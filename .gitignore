@@ -1,5 +1,5 @@
 dist/
-klue_aws.egg-info/
+klue_microservice.egg-info/
 **/__pycache__
 *.tar
 **/*.pyc
