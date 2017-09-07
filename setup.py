@@ -28,9 +28,9 @@ if not version:
 print("version: %s" % version)
 
 setup(
-    name='klue-easy-api',
+    name='klue-microservice',
     version=version,
-    url='https://github.com/erwan-lemonnier/klue-easy-api',
+    url='https://github.com/erwan-lemonnier/klue-microservice',
     license='BSD',
     author='Erwan Lemonnier',
     author_email='erwan@lemonnier.se',
