@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 class API(object):
 
 
-    def __init__(self, app, host='localhost', port=80, debug=False, log_level=logging.DEBUG, formats=None, timeout=20, error_reporter=None, jwt_secret=None):
+    def __init__(self, app, host='localhost', port=80, debug=False, log_level=logging.DEBUG, formats=None, timeout=20, error_reporter=None, jwt_secret=None, jwt_audience=None):
         """Take the flask app, and optionally the http port to listen on, and
         whether flask's debug mode is one or not, which callback to call when
         catching exceptions, and the api's log level"""
@@ -31,7 +31,7 @@ class API(object):
         self.debug = debug
         self.formats = formats
         self.timeout = timeout
-        set_jwt_defaults(secret=jwt_secret)
+        set_jwt_defaults(secret=jwt_secret, audience=jwt_audience)
         set_level(log_level)
         if error_reporter:
             set_error_reporter(error_reporter)

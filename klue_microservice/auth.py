@@ -24,6 +24,7 @@ log = logging.getLogger(__name__)
 #
 
 DEFAULT_JWT_ISSUER = 'klue'
+DEFAULT_JWT_AUDIENCE = 'HFhAcAZ1VdRt0anWpefDfGYnW8F79uLF'
 DEFAULT_USER_ID = None
 DEFAULT_TOKEN_TIMEOUT = 86400
 # Automatically renew token if expires in less than this time (in sec) 3 hours
@@ -31,7 +32,7 @@ DEFAULT_TOKEN_TIMEOUT = 86400
 DEFAULT_TOKEN_RENEW_AFTER = 10800
 DEFAULT_JWT_SECRET = None
 
-def set_jwt_defaults(issuer=None, user_id=None, token_timeout=None, token_renew=None, secret=None):
+def set_jwt_defaults(issuer=None, user_id=None, token_timeout=None, token_renew=None, secret=None, audience=None):
     if issuer:
         global DEFAULT_JWT_ISSUER
         log.info("Setting JWT issuer to %s" % issuer)
@@ -52,6 +53,10 @@ def set_jwt_defaults(issuer=None, user_id=None, token_timeout=None, token_renew=
         global DEFAULT_JWT_SECRET
         log.info("Setting JWT secret")
         DEFAULT_JWT_SECRET = secret
+    if audience:
+        global DEFAULT_JWT_AUDIENCE
+        log.info("Setting JWT audience: %s" % audience)
+        DEFAULT_JWT_AUDIENCE = audience
 
 
 #
@@ -162,16 +167,16 @@ def authenticate_http_request():
     log.debug("Validating Auth header [%s]" % auth)
 
     if not auth:
-        raise pnt_common.exceptions.AuthMissingHeaderError('There is no Authorization header in the HTTP request')
+        raise AuthMissingHeaderError('There is no Authorization header in the HTTP request')
 
     parts = auth.split()
 
     if parts[0].lower() != 'bearer':
-        raise pnt_common.exceptions.AuthInvalidTokenError('Authorization header must start with Bearer')
+        raise AuthInvalidTokenError('Authorization header must start with Bearer')
     elif len(parts) == 1:
-        raise pnt_common.exceptions.AuthInvalidTokenError('Token not found in Authorization header')
+        raise AuthInvalidTokenError('Token not found in Authorization header')
     elif len(parts) > 2:
-        raise pnt_common.exceptions.AuthInvalidTokenError('Authorization header must be Bearer + \s + token')
+        raise AuthInvalidTokenError('Authorization header must be Bearer + \s + token')
 
     token = parts[1]
 
@@ -186,6 +191,7 @@ def generate_token(user_id, expire_in=None, data={}, issuer=DEFAULT_JWT_ISSUER, 
     is 1 year from creation time"""
     assert user_id
     assert isinstance(data, dict)
+    assert DEFAULT_JWT_SECRET
 
     if expire_in is None:
         expire_in = DEFAULT_TOKEN_TIMEOUT
@@ -198,7 +204,7 @@ def generate_token(user_id, expire_in=None, data={}, issuer=DEFAULT_JWT_ISSUER, 
 
     data['iss'] = issuer
     data['sub'] = user_id
-    data['aud'] = get_jwt_client_id(issuer)
+    data['aud'] = DEFAULT_JWT_AUDIENCE
     data['exp'] = epoch_end
     data['iat'] = epoch_now
 
@@ -212,7 +218,7 @@ def generate_token(user_id, expire_in=None, data={}, issuer=DEFAULT_JWT_ISSUER, 
 
     t = jwt.encode(
         data,
-        get_jwt_secret(issuer),
+        DEFAULT_JWT_SECRET,
         headers=headers,
     )
 
