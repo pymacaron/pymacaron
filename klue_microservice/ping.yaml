@@ -1,0 +1,142 @@
+# This is a swagger description of the Klue MicroService default API
+
+swagger: '2.0'
+info:
+  title: Tthe Klue MicroService default API
+  version: "0.0.1"
+  description: |
+    Implement the /ping and /version endpoints common to all services.
+
+host: localhost
+# array of all schemes that your API supports
+schemes:
+  - https
+  - http
+# will be prefixed to all paths
+basePath: /v1
+produces:
+  - application/json
+paths:
+
+  /ping:
+    get:
+      summary: Return an empty message.
+      description: |
+        Return an empty message (pong).
+      tags:
+        - Ping
+      produces:
+        - application/json
+      x-bind-server: klue_microservice.api.do_ping
+      responses:
+        '200':
+          description: API version
+          schema:
+            $ref: '#/definitions/Ok'
+
+
+  /version:
+    get:
+      summary: Return the API''s version.
+      description: |
+        Return the API''s version. Can be used to ping the api.
+      tags:
+        - Version
+      produces:
+        - application/json
+      x-bind-server: klue_microservice.api.do_version
+      responses:
+        '200':
+          description: API version
+          schema:
+            $ref: '#/definitions/Version'
+
+
+
+  /auth/version:
+    get:
+      summary: Authenticated version.
+      description: |
+        A ping/version endpoint that requires a valid Authentication header.
+      tags:
+        - Version
+      produces:
+        - application/json
+      x-bind-server: klue_microservice.api.do_version
+      x-decorate-server: klue_microservice.auth.requires_auth
+      responses:
+        '200':
+          description: API version
+          schema:
+            $ref: '#/definitions/Version'
+        default:
+          description: Error
+          schema:
+            $ref: '#/definitions/Error'
+
+
+definitions:
+
+  Version:
+    type: object
+    description: The api''s version
+    properties:
+      name:
+        type: string
+        description: Name of the api being served
+      version:
+        type: string
+        description: Version of the swagger spec of the api being served
+      container:
+        type: string
+        description: Version of the docker contained running the api
+    example:
+      version: 1.0.34
+      name: klue
+      container: master-20160215-1903-42-e469af
+    required:
+      - version
+      - name
+      - container
+
+
+  Ok:
+    type: object
+    description: An empty all-went-well reply
+    properties:
+      ok:
+        type: string
+
+
+  Error:
+    type: object
+    description: An api error
+    properties:
+      status:
+        type: integer
+        format: int32
+        description: HTTP error code.
+      error:
+        type: string
+        description: A unique identifier for this error.
+      error_description:
+        type: string
+        description: A humanly readable error message in the user''s selected language.
+      error_id:
+        type: string
+        description: Unique error id for querying error trace and analytics data
+      error_caught:
+        type: string
+        description: The internal error that was caught (if any)
+      user_message:
+        type: string
+        description: A user-friendly error message, in the user's language, to be shown in the app's alert.
+    required:
+      - status
+      - error
+      - error_description
+    example:
+      status: 500
+      error: SERVER_ERROR
+      error_description: Expected data to send in reply but got none
+      user_message: Something went wrong! Try again later.

@@ -7,6 +7,7 @@ from klue_microservice.log import set_level
 from klue_microservice.api import do_ping
 from klue_microservice.crash import set_error_reporter, crash_handler
 from klue_microservice.exceptions import format_error
+from klue_microservice.auth import set_jwt_defaults
 
 
 log = logging.getLogger(__name__)
@@ -19,7 +20,7 @@ log = logging.getLogger(__name__)
 class API(object):
 
 
-    def __init__(self, app, host='localhost', port=80, debug=False, log_level=logging.DEBUG, formats=None, timeout=20, error_reporter=None):
+    def __init__(self, app, host='localhost', port=80, debug=False, log_level=logging.DEBUG, formats=None, timeout=20, error_reporter=None, jwt_secret=None):
         """Take the flask app, and optionally the http port to listen on, and
         whether flask's debug mode is one or not, which callback to call when
         catching exceptions, and the api's log level"""
@@ -30,17 +31,22 @@ class API(object):
         self.debug = debug
         self.formats = formats
         self.timeout = timeout
+        set_jwt_defaults(secret=jwt_secret)
         set_level(log_level)
         if error_reporter:
             set_error_reporter(error_reporter)
         log.info("Initialized API (%s:%s) (Flask debug:%s)" % (host, port, debug))
 
 
-    def load_apis(self, path):
-        """Load all swagger files found at the given path"""
+    def load_apis(self, path, ignore=[]):
+        """Load all swagger files found at the given path, except those whose
+        names are in the 'ignore' list"""
 
         if not path:
             raise Exception("Missing path to api swagger files")
+
+        if type(ignore) is not list:
+            raise Exception("'ignore' should be a list of api names")
 
         # Find all swagger apis under 'path'
         apis = {}
@@ -50,14 +56,24 @@ class API(object):
             for f in files:
                 if f.endswith('.yaml'):
                     api_name = f.replace('.yaml', '')
+
+                    if api_name in ignore:
+                        log.info("Ignoring api %s" % api_name)
+                        continue
+
                     apis[api_name] = os.path.join(path, f)
                     log.debug("Found api %s in %s" % (api_name, f))
 
+        # And add klue-microservice's default ping api
+        ping_path = os.path.join(os.path.dirname(sys.modules[__name__].__file__), 'ping.yaml')
+        apis['ping'] = ping_path
+
+        # Save found apis
         self.path_apis = path
         self.apis = apis
 
 
-    def start(self, debug=False, serve=[]):
+    def start(self, serve=[]):
         """Start the API server"""
 
         # Check arguments
@@ -77,6 +93,9 @@ class API(object):
 
         app = self.app
         app.secret_key = os.urandom(24)
+
+        # Always serve the ping api
+        serve.append('ping')
 
         # Let's compress returned data when possible
         compress = Compress()
@@ -124,14 +143,15 @@ class API(object):
 
         # Now spawn flask routes for all endpoints
         for api_name in self.apis.keys():
-            log.info("Spawning api %s" % api_name)
-            api = getattr(ApiPool, api_name)
-            api.spawn_api(app, decorator=crash_handler)
+            if api_name in serve:
+                log.info("Spawning api %s" % api_name)
+                api = getattr(ApiPool, api_name)
+                api.spawn_api(app, decorator=crash_handler)
 
         if os.path.basename(sys.argv[0]) == 'gunicorn':
             # Gunicorn takes care of spawning workers
             return
 
         # Debug mode is the default when not running via gunicorn
-        app.debug = debug
+        app.debug = self.debug
         app.run(host='0.0.0.0', port=port)

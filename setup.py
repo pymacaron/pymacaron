@@ -42,6 +42,8 @@ setup(
 	'flask-cors',
 	'flask-compress',
 	'pytz',
+	'PyJWT',
+	'klue-unit',
     ],
     tests_require=[
         'klue-aws-toolbox',

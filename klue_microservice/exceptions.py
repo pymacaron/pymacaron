@@ -67,6 +67,18 @@ class UnhandledServerError(KlueMicroServiceException):
     code = 'UNHANDLED_SERVER_ERROR'
     status = 500
 
+class AuthMissingHeaderError(KlueMicroServiceException):
+    code = 'AUTHORIZATION_HEADER_MISSING'
+    status = 401
+
+class AuthTokenExpiredError(KlueMicroServiceException):
+    code = 'TOKEN_EXPIRED'
+    status = 401
+
+class AuthInvalidTokenError(KlueMicroServiceException):
+    code = 'TOKEN_INVALID'
+    status = 401
+
 
 def responsify(error):
     """Take an Error model and return it as a Flask response"""

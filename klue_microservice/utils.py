@@ -1,3 +1,5 @@
+import os
+import sys
 import datetime
 from dateutil import parser
 import logging
@@ -49,3 +51,12 @@ def to_datetime(e):
     return datetime.datetime.fromtimestamp(e, pytz.timezone('utc'))
 
 
+def get_container_version():
+    """Return the version of the docker container running the present server,
+    or '' if not in a container"""
+    root_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
+    version_file = os.path.join(root_dir, 'VERSION')
+    if os.path.exists(version_file):
+        with open(version_file) as f:
+            return f.read()
+    return ''
