@@ -110,6 +110,9 @@ def crash_handler(f):
 
     @wraps(f)
     def wrapper(*args, **kwargs):
+        """Generate a report of this api call, and if the call failed or was too slow,
+        forward this report via the error_reporter"""
+
         data = {}
         t0 = timenow()
 
