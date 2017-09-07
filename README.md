@@ -1,2 +1,3 @@
-# klue-micro-service
-Swiftly create a rest api micro service running as a Docker container on amazon AWS
+# klue-easy-api
+
+Easily create and deploy a Flask-based REST api running as a Docker container on amazon AWS
