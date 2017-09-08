@@ -37,13 +37,13 @@ setup(
     description='Easily implement a REST API and deploy it as a Docker container on amazon AWS',
     install_requires=[
         'klue-aws-toolbox',
-	'click',
-	'klue-client-server',
-	'flask-cors',
-	'flask-compress',
-	'pytz',
-	'PyJWT',
-	'klue-unit',
+        'click',
+        'klue-client-server',
+        'flask-cors',
+        'flask-compress',
+        'pytz',
+        'PyJWT',
+        'klue-unit',
     ],
     tests_require=[
         'klue-aws-toolbox',
@@ -51,6 +51,7 @@ setup(
         'mock',
         'pep8'
     ],
+    package_data={'': '/klue_microservice/ping.yaml'},
     test_suite='nose.collector',
     packages=['klue_microservice'],
     zip_safe=False,

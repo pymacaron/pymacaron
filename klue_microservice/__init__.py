@@ -2,6 +2,7 @@ import os
 import sys
 import logging
 import click
+import pkg_resources
 from flask_compress import Compress
 from klue.swagger.apipool import ApiPool
 from klue_microservice.log import set_level
@@ -66,7 +67,9 @@ class API(object):
                     log.debug("Found api %s in %s" % (api_name, f))
 
         # And add klue-microservice's default ping api
-        ping_path = os.path.join(os.path.dirname(sys.modules[__name__].__file__), 'ping.yaml')
+        ping_path = pkg_resources.resource_filename(__name__, 'ping.yaml')
+        if not os.path.isfile(ping_path):
+            ping_path = os.path.join(os.path.dirname(sys.modules[__name__].__file__), 'ping.yaml')
         apis['ping'] = ping_path
 
         # Save found apis
