@@ -54,7 +54,7 @@ looking like this:
 ├── LICENSE               # You should always have a licence :-)
 ├── README.rst            # and a readme!
 |
-├── env.secrets           # List of environment variables to pass into containers
+├── klue-config.yaml      # Config for klue-microservice and klue-aws-toolbox
 |
 ├── server.py             # Code to start your server, see below
 |
@@ -162,20 +162,37 @@ TODO
 
 TODO
 
-### env.secrets
+### klue-config.yaml
 
-The file 'env.secrets' contains a list of environemt variables that will be
-passed to Elastic Beanstalk and loaded into containers. This allows you to pass
-secrets to the container without commiting them inside your code.
+'klue-microservice' needs the following information, stored in the file
+'klue-config.yaml':
 
-In the example above, 'env.secrets' would contain at least:
+* 'name': a short name for this project, used when naming elastic beanstalk
+environments.
+* 'env_jwt_secret' and 'env_jwt_audience': name of environment variables
+containing the JWT secret, respectively audience, used for authentication (if
+any).
+* 'env_secrets': names of env environemt variables that will be passed to
+Elastic Beanstalk and loaded into containers. This allows you to pass secrets
+to the container without commiting them inside your code.
+* 'live_host': url to the live server running this api.
+* 'live_port': tcp port of the live server.
+
+'klue-aws-toolbox' adds a few fields of its own to this config file.
+
+Example of 'klue-config.yaml':
 
 ```
-$ cat env.secrets
-# Name of environment variables to pass into the docker containers
-KLUE_JWT_SECRET
-KLUE_JWT_AUDIENCE
-
+name: helloworld
+env_jwt_secret: KSTING_JWT_SECRET
+env_jwt_audience: KSTING_JWT_AUDIENCE
+live_host: https://api.ksting.com
+live_port: 443
+env_secrets:
+  - KLUE_JWT_SECRET
+  - KLUE_JWT_AUDIENCE
+  - AWS_SECRET_ACCESS_KEY
+  - AWS_ACCESS_KEY_ID
 ```
 
 ### Built-in endpoints
