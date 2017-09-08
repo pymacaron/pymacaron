@@ -52,9 +52,9 @@ setup(
         'mock',
         'pep8'
     ],
+    package=['klue_microservice'],
     package_data={'': 'klue_microservice/ping.yaml'},
     test_suite='nose.collector',
-    packages=['klue_microservice'],
     zip_safe=False,
     include_package_data=True,
     platforms='any',
