@@ -1,0 +1,54 @@
+#!/usr/bin/env python
+
+import os
+import sys
+import logging
+import click
+import subprocess
+import yaml
+
+
+@click.command()
+@click.option('--env-jwt-secret/--no-env-jwt-secret', help="Return the name of the environment variable containing the project's JWT secret", default=False)
+@click.option('--env-jwt-audience/--no-env-jwt-audience', help="Return the name of the environment variable containing the project's JWT audience", default=False)
+@click.option('--live-host/--no-live-host', help="Return the url of the live server", default=False)
+@click.option('--live-port/--no-live-port', help="Return the TCP port of the live server", default=False)
+@click.option('--pass-environment/--no-pass-environment', help="Return a list of environment variables to pass to docker/elasticbean", default=False)
+@click.option('--git-root/--no-git-root', help="Print the git repository's root dir", default=False)
+def main(env_jwt_secret, env_jwt_audience, live_host, live_port, pass_environment, git_root):
+    """Parse the klue config file (klue-config.yaml) in a shell script friendly
+    way."""
+
+    # What is the repo's root directory?
+    root_dir = subprocess.Popen(["git", "rev-parse", "--show-toplevel"], stdout=subprocess.PIPE).stdout.read()
+    root_dir = root_dir.decode("utf-8").strip()
+
+    if git_root:
+        print(root_dir)
+        sys.exit(0)
+
+    # Load klue-config.yaml
+    path = os.path.join(root_dir, 'klue-config.yaml')
+
+    if not os.path.isfile(path):
+        print("ERROR: cannot find config file %s" % path)
+        sys.exit(1)
+
+    d = None
+    with open(path, 'r') as stream:
+        d = yaml.load(stream)
+
+    if env_jwt_secret:
+        print(d['env_jwt_secret'])
+    elif env_jwt_audience:
+        print(d['env_jwt_audience'])
+    elif live_host:
+        print(d['live_host'])
+    elif live_port:
+        print(d['live_port'])
+    elif pass_environment:
+        print(d['pass_environment'])
+
+
+if __name__ == "__main__":
+    main()
