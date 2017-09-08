@@ -30,15 +30,14 @@ def default_error_reporter(title, message):
     log.error("error: %s" % title)
     log.error("details:\n%s" % message)
 
-global error_reporter
 error_reporter = default_error_reporter
 
 def set_error_reporter(callback=None):
     """Here you can override the default crash reporter (and send yourself
     emails, sms, slacks...)"""
 
+    global error_reporter
     if error_reporter:
-        global error_reporter
         error_reporter = callback
 
 
