@@ -54,6 +54,8 @@ looking like this:
 ├── LICENSE               # You should always have a licence :-)
 ├── README.rst            # and a readme!
 |
+├── env.secrets           # List of environment variables to pass into containers
+|
 ├── server.py             # Code to start your server, see below
 |
 └── testaccept            # Acceptance tests! Will be run multiple times
@@ -79,7 +81,6 @@ app = Flask(__name__)
 
 
 def start(port=80, debug=False):
-    """You could have more arguments, this is just an example :-)"""
 
     # Your swagger api files are under ./apis, but you could have them anywhere
     # else really.
@@ -160,6 +161,22 @@ TODO
 ### Elastic Beanstalk configuration
 
 TODO
+
+### env.secrets
+
+The file 'env.secrets' contains a list of environemt variables that will be
+passed to Elastic Beanstalk and loaded into containers. This allows you to pass
+secrets to the container without commiting them inside your code.
+
+In the example above, 'env.secrets' would contain at least:
+
+```
+$ cat env.secrets
+# Name of environment variables to pass into the docker containers
+KLUE_JWT_SECRET
+KLUE_JWT_AUDIENCE
+
+```
 
 ### Built-in endpoints
 
