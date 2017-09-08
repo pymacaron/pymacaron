@@ -1,6 +1,7 @@
 from setuptools import setup
 import sys
 import os
+from glob import glob
 
 version = None
 
@@ -37,13 +38,13 @@ setup(
     author_email='erwan@lemonnier.se',
     description='Easily implement a REST API and deploy it as a Docker container on amazon AWS',
     install_requires=[
-        'click',
+        'klue-unit',
         'klue-client-server',
         'flask-cors',
         'flask-compress',
+        'click',
         'pytz',
         'PyJWT',
-        'klue-unit',
     ],
     tests_require=[
         'nose',
@@ -52,6 +53,7 @@ setup(
     ],
     packages=['klue_microservice'],
     package_data={'klue_microservice': ['*.yaml']},
+    scripts=glob("bin/*"),
     test_suite='nose.collector',
     zip_safe=False,
     platforms='any',
