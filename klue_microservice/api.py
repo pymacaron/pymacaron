@@ -9,7 +9,7 @@ log = logging.getLogger(__name__)
 
 def do_ping():
     log.debug("Replying ping:ok")
-    v = ApiPool.ping.model.Version()
+    v = ApiPool.ping.model.Ok()
     return v
 
 def do_version():
