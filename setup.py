@@ -37,7 +37,6 @@ setup(
     author_email='erwan@lemonnier.se',
     description='Easily implement a REST API and deploy it as a Docker container on amazon AWS',
     install_requires=[
-        'klue-aws-toolbox',
         'click',
         'klue-client-server',
         'flask-cors',
@@ -47,7 +46,6 @@ setup(
         'klue-unit',
     ],
     tests_require=[
-        'klue-aws-toolbox',
         'nose',
         'mock',
         'pep8'
