@@ -6,7 +6,7 @@ on amazon AWS Elastic Beanstalk.
 [klue-microservice](https://github.com/erwan-lemonnier/klue-microservice) uses
 [klue-client-server](https://github.com/erwan-lemonnier/klue-client-server) to
 spawn REST apis into a Flask app. These apis are defined as swagger
-specifications, defining all API endpoints in a friendly yaml format, and
+specifications, describing all API endpoints in a friendly yaml format, and
 binding endpoints to Python methods.
 
 [klue-microservice](https://github.com/erwan-lemonnier/klue-microservice) uses
@@ -17,13 +17,10 @@ Elastic Beanstalk.
 With [klue-microservice](https://github.com/erwan-lemonnier/klue-microservice),
 you get out-of-the-box:
 
-* a best practice auto-scalling setup on Elastic Beanstalk
-
-* error handling and reporting around your api endpoints
-
-* endpoint authentication based on JWT tokens
-
-* Python objects for all you api's json data, with silent
+* A best practice auto-scalling setup on Elastic Beanstalk
+* Error handling and reporting around your api endpoints
+* Endpoint authentication based on JWT tokens
+* Python objects for all your api's json data, with silent
 marshalling/unmarshalling and validation
 
 Easy peasy now you happy!
@@ -83,7 +80,7 @@ log = logging.getLogger(__name__)
 @click.option('--port', help="Set server listening port (default: 80)", default=80)
 @click.option('--debug/--no-debug', default=True)
 def main(port, debug):
-    """"""
+    """You could have more arguments, this is just an example :-)"""
 
     # Your swagger api files are under ./apis, but you could have them anywhere
     # else really.
@@ -93,10 +90,10 @@ def main(port, debug):
     # Create a flask app. Here you could add custom routes, etc.
     app = Flask(__name__)
 
-    # Tell klue-microservice to spawn apis inside this Flask app.  Set th
-    # server's listening port, whether Flask debug is on or not, and if some of
-    # your endpoints use klue-microservice's builtin JWT token-based
-    # authentication scheme, initialise a wt token and audience
+    # Tell klue-microservice to spawn apis inside this Flask app.  Set the
+    # server's listening port, whether Flask debug mode is on or not, and, if
+    # some of your endpoints use klue-microservice's builtin JWT token-based
+    # authentication scheme, initialise a jwt token and audience
     api = API(
         app,
         port=port,
@@ -122,14 +119,14 @@ if os.path.basename(sys.argv[0]) == 'gunicorn':
 
 ```
 
-And you start your server in a terminal like this:
+You start your server in a terminal like this:
 
 ```bash
 cd projectroot
 python server.py --port 8080
 ```
 
-And run acceptance tests against the above server like this:
+You run acceptance tests against the above server like this:
 
 ```bash
 cd projectroot
