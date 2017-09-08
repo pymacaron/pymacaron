@@ -74,6 +74,9 @@ from klue_microservice import API, letsgo
 
 log = logging.getLogger(__name__)
 
+# Create a flask app. Here you could add custom routes, etc.
+app = Flask(__name__)
+
 
 def start(port=80, debug=False):
     """You could have more arguments, this is just an example :-)"""
@@ -82,9 +85,6 @@ def start(port=80, debug=False):
     # else really.
     here = os.path.dirname(os.path.realpath(__file__))
     path_apis = os.path.join(here, "apis")
-
-    # Create a flask app. Here you could add custom routes, etc.
-    app = Flask(__name__)
 
     # Tell klue-microservice to spawn apis inside this Flask app.  Set the
     # server's listening port, whether Flask debug mode is on or not, and, if
