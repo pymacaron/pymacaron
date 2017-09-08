@@ -105,18 +105,16 @@ else
     # Start the container, passing all secrets as environment variables,
     # just like in the amazon EBS setup
     CMD="docker run"
-    if [ -e "env.secrets" ]; then
-        for VAR in $(cat env.secrets | grep -v '#')
-        do
-            echo "=> Passing env variable $VAR"
-            VALUE=$(env | grep "^$VAR=" | cut -d '=' -f 2)
-            if [ -z "$VALUE" ]; then
-                echo "ERROR: variable $VAR has no value in env"
-                exit 1
-            fi
-            CMD="$CMD -e $VAR=$VALUE"
-        done
-    fi
+    for VAR in $(klue_config --env-secrets)
+    do
+        echo "=> Passing env variable $VAR"
+        VALUE=$(env | grep "^$VAR=" | cut -d '=' -f 2)
+        if [ -z "$VALUE" ]; then
+            echo "ERROR: variable $VAR has no value in env"
+            exit 1
+        fi
+        CMD="$CMD -e $VAR=$VALUE"
+    done
     CMD="$CMD --rm -P $IMAGE_ID"
 
     echo "=> Starting container for image $IMAGE_ID"
