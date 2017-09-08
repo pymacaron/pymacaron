@@ -135,6 +135,12 @@ run_acceptance_tests --local
 
 ## Deep dive
 
+### Installing
+
+```
+pip install klue-microservice
+```
+
 ### Swagger specifications
 
 All api endpoints that your service needs, both those it implements and those
