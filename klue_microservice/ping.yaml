@@ -20,9 +20,9 @@ paths:
 
   /ping:
     get:
-      summary: Return an empty message.
+      summary: Ping the server.
       description: |
-        Return an empty message (pong).
+        Return an empty json message (a pong).
       tags:
         - Ping
       produces:
@@ -30,16 +30,20 @@ paths:
       x-bind-server: klue_microservice.api.do_ping
       responses:
         '200':
-          description: API version
+          description: Ok.
           schema:
             $ref: '#/definitions/Ok'
+        default:
+          description: Error
+          schema:
+            $ref: '#/definitions/Error'
 
 
   /version:
     get:
-      summary: Return the API''s version.
+      summary: Get the API's version.
       description: |
-        Return the API''s version. Can be used to ping the api.
+        Return the API''s version and various stats. Can be used to ping the api.
       tags:
         - Version
       produces:
@@ -50,14 +54,17 @@ paths:
           description: API version
           schema:
             $ref: '#/definitions/Version'
-
+        default:
+          description: Error
+          schema:
+            $ref: '#/definitions/Error'
 
 
   /auth/version:
     get:
-      summary: Authenticated version.
+      summary: Get the API's version (requires authentication)
       description: |
-        A ping/version endpoint that requires a valid Authentication header.
+        Same as '/version', but requiring authentication. Usefull to test your JWT tokens.
       tags:
         - Version
       produces:

@@ -138,9 +138,6 @@ class API(object):
 
         ApiPool.merge()
 
-        # Add default healthcheck routes
-        app.add_url_rule('/ping', 'do_ping', do_ping)
-
         # Now spawn flask routes for all endpoints
         for api_name in self.apis.keys():
             if api_name in serve:

@@ -153,6 +153,14 @@ and does all the magic of spawning client and server stubs for all api
 endpoints, as well as supporting optional database serialization for your api
 objects.
 
+### JWT authentication
+
+TODO
+
+### Error handling and reporting
+
+TODO
+
 ### Acceptance tests
 
 TODO
@@ -160,3 +168,39 @@ TODO
 ### Elastic Beanstalk configuration
 
 TODO
+
+### Built-in endpoints
+
+The following endpoints are built-in into every klue-microservice instance, based
+on [this swagger spec](https://github.com/erwan-lemonnier/klue-microservice/blob/master/klue_microservice/ping.yaml):
+
+```
+# Assuming you did in a separate terminal:
+# $ python server.py --port 8080
+
+$ curl http://127.0.0.1:8080/ping
+{}
+
+$ curl http://127.0.0.1:8080/version
+{
+  "container": "",
+  "name": "ping",
+  "version": "0.0.1"
+}
+
+$ curl http://127.0.0.1:8080/auth/version
+{
+  "error_description": "There is no Authorization header in the HTTP request",
+  "error_id": "17f900c8-b456-4a64-8b2b-83c7d36353f6",
+  "status": 401,
+  "error": "AUTHORIZATION_HEADER_MISSING"
+}
+
+$ curl -H "Authorization: Bearer eyJpc3M[...]y8kNg" http://127.0.0.1:8080/auth/version
+{
+  "container": "",
+  "name": "ping",
+  "version": "0.0.1"
+}
+
+```

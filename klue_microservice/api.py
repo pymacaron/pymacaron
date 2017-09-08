@@ -1,17 +1,16 @@
 import logging
 import pprint
 from klue.swagger.apipool import ApiPool
-from flask_cors import cross_origin
 from klue_microservice.utils import get_container_version
 
 
 log = logging.getLogger(__name__)
 
 
-@cross_origin(headers=['Content-Type', 'Authorization'])
 def do_ping():
     log.debug("Replying ping:ok")
-    return "{}"
+    v = ApiPool.ping.model.Version()
+    return v
 
 def do_version():
     """Return version details of the running server api"""
