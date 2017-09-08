@@ -30,6 +30,7 @@ def default_error_reporter(title, message):
     log.error("error: %s" % title)
     log.error("details:\n%s" % message)
 
+global error_reporter
 error_reporter = default_error_reporter
 
 def set_error_reporter(callback=None):
