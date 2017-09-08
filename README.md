@@ -65,21 +65,17 @@ looking like this:
 And your server simply looks like:
 
 ```python
-import click
 import os
 import sys
 import logging
 from flask import Flask
-from klue_microservice import API
+from klue_microservice import API, letsgo
 
 
 log = logging.getLogger(__name__)
 
 
-@click.command()
-@click.option('--port', help="Set server listening port (default: 80)", default=80)
-@click.option('--debug/--no-debug', default=True)
-def main(port, debug):
+def start(port=80, debug=False):
     """You could have more arguments, this is just an example :-)"""
 
     # Your swagger api files are under ./apis, but you could have them anywhere
@@ -110,13 +106,9 @@ def main(port, debug):
     api.start(serve="myservice")
 
 
-if __name__ == "__main__":
-    main()
-
-# In docker containers, your Flask app will run in gunicorn
-if os.path.basename(sys.argv[0]) == 'gunicorn':
-    start()
-
+# Run the Flask server, either as standalone in a terminal,
+# or via gunicorn
+letsgo(__name__, callback=start)
 ```
 
 You start your server in a terminal like this:

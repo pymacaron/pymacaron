@@ -1,6 +1,7 @@
 import os
 import sys
 import logging
+import click
 from flask_compress import Compress
 from klue.swagger.apipool import ApiPool
 from klue_microservice.log import set_level
@@ -152,3 +153,22 @@ class API(object):
         # Debug mode is the default when not running via gunicorn
         app.debug = self.debug
         app.run(host='0.0.0.0', port=port)
+
+#
+# Generic code to start server, from command line or via gunicorn
+#
+
+def letsgo(name, callback=None):
+    assert callback
+
+    @click.command()
+    @click.option('--port', help="Set server listening port (default: 80)", default=80)
+    @click.option('--debug/--no-debug', default=True)
+    def main(port, debug):
+        callback(port, debug)
+
+    if name == "__main__":
+        main()
+
+    if os.path.basename(sys.argv[0]) == 'gunicorn':
+        callback()
