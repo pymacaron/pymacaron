@@ -54,7 +54,6 @@ setup(
     package_data={'klue_microservice': ['*.yaml']},
     test_suite='nose.collector',
     zip_safe=False,
-    include_package_data=True,
     platforms='any',
     classifiers=[
         'Environment :: Web Environment',
