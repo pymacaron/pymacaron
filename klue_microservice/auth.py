@@ -51,7 +51,7 @@ def set_jwt_defaults(issuer=None, user_id=None, token_timeout=None, token_renew=
         DEFAULT_TOKEN_RENEW_AFTER = token_renew
     if secret:
         global DEFAULT_JWT_SECRET
-        log.info("Setting JWT secret")
+        log.info("Setting JWT secret %s*****.." % secret[0:5])
         DEFAULT_JWT_SECRET = secret
     if audience:
         global DEFAULT_JWT_AUDIENCE
@@ -125,7 +125,7 @@ def load_auth_token(token, load=True):
         payload = jwt.decode(
             token,
             DEFAULT_JWT_SECRET,
-            audience=DEFAULT_JWT_ISSUER,
+            audience=DEFAULT_JWT_AUDIENCE,
             # Allow for a time difference of up to 5min (300sec)
             leeway=300
         )

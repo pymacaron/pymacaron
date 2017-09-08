@@ -87,6 +87,9 @@ definitions:
       version:
         type: string
         description: Version of the swagger spec of the api being served
+      live:
+        type: boolean
+        description: Whether this is a production server or not
       container:
         type: string
         description: Version of the docker contained running the api
