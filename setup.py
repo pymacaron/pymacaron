@@ -51,7 +51,7 @@ setup(
         'pep8'
     ],
     packages=['klue_microservice'],
-    package_data={'': ['klue_microservice/ping.yaml']},
+    package_data={'klue_microservice': ['*.yaml']},
     test_suite='nose.collector',
     zip_safe=False,
     include_package_data=True,
