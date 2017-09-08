@@ -52,7 +52,7 @@ setup(
         'pep8'
     ],
     test_suite='nose.collector',
-    packages=[],
+    packages=['klue_microservice'],
     zip_safe=False,
     include_package_data=True,
     platforms='any',
