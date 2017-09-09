@@ -23,7 +23,7 @@ log = logging.getLogger(__name__)
 # Configuration
 #
 
-DEFAULT_JWT_ISSUER = 'klue'
+DEFAULT_JWT_ISSUER = None
 DEFAULT_JWT_AUDIENCE = 'HFhAcAZ1VdRt0anWpefDfGYnW8F79uLF'
 DEFAULT_USER_ID = None
 DEFAULT_TOKEN_TIMEOUT = 86400
@@ -39,7 +39,7 @@ def set_jwt_defaults(issuer=None, user_id=None, token_timeout=None, token_renew=
         DEFAULT_JWT_ISSUER = issuer
     if user_id:
         global DEFAULT_USER_ID
-        log.info("Setting JWT user_id to %s" % user_id)
+        log.info("Setting JWT default user_id to %s" % user_id)
         DEFAULT_USER_ID = user_id
     if token_timeout:
         global DEFAULT_TOKEN_TIMEOUT
@@ -52,7 +52,7 @@ def set_jwt_defaults(issuer=None, user_id=None, token_timeout=None, token_renew=
     if secret:
         global DEFAULT_JWT_SECRET
         log.info("Setting JWT secret %s*****.." % secret[0:5])
-        DEFAULT_JWT_SECRET = secret
+        DEFAULT_JWT_SECRET = base64.b64decode(secret.replace("_", "/").replace("-", "+"))
     if audience:
         global DEFAULT_JWT_AUDIENCE
         log.info("Setting JWT audience: %s" % audience)
@@ -211,7 +211,7 @@ def generate_token(user_id, expire_in=None, data={}, issuer=DEFAULT_JWT_ISSUER, 
     headers = {
         "typ": "JWT",
         "alg": "HS256",
-        "iss": issuer
+        "iss": issuer,
     }
 
     log.debug("Encoding token with data %s and headers %s" % (data, headers))
@@ -229,12 +229,21 @@ def generate_token(user_id, expire_in=None, data={}, issuer=DEFAULT_JWT_ISSUER, 
 
 
 @contextmanager
-def backend_token(issuer=DEFAULT_JWT_ISSUER, user_id=DEFAULT_USER_ID):
+def backend_token(issuer=None, user_id=None):
+
+    if not issuer:
+        issuer = DEFAULT_JWT_ISSUER
+    if not user_id:
+        user_id = DEFAULT_USER_ID
 
     assert issuer
     assert user_id
 
     cur_token = ''
+
+    if stack.top is None:
+        raise RuntimeError('working outside of request context')
+
     if not hasattr(stack.top, 'current_user'):
         stack.top.current_user = {}
     else:
