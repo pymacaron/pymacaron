@@ -290,20 +290,21 @@ def crash_handler(f):
         # Should we report this call?
         #
 
-        fqdn = data['server']['fqdn']
         if 'server' not in data:
             log.info("This is a unitest running: not reporting error")
             pass
-        elif '192.168' in fqdn or '127.0.0' in fqdn:
-            log.info("This is a test setup: not reporting error")
-            pass
         else:
-            # If it is an internal errors, report it
-            # If it is too slow, report it
-            if str(data['response']['status']) in ('500'):
-                report_error(data)
-            elif int(data['time']['microsecs']) > 3000000:
-                report_error(data, msg="SLOW BACKEND CALL: %s %s" % (ApiPool().current_server_name, data['endpoint']['path']))
+            fqdn = data['server']['fqdn']
+            if '192.168' in fqdn or '127.0.0' in fqdn:
+                log.info("This is a test setup: not reporting error")
+                pass
+            else:
+                # If it is an internal errors, report it
+                # If it is too slow, report it
+                if str(data['response']['status']) in ('500'):
+                    report_error(data)
+                elif int(data['time']['microsecs']) > 3000000:
+                    report_error(data, msg="SLOW BACKEND CALL: %s %s" % (ApiPool().current_server_name, data['endpoint']['path']))
 
         return res
 
