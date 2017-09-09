@@ -105,6 +105,78 @@ def report_error(data, msg=None, caught=None, title=None):
         log.error("Failed to send email report: %s" % str(e))
 
 
+def populate_error_report(data):
+    """Add generic stats to the error report"""
+
+    # Did klue-client-server set a call_id and call_path?
+    call_id, call_path = '', ''
+    if hasattr(stack.top, 'call_id'):
+        call_id = stack.top.call_id
+    if hasattr(stack.top, 'call_path'):
+        call_path = stack.top.call_path
+
+    # Unique ID associated to all responses associated to a given
+    # call to klue-api, across all micro-services
+    data['call_id'] = call_id
+    data['call_path'] = call_path
+
+
+    # If user is authenticated, get her id
+    user_data = {
+        'id': '',
+        'is_auth': 0,
+        'ip': '',
+    }
+
+    if stack.top:
+        # We are in a request context
+        user_data['ip'] = request.remote_addr
+
+        if 'X-Forwarded-For' in request.headers:
+            user_data['forwarded_ip'] = request.headers.get('X-Forwarded-For', '')
+
+        if 'User-Agent' in request.headers:
+            user_data['user_agent'] = request.headers.get('User-Agent', '')
+
+    if hasattr(stack.top, 'current_user'):
+        user_data['is_auth'] = 1
+        user_data['id'] = stack.top.current_user.get('sub', '')
+        for k in ('name', 'email', 'is_expert', 'is_admin', 'is_support', 'is_tester', 'language'):
+            v = stack.top.current_user.get(k, None)
+            log.info("Got %s=%s" % (k, v))
+            if v:
+                user_data[k] = v
+
+    data['user'] = user_data
+
+    # Is the current code running as a server?
+    if ApiPool().current_server_api:
+        # Server info
+        server = request.base_url
+        server = server.replace('http://', '')
+        server = server.replace('https://', '')
+        server = server.split('/')[0]
+        parts = server.split(':')
+        fqdn = parts[0]
+        port = parts[1] if len(parts) == 2 else ''
+
+        data['server'] = {
+            'fqdn': fqdn,
+            'port': port,
+            'api_name': ApiPool().current_server_name,
+            'api_version': ApiPool().current_server_api.get_version(),
+        }
+
+        # Endpoint data
+        data['endpoint'] = {
+            'id': "%s %s %s" % (ApiPool().current_server_name, request.method, request.path),
+            'url': request.url,
+            'base_url': request.base_url,
+            'path': request.path,
+            'method': request.method
+        }
+
+
 def crash_handler(f):
     """Return a decorator that reports failed api calls via the error_reporter,
     for use on every server endpoint"""
@@ -211,70 +283,8 @@ def crash_handler(f):
                 },
             }
 
-            # Did klue-client-server set a call_id and call_path?
-            call_id, call_path = '', ''
-            if hasattr(stack.top, 'call_id'):
-                call_id = stack.top.call_id
-            if hasattr(stack.top, 'call_path'):
-                call_path = stack.top.call_path
-
-        # Unique ID associated to all responses associated to a given
-        # call to klue-api, across all micro-services
-        data['call_id'] = call_id
-        data['call_path'] = call_path
-
-        # If user is authenticated, get her id
-        user_data = {
-            'id': '',
-            'is_auth': 0,
-            'ip': request.remote_addr,
-        }
-
-        if 'X-Forwarded-For' in request.headers:
-            user_data['forwarded_ip'] = request.headers.get('X-Forwarded-For', '')
-
-        if 'User-Agent' in request.headers:
-            user_data['user_agent'] = request.headers.get('User-Agent', '')
-
-        if hasattr(stack.top, 'current_user'):
-            user_data['is_auth'] = 1
-            user_data['id'] = stack.top.current_user.get('sub', '')
-            for k in ('name', 'email', 'is_expert', 'is_admin', 'is_support', 'is_tester', 'language'):
-                v = stack.top.current_user.get(k, None)
-                log.info("Got %s=%s" % (k, v))
-                if v:
-                    user_data[k] = v
-
-        data['user'] = user_data
-
-        # Is the current code running as a server?
-        if ApiPool().current_server_api:
-            # Server info
-            server = request.base_url
-            server = server.replace('http://', '')
-            server = server.replace('https://', '')
-            server = server.split('/')[0]
-            parts = server.split(':')
-            fqdn = parts[0]
-            port = parts[1] if len(parts) == 2 else ''
-
-            data['server'] = {
-                'fqdn': fqdn,
-                'port': port,
-                'api_name': ApiPool().current_server_name,
-                'api_version': ApiPool().current_server_api.get_version(),
-            }
-
-            # Endpoint data
-            data['endpoint'] = {
-                'id': "%s %s %s" % (ApiPool().current_server_name, request.method, request.path),
-                'url': request.url,
-                'base_url': request.base_url,
-                'path': request.path,
-                'method': request.method
-            }
-
-            log.info("Analytics: " + pformat(data))
+        populate_error_report(data)
+        log.info("Analytics: " + pformat(data))
 
         #
         # Should we report this call?
