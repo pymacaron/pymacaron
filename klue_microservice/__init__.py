@@ -7,6 +7,7 @@ from uuid import uuid4
 import yaml
 from flask import Response, redirect
 from flask_compress import Compress
+from flask_cors import CORS
 from klue.swagger.apipool import ApiPool
 from klue_microservice.log import set_level
 from klue_microservice.api import do_ping
@@ -103,6 +104,9 @@ class API(object):
             raise Exception("Cannot publish apis: klue-config.yaml lacks the 'live_host' key")
 
         live_host = d['live_host']
+
+        # Allow cross-origin calls
+        cors = CORS(self.app, resources={r"/%s/*" % path: {"origins": "*"}})
 
         # Add routes to serve api specs and redirect to petstore ui for each one
         for api_name, api_path in self.apis.items():
