@@ -23,7 +23,8 @@ import yaml
 @click.option('--aws-keypair/--no-aws-keypair', help="Name of the aws ssh keypair to deploy on ec2 instances", default=False)
 @click.option('--aws-instance-type/--no-aws-instance-type', help="Name of the aws instance type to use", default=False)
 @click.option('--aws-cert-arn/--no-aws-cert-arn', help="ARN of ssl certificate to use for server, if https enabled", default=False)
-def main(name, env_jwt_secret, env_jwt_audience, live_host, live_port, env_secrets, git_root, docker_repo, docker_bucket, aws_region, aws_user, aws_keypair, aws_instance_type, aws_cert_arn):
+@click.option('--include-links/--no-include-links', help="Which symlinks to include in the docker image", default=False)
+def main(name, env_jwt_secret, env_jwt_audience, live_host, live_port, env_secrets, git_root, docker_repo, docker_bucket, aws_region, aws_user, aws_keypair, aws_instance_type, aws_cert_arn, include_links):
     """Parse the klue config file (klue-config.yaml) in a shell script friendly
     way."""
 
@@ -57,8 +58,13 @@ def main(name, env_jwt_secret, env_jwt_audience, live_host, live_port, env_secre
     elif live_port:
         print(d['live_port'])
     elif env_secrets:
-        for s in d['env_secrets']:
-            print(s)
+        if 'env_secrets' in d:
+            for s in d['env_secrets']:
+                print(s)
+    elif include_links:
+        if 'include_links' in d:
+            for s in d['include_links']:
+                print(s)
     elif docker_repo:
         print(d['docker_repo'])
     elif docker_bucket:

@@ -6,7 +6,7 @@ from urllib.parse import unquote_plus
 from contextlib import contextmanager
 from functools import wraps
 from flask import request
-from klue_microservice.exceptions import AuthInvalidTokenError, AuthInvalidTokenError
+from klue_microservice.exceptions import AuthInvalidTokenError, AuthTokenExpiredError
 from klue_microservice.exceptions import AuthMissingHeaderError, KlueMicroServiceException
 from klue_microservice.utils import timenow, to_epoch
 

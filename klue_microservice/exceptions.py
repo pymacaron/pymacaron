@@ -112,10 +112,6 @@ def is_error(o):
     return False
 
 
-def report_error(data, msg=None, caught=None, title=None):
-    return crash.report_error(data, msg=msg, caught=caught, title=title)
-
-
 def format_error(e):
     """Take an exception caught within klue-client-server and turn it into a
     bravado-core Error instance"""

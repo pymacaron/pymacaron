@@ -249,39 +249,39 @@ def crash_handler(f):
             else:
                 status_code = 200
 
-            request_args = []
-            if len(args):
-                request_args.append(args)
-            if kwargs:
-                request_args.append(kwargs)
+        request_args = []
+        if len(args):
+            request_args.append(args)
+        if kwargs:
+            request_args.append(kwargs)
 
-            data = {
-                # Set only on the original error, not on forwarded ones, not on
-                # success responses
-                'error_id': error_id,
+        data = {
+            # Set only on the original error, not on forwarded ones, not on
+            # success responses
+            'error_id': error_id,
 
-                # Call results
-                'time': {
-                    'start': t0.isoformat(),
-                    'end': t1.isoformat(),
-                    'microsecs': (t1 - t0).microseconds,
-                },
+            # Call results
+            'time': {
+                'start': t0.isoformat(),
+                'end': t1.isoformat(),
+                'microsecs': (t1 - t0).microseconds,
+            },
 
-                # Response details
-                'response': {
-                    'type': response_type,
-                    'status': status_code,
-                    'is_error': is_an_error,
-                    'error_code': error,
-                    'error_description': error_description,
-                    'user_message': error_user_message,
-                },
+            # Response details
+            'response': {
+                'type': response_type,
+                'status': status_code,
+                'is_error': is_an_error,
+                'error_code': error,
+                'error_description': error_description,
+                'user_message': error_user_message,
+            },
 
-                # Request details
-                'request': {
-                    'params': pformat(request_args),
-                },
-            }
+            # Request details
+            'request': {
+                'params': pformat(request_args),
+            },
+        }
 
         populate_error_report(data)
         log.info("Analytics: " + pformat(data))
