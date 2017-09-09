@@ -11,7 +11,7 @@ from klue.swagger.apipool import ApiPool
 log = logging.getLogger(__name__)
 
 
-class KlueMicroServiceException(Exception):
+class KlueMicroServiceException(KlueException):
     code = 'UNKNOWN_EXCEPTION'
     status = 500
     error_id = None
@@ -67,6 +67,10 @@ class UnhandledServerError(KlueMicroServiceException):
     code = 'UNHANDLED_SERVER_ERROR'
     status = 500
 
+class InternalServerError(KlueMicroServiceException):
+    code = 'SERVER_ERROR'
+    status = 500
+
 class AuthMissingHeaderError(KlueMicroServiceException):
     code = 'AUTHORIZATION_HEADER_MISSING'
     status = 401
@@ -106,6 +110,10 @@ def is_error(o):
     if hasattr(o, 'error') and hasattr(o, 'error_description') and hasattr(o, 'status'):
         return True
     return False
+
+
+def report_error(data, msg=None, caught=None, title=None):
+    return crash.report_error(data, msg=msg, caught=caught, title=title)
 
 
 def format_error(e):
