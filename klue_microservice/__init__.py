@@ -92,11 +92,16 @@ class API(object):
 
         # Get the live host from klue-config.yaml
         config_path = os.path.join(os.path.dirname(sys.argv[0]), 'klue-config.yaml')
+        if not os.path.isfile(config_path):
+            config_path = '/klue/klue-config.yaml'
+
         d = None
         with open(config_path, 'r') as stream:
             d = yaml.load(stream)
+
         if 'live_host' not in d:
             raise Exception("Cannot publish apis: klue-config.yaml lacks the 'live_host' key")
+
         live_host = d['live_host']
 
         # Add routes to serve api specs and redirect to petstore ui for each one
