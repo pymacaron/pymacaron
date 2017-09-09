@@ -3,6 +3,9 @@ import sys
 import logging
 import click
 import pkg_resources
+from uuid import uuid4
+import yaml
+from flask import Response, redirect
 from flask_compress import Compress
 from klue.swagger.apipool import ApiPool
 from klue_microservice.log import set_level
@@ -75,6 +78,50 @@ class API(object):
         # Save found apis
         self.path_apis = path
         self.apis = apis
+
+
+    def publish_apis(self, path='doc'):
+        """Publish all loaded apis on under the uri /<path>/<api-name>, by
+        redirecting to http://petstore.swagger.io/
+        """
+
+        assert path
+
+        if not self.apis:
+            raise Exception("You must call .load_apis() before .publish_apis()")
+
+        # Get the live host from klue-config.yaml
+        config_path = os.path.join(os.path.dirname(sys.argv[0]), 'klue-config.yaml')
+        d = None
+        with open(config_path, 'r') as stream:
+            d = yaml.load(stream)
+        if 'live_host' not in d:
+            raise Exception("Cannot publish apis: klue-config.yaml lacks the 'live_host' key")
+        live_host = d['live_host']
+
+        # Add routes to serve api specs and redirect to petstore ui for each one
+        for api_name, api_path in self.apis.items():
+
+            api_filename = os.path.basename(api_path)
+            log.info("Publishing api %s at /%s/%s" % (api_name, path, api_name))
+
+            def redirect_to_petstore(live_host, api_filename):
+                def f():
+                    url = 'http://petstore.swagger.io/?url=%s/doc/%s' % (live_host, api_filename)
+                    log.info("Redirecting to %s" % url)
+                    return redirect(url, code=302)
+                return f
+
+            def serve_api_spec(api_path):
+                def f():
+                    with open(api_path, 'r') as f:
+                        spec = f.read()
+                        log.info("Serving %s" % api_path)
+                        return Response(spec, mimetype='text/plain')
+                return f
+
+            self.app.add_url_rule('/%s/%s' % (path, api_name), str(uuid4()), redirect_to_petstore(live_host, api_filename))
+            self.app.add_url_rule('/%s/%s' % (path, api_filename), str(uuid4()), serve_api_spec(api_path))
 
 
     def start(self, serve=[]):
