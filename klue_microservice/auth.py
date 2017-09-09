@@ -186,12 +186,17 @@ def authenticate_http_request():
 # Generate tokens
 #
 
-def generate_token(user_id, expire_in=None, data={}, issuer=DEFAULT_JWT_ISSUER, iat=None):
+def generate_token(user_id, expire_in=None, data={}, issuer=None, iat=None):
     """Generate a new JWT token for this user_id. Default expiration date
     is 1 year from creation time"""
     assert user_id
     assert isinstance(data, dict)
     assert DEFAULT_JWT_SECRET
+
+    if not issuer:
+        issuer = DEFAULT_JWT_ISSUER
+
+    assert issuer
 
     if expire_in is None:
         expire_in = DEFAULT_TOKEN_TIMEOUT
