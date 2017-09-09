@@ -79,6 +79,10 @@ class AuthInvalidTokenError(KlueMicroServiceException):
     code = 'TOKEN_INVALID'
     status = 401
 
+class ValidationError(KlueMicroServiceException):
+    code = 'INVALID_PARAMETER'
+    status = 400
+
 
 def responsify(error):
     """Take an Error model and return it as a Flask response"""
@@ -112,10 +116,10 @@ def format_error(e):
         return e.to_model()
 
     if isinstance(e, KlueException) and e.__class__.__name__ == 'ValidationError':
-        return code_to_class['INVALID_PARAMETER'](str(e)).to_model()
+        return ValidationError(str(e)).to_model()
 
     # Turn this exception into a PntCommonException
-    return code_to_class['SERVER_ERROR'](str(e)).to_model()
+    return UnhandledServerError(str(e)).to_model()
 
 
 def raise_error(e):
