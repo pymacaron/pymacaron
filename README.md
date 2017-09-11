@@ -32,6 +32,13 @@ See
 for an example of a minimal REST api implemented with klue-microservice, and
 ready to deploy on docker containers in Amazon EC2.
 
+## Installation
+
+```
+pip install klue-microservice
+pip install klue-microservice-deploy
+```
+
 ## Synopsis
 
 A REST api microservice built with klue-microservice has a directory tree
