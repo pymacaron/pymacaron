@@ -50,6 +50,13 @@ setup(
         'nose',
         'mock',
         'pep8'
+        'klue-unit',
+        'klue-client-server',
+        'flask-cors',
+        'flask-compress',
+        'click',
+        'pytz',
+        'PyJWT',
     ],
     packages=['klue_microservice'],
     package_data={'klue_microservice': ['*.yaml']},
