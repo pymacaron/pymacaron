@@ -13,18 +13,16 @@ import yaml
 @click.option('--env-jwt-secret/--no-env-jwt-secret', help="Return the name of the environment variable containing the project's JWT secret", default=False)
 @click.option('--env-jwt-audience/--no-env-jwt-audience', help="Return the name of the environment variable containing the project's JWT audience", default=False)
 @click.option('--live-host/--no-live-host', help="Return the url of the live server", default=False)
-@click.option('--live-port/--no-live-port', help="Return the TCP port of the live server", default=False)
 @click.option('--env-secrets/--no-env-secrets', help="Return a list of environment variables to pass to docker/elasticbean", default=False)
 @click.option('--git-root/--no-git-root', help="Print the git repository's root dir", default=False)
 @click.option('--docker-repo/--no-docker-repo', help="Name of your docker repo on docker.io", default=False)
 @click.option('--docker-bucket/--no-docker-bucket', help="Name of the s3 bucket to upload the docker config to", default=False)
-@click.option('--aws-region/--no-aws-region', help="Name of the aws region to deploy in", default=False)
 @click.option('--aws-user/--no-aws-user', help="Name of the aws iam user to deploy as", default=False)
 @click.option('--aws-keypair/--no-aws-keypair', help="Name of the aws ssh keypair to deploy on ec2 instances", default=False)
 @click.option('--aws-instance-type/--no-aws-instance-type', help="Name of the aws instance type to use", default=False)
 @click.option('--aws-cert-arn/--no-aws-cert-arn', help="ARN of ssl certificate to use for server, if https enabled", default=False)
 @click.option('--include-links/--no-include-links', help="Which symlinks to include in the docker image", default=False)
-def main(name, env_jwt_secret, env_jwt_audience, live_host, live_port, env_secrets, git_root, docker_repo, docker_bucket, aws_region, aws_user, aws_keypair, aws_instance_type, aws_cert_arn, include_links):
+def main(name, env_jwt_secret, env_jwt_audience, live_host, env_secrets, git_root, docker_repo, docker_bucket, aws_user, aws_keypair, aws_instance_type, aws_cert_arn, include_links):
     """Parse the klue config file (klue-config.yaml) in a shell script friendly
     way."""
 
@@ -55,8 +53,6 @@ def main(name, env_jwt_secret, env_jwt_audience, live_host, live_port, env_secre
         print(d['env_jwt_audience'])
     elif live_host:
         print(d['live_host'])
-    elif live_port:
-        print(d['live_port'])
     elif env_secrets:
         if 'env_secrets' in d:
             for s in d['env_secrets']:
@@ -69,8 +65,6 @@ def main(name, env_jwt_secret, env_jwt_audience, live_host, live_port, env_secre
         print(d['docker_repo'])
     elif docker_bucket:
         print(d['docker_bucket'])
-    elif aws_region:
-        print(d['aws_region'])
     elif aws_user:
         print(d['aws_user'])
     elif aws_keypair:
@@ -78,7 +72,8 @@ def main(name, env_jwt_secret, env_jwt_audience, live_host, live_port, env_secre
     elif aws_instance_type:
         print(d['aws_instance_type'])
     elif aws_cert_arn:
-        print(d['aws_cert_arn'])
+        if 'aws_cert_arn' in d:
+            print(d['aws_cert_arn'])
 
 
 if __name__ == "__main__":
