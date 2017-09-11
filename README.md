@@ -10,8 +10,8 @@ specifications, describing all API endpoints in a friendly yaml format, and
 binding endpoints to Python methods.
 
 [klue-microservice](https://github.com/erwan-lemonnier/klue-microservice) uses
-[klue-aws-toolbox](https://github.com/erwan-lemonnier/klue-aws-toolbox) to
-easily deploy the micro service as a Docker container running inside Amazon
+[klue-microservice-deploy](https://github.com/erwan-lemonnier/klue-microservice-deploy)
+to easily deploy the micro service as a Docker container running inside Amazon
 Elastic Beanstalk.
 
 With [klue-microservice](https://github.com/erwan-lemonnier/klue-microservice),
@@ -50,7 +50,7 @@ looking like this:
 ├── LICENSE                    # You should always have a licence :-)
 ├── README.rst                 # and a readme!
 |
-├── klue-config.yaml           # Config for klue-microservice and klue-aws-toolbox
+├── klue-config.yaml           # Config for klue-microservice and klue-microservice-deploy
 |
 ├── server.py                  # Code to start your server, see below
 |
@@ -259,14 +259,15 @@ Klue microservices come with a ready-to-use deployment pipeline that packages
 the service as a docker image and deploys it on Amazon Elastic Beanstalk with
 minimal configuration.
 
-For details, see [klue-aws-toolbox](https://github.com/erwan-lemonnier/klue-aws-toolbox).
+For details, see
+[klue-microservice-deploy](https://github.com/erwan-lemonnier/klue-microservice-deploy).
 
 ### Elastic Beanstalk configuration
 
 The Klue microservice toolchain is built to deploy services as Docker images
 running inside Amazon EC2 instances in Elastic Beanstalk, behind an Elastic
 Load Balancer. All the details of setting up those Amazon services is handled
-by [klue-aws-toolbox] and should be left untouched. A few parameters can be
+by [klue-microservice-deploy] and should be left untouched. A few parameters can be
 adjusted, though. They are described in the 'klue-config.yaml' section below.
 
 ### klue-config.yaml
@@ -274,8 +275,8 @@ adjusted, though. They are described in the 'klue-config.yaml' section below.
 The file 'klue-config.yaml' is the one place to find all configurable aspects
 of a 'klue-microservice'. The file accepts the following attributes:
 
-* 'name' (MANDATORY): a short name for this project, used when naming elastic beanstalk
-environments.
+* 'name' (MANDATORY): a short name for this project, used when naming elastic
+beanstalk environments.
 
 * 'live_host' (MANDATORY): url to the live server running this api.
 
@@ -290,12 +291,12 @@ environments.
   without commiting them inside your code.
 
 The following variables are needed if you want to deploy to Elastic Beanstalk
-using klue-aws-toolbox:
+using klue-microservice-deploy:
 
 * 'aws_user' (MANDATORY): name of the IAM user to use when creating the
   Beanstalk environment (see
-  [klue-aws-toolbox](https://github.com/erwan-lemonnier/klue-aws-toolbox) for
-  details).
+  [klue-microservice-deploy](https://github.com/erwan-lemonnier/klue-microservice-deploy)
+  for details).
 
 * 'aws_keypair' (MANDATORY): name of the ssh keypair to deploy on the server's
   EC2 instances.
@@ -309,13 +310,13 @@ using klue-aws-toolbox:
 
 * 'docker_repo' (MANDATORY): name of the hub.docker.com organization or user to
   which to upload docker images (see
-  [klue-aws-toolbox](https://github.com/erwan-lemonnier/klue-aws-toolbox) for
-  details).
+  [klue-microservice-deploy](https://github.com/erwan-lemonnier/klue-microservice-deploy)
+  for details).
 
 * 'docker_bucket' (MANDATORY): name of the Amazon S3 bucket to which to upload
   the service's Amazon configuration (see
-  [klue-aws-toolbox](https://github.com/erwan-lemonnier/klue-aws-toolbox) for
-  details).
+  [klue-microservice-deploy](https://github.com/erwan-lemonnier/klue-microservice-deploy)
+  for details).
 
 [Here is an
 example](https://github.com/erwan-lemonnier/klue-microservice-helloworld/blob/master/klue-config.yaml)
