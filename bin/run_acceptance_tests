@@ -56,6 +56,28 @@ parse_args $ARGS
 # Force re-generation of recent auth token
 unset KLUE_JWT_TOKEN
 
+set_runpath() {
+    if [ ! -z "$IMAGE_ID" ];
+    then
+        echo "=> Will execute tests $IMAGE_ID"
+        RUNPATH=$IMAGE_ID
+    else
+        HERE=$PWD
+        # Let's append all symlinked dirs's testaccept/ to RUNPATH
+        for DIR in $(klue_config --include-links)
+        do
+            cd $DIR
+            ROOTDIR=$(git rev-parse --show-toplevel)
+            if [ -d "$ROOTDIR/testaccept" ]; then
+                echo "=> Appending tests from $ROOTDIR"
+                RUNPATH="$RUNPATH $ROOTDIR/testaccept"
+            fi
+            cd $HERE
+        done
+        echo "=> Will execute tests $RUNPATH"
+    fi
+}
+
 # Make sure we can connect to aws
 if [ -z $AWS_SECRET_ACCESS_KEY ]; then
     SECRETS_FILE=~/.env.secrets
@@ -77,29 +99,21 @@ if [ ! -z "$LIVE" ]; then
         KLUE_SERVER_PORT=443
     fi
 
-    if [ ! -z "$IMAGE_ID" ]; then
-        echo "=> Will execute tests $IMAGE_ID"
-        RUNPATH=$IMAGE_ID
-    fi
+    set_runpath
 
 elif [ ! -z "$LOCAL" ]; then
     echo "=> Running against $KLUE_SERVER_HOST:$KLUE_SERVER_PORT"
 
-    if [ ! -z "$IMAGE_ID" ]; then
-        echo "=> Will execute tests $IMAGE_ID"
-        RUNPATH=$IMAGE_ID
-    fi
+    set_runpath
 
     # TODO: check that server is indeed running locally. If not, start it
+
 elif [ ! -z "$TARGET_HOST" ]; then
     echo "=> Running against $TARGET_HOST:$TARGET_PORT"
     KLUE_SERVER_HOST=$TARGET_HOST
     KLUE_SERVER_PORT=$TARGET_PORT
 
-    if [ ! -z "$IMAGE_ID" ]; then
-        echo "=> Will execute tests $IMAGE_ID"
-        RUNPATH=$IMAGE_ID
-    fi
+    set_runpath
 
 else
 
