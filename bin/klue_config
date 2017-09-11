@@ -22,7 +22,9 @@ import yaml
 @click.option('--aws-instance-type/--no-aws-instance-type', help="Name of the aws instance type to use", default=False)
 @click.option('--aws-cert-arn/--no-aws-cert-arn', help="ARN of ssl certificate to use for server, if https enabled", default=False)
 @click.option('--include-links/--no-include-links', help="Which symlinks to include in the docker image", default=False)
-def main(name, env_jwt_secret, env_jwt_audience, live_host, env_secrets, git_root, docker_repo, docker_bucket, aws_user, aws_keypair, aws_instance_type, aws_cert_arn, include_links):
+@click.option('--aws-hosts-min/--no-aws-hosts-min', help="Minimum size of autoscalling group (default: 1)", default=False)
+@click.option('--aws-hosts-max/--no-aws-hosts-max', help="Maximum size of autoscalling group (default: 4)", default=False)
+def main(name, env_jwt_secret, env_jwt_audience, live_host, env_secrets, git_root, docker_repo, docker_bucket, aws_user, aws_keypair, aws_instance_type, aws_cert_arn, include_links, aws_hosts_min, aws_hosts_max):
     """Parse the klue config file (klue-config.yaml) in a shell script friendly
     way."""
 
@@ -74,7 +76,16 @@ def main(name, env_jwt_secret, env_jwt_audience, live_host, env_secrets, git_roo
     elif aws_cert_arn:
         if 'aws_cert_arn' in d:
             print(d['aws_cert_arn'])
-
+    elif aws_hosts_min:
+        if 'aws_hosts_min' in d:
+            print(d['aws_hosts_min'])
+        else:
+            print('1')
+    elif aws_hosts_max:
+        if 'aws_hosts_max' in d:
+            print(d['aws_hosts_max'])
+        else:
+            print('4')
 
 if __name__ == "__main__":
     main()
