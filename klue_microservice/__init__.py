@@ -101,11 +101,11 @@ class API(object):
         if not os.path.isfile(config_path):
             config_path = '/klue/klue-config.yaml'
 
-        d = None
+        config = None
         with open(config_path, 'r') as stream:
-            d = yaml.load(stream)
+            config = yaml.load(stream)
 
-        if 'live_host' not in d:
+        if 'live_host' not in config:
             raise Exception("Cannot publish apis: klue-config.yaml lacks the 'live_host' key")
 
         proto = 'http'
