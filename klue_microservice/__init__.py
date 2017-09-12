@@ -5,7 +5,7 @@ import click
 import pkg_resources
 from uuid import uuid4
 import yaml
-from flask import Response, redirect
+from flask import Response, redirect, request
 from flask_compress import Compress
 from flask_cors import CORS
 from klue.swagger.apipool import ApiPool
@@ -14,9 +14,33 @@ from klue_microservice.api import do_ping
 from klue_microservice.crash import set_error_reporter, crash_handler
 from klue_microservice.exceptions import format_error
 from klue_microservice.auth import set_jwt_defaults
+from klue_microservice.utils import is_ec2_instance, is_https_request
 
 
 log = logging.getLogger(__name__)
+
+
+def redirect_to_https():
+    if is_https_request():
+        return
+    else:
+        url = request.url
+        url = url.replace('http:', 'https:')
+        log.info("Redirecting to '%s'" % url)
+        return redirect(url, code=302)
+
+
+def get_klue_config():
+    # Get the live host from klue-config.yaml
+    config_path = os.path.join(os.path.dirname(sys.argv[0]), 'klue-config.yaml')
+    if not os.path.isfile(config_path):
+        config_path = '/klue/klue-config.yaml'
+
+    d = None
+    with open(config_path, 'r') as stream:
+        d = yaml.load(stream)
+
+    return d
 
 
 #
@@ -97,18 +121,12 @@ class API(object):
             raise Exception("You must call .load_apis() before .publish_apis()")
 
         # Get the live host from klue-config.yaml
-        config_path = os.path.join(os.path.dirname(sys.argv[0]), 'klue-config.yaml')
-        if not os.path.isfile(config_path):
-            config_path = '/klue/klue-config.yaml'
+        config = get_klue_config()
 
-        d = None
-        with open(config_path, 'r') as stream:
-            d = yaml.load(stream)
-
-        if 'live_host' not in d:
+        if 'live_host' not in config:
             raise Exception("Cannot publish apis: klue-config.yaml lacks the 'live_host' key")
 
-        live_host = d['live_host']
+        live_host = config['live_host']
 
         # Allow cross-origin calls
         cors = CORS(self.app, resources={r"/%s/*" % path: {"origins": "*"}})
@@ -209,6 +227,21 @@ class API(object):
                 log.info("Spawning api %s" % api_name)
                 api = getattr(ApiPool, api_name)
                 api.spawn_api(app, decorator=crash_handler)
+
+        # If running on amazon and behind a ssl certificate, we should redirect
+        # http traffic to https
+        if is_ec2_instance():
+            # Let's check the Klue config and see if it has a aws_cert_arn
+
+            # Is the server being a SSL cert?
+            config = get_klue_config()
+            if 'aws_cert_arn' in config:
+                # Yup! Redirect all http to https!
+                @app.before_request()
+                def before_request():
+                    return redirect_to_https()
+
+        # Done. Now let's run this server...
 
         if os.path.basename(sys.argv[0]) == 'gunicorn':
             # Gunicorn takes care of spawning workers
