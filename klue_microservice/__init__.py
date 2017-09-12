@@ -220,7 +220,7 @@ class API(object):
 
         # Debug mode is the default when not running via gunicorn
         app.debug = self.debug
-        app.run(host='0.0.0.0', port=port)
+        app.run(host='0.0.0.0', port=self.port)
 
 #
 # Generic code to start server, from command line or via gunicorn
