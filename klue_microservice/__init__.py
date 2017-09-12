@@ -126,7 +126,11 @@ class API(object):
         if 'live_host' not in config:
             raise Exception("Cannot publish apis: klue-config.yaml lacks the 'live_host' key")
 
-        live_host = config['live_host']
+        proto = 'http'
+        if 'aws_cert_arn' in config:
+            proto = 'https'
+
+        live_host = "%s://%s" % (proto, config['live_host'])
 
         # Allow cross-origin calls
         cors = CORS(self.app, resources={r"/%s/*" % path: {"origins": "*"}})
