@@ -29,29 +29,6 @@ def is_ec2_instance():
         return False
 
 
-def is_https_request():
-    """Find out if the original request came over https (true) or just http
-    (false)"""
-
-    log.info("is_https_request: Got request url: %s" % request.url)
-    log.info("is_https_request: Got request headers: %s" % request.headers)
-
-    if 'X-Forwarded-Proto' in request.headers:
-        if request.headers.get('X-Forwarded-Proto', '').lower() == 'https':
-            log.debug("Called over https, according to X-Forwarded-Proto")
-            return True
-        else:
-            log.debug("Called over http, according to X-Forwarded-Proto")
-            return False
-
-    if 'https' in request.url.lower():
-        log.debug("Called over https, according to url (%s)" % request.url)
-        return True
-
-    log.debug("Request was made over http (url:%s) (X-Forwarded-Proto:%s)" % (request.url, request.headers.get('X-Forwarded-Proto', '')))
-    return False
-
-
 def timenow():
     return datetime.datetime.now(pytz.timezone('utc'))
 
