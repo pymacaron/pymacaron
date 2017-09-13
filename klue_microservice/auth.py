@@ -274,6 +274,11 @@ def get_userid():
     return current_user.get('sub', '')
 
 
+def get_user_token_data():
+    """Return the authenticated user's id, i.e. its auth0 id"""
+    return stack.top.current_user
+
+
 def get_user_token():
     """Return the authenticated user's auth token"""
     current_user = stack.top.current_user
