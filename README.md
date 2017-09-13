@@ -238,6 +238,32 @@ api = API(
 )
 ```
 
+### Defining new Errors
+
+You can define your own Exceptions extending 'KlueMicroServiceException' by
+calling the 'add_error' method as below:
+
+```
+from klue_microservice.exceptions import add_error
+
+# add_error() generates a class named MyOwnException that inherits from
+# KlueMicroServiceException and is properly handled by
+# klue-microservice. add_error() returns the MyOwnException class
+
+exceptionclass = add_error(
+    name='MyOwnException',
+    code='MY_OWN_EXCEPTION',
+    status=401,
+)
+
+# You can then inject the MyOwnException into the current module's namespace
+globals()['MyOwnException'] = exceptionclass
+
+# And now you can import it in other modules as well
+# from myexceptions import MyOwnException
+
+```
+
 ### Testing strategy
 
 klue microservices are developed around two sets of tests:

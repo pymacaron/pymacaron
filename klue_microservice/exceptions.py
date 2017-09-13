@@ -62,31 +62,33 @@ class KlueMicroServiceException(KlueException):
             e.error_caught = pformat(self.error_caught)
         return e
 
+#
+# Interface to allow creating further Exception classes
+#
 
-class UnhandledServerError(KlueMicroServiceException):
-    code = 'UNHANDLED_SERVER_ERROR'
-    status = 500
+code_to_class = {}
 
-class InternalServerError(KlueMicroServiceException):
-    code = 'SERVER_ERROR'
-    status = 500
+def add_error(name=None, code=None, status=None):
+    """Create a new Exception class"""
+    if not name or not status or not code:
+        raise Exception("Can't create Exception class %s: you must set both name, status and code" % name)
+    myexception = type(name, (KlueMicroServiceException, ), {"code": code, "status": status})
+    globals()[name] = myexception
+    if code in code_to_class:
+        raise Exception("ERROR! Exception %s is already defined." % code)
+    code_to_class[code] = myexception
+    return myexception
 
-class AuthMissingHeaderError(KlueMicroServiceException):
-    code = 'AUTHORIZATION_HEADER_MISSING'
-    status = 401
+add_error('UnhandledServerError', 'UNHANDLED_SERVER_ERROR', 500)
+add_error('InternalServerError', 'SERVER_ERROR', 500)
+add_error('AuthMissingHeaderError', 'AUTHORIZATION_HEADER_MISSING', 401)
+add_error('AuthTokenExpiredError', 'TOKEN_EXPIRED', 401)
+add_error('AuthInvalidTokenError', 'TOKEN_INVALID', 401)
+add_error('ValidationError', 'INVALID_PARAMETER', 400)
 
-class AuthTokenExpiredError(KlueMicroServiceException):
-    code = 'TOKEN_EXPIRED'
-    status = 401
-
-class AuthInvalidTokenError(KlueMicroServiceException):
-    code = 'TOKEN_INVALID'
-    status = 401
-
-class ValidationError(KlueMicroServiceException):
-    code = 'INVALID_PARAMETER'
-    status = 400
-
+#
+# Manipulate various error objects
+#
 
 def responsify(error):
     """Take an Error model and return it as a Flask response"""
