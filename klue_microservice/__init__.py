@@ -48,6 +48,7 @@ class API(object):
         if error_reporter:
             set_error_reporter(error_reporter)
         log.info("Initialized API (%s:%s) (Flask debug:%s)" % (host, port, debug))
+        return self
 
 
     def load_apis(self, path, ignore=[]):
@@ -85,6 +86,8 @@ class API(object):
         # Save found apis
         self.path_apis = path
         self.apis = apis
+
+        return self
 
 
     def publish_apis(self, path='doc'):
@@ -142,9 +145,12 @@ class API(object):
             self.app.add_url_rule('/%s/%s' % (path, api_name), str(uuid4()), redirect_to_petstore(live_host, api_filename))
             self.app.add_url_rule('/%s/%s' % (path, api_filename), str(uuid4()), serve_api_spec(api_path))
 
+        return self
 
     def start(self, serve=[]):
-        """Start the API server"""
+        """Load all apis, either as local apis served by the flask app, or as
+        remote apis to be called from whithin the app's endpoints, then start
+        the app server"""
 
         # Check arguments
         if type(serve) is str:
