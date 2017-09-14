@@ -95,11 +95,11 @@ def report_error(data, msg=None, caught=None, title=None):
         log.info("NO_ERROR_REPORTING is set: not sending error to slack or email")
         return
 
-    global crash_reporter
+    global error_reporter
     log.info("Reporting crash...")
 
     try:
-        crash_reporter(msg, json.dumps(data, sort_keys=True, indent=4))
+        error_reporter(msg, json.dumps(data, sort_keys=True, indent=4))
     except Exception as e:
         # Don't block on replying to api caller
         log.error("Failed to send email report: %s" % str(e))
