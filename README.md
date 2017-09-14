@@ -390,3 +390,37 @@ $ curl -H "Authorization: Bearer eyJpc3M[...]y8kNg" http://127.0.0.1:8080/auth/v
 }
 
 ```
+
+## Recipes
+
+### Loading api clients from a standalone script
+
+It may come very handy within a standalone script to be able to call REST apis
+through the klue-microservice framework, to get object marshalling and error
+handling out of the box. It is done as follows:
+
+```python
+import flask
+from klue.swagger.apipool import ApiPool
+from klue_microservice.exceptions import is_error
+from klue_microservice import load_clients
+
+# Declare a Flask app and mock its context
+app = flask.Flask(__name__)
+with app.test_request_context(''):
+
+    # Then load client libraries against a given set of libraries
+    api = API(app)
+    api.load_clients(apis=['login', 'search'])
+
+    # And you can now call those apis seamlessly!
+    result = ApiPool.login.client.do_login(
+        ApiPool.login.model.LoginData(
+            name='foobar',
+            password='youdontwanttoknow'
+        )
+    )
+
+    if is_error(result):
+        log.error("Oops. Failed to login used")
+```

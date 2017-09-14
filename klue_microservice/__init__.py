@@ -48,6 +48,36 @@ class API(object):
         if error_reporter:
             set_error_reporter(error_reporter)
         log.info("Initialized API (%s:%s) (Flask debug:%s)" % (host, port, debug))
+
+
+    def load_clients(self, path=None, apis=[]):
+        """Generate client libraries for the given apis, without starting an
+        api server"""
+
+        if not path:
+            raise Exception("Missing path to api swagger files")
+
+        if type(apis) is not list:
+            raise Exception("'apis' should be a list of api names")
+
+        if len(apis) == 0:
+            raise Exception("'apis' is an empty list - Expected at least one api name")
+
+        for api_name in apis:
+            api_path = os.path.join(path, '%s.yaml' % api_name)
+            if not os.path.isfile(api_path):
+                raise Exception("Cannot find swagger specification at %s" % api_path)
+            log.info("Loading api %s from %s" % (api_name, api_path))
+            ApiPool.add(
+                api_name,
+                yaml_path=api_path,
+                timeout=self.timeout,
+                error_callback=self.error_callback,
+                formats=self.formats,
+                do_persist=False,
+                local=False,
+            )
+
         return self
 
 
@@ -146,6 +176,7 @@ class API(object):
             self.app.add_url_rule('/%s/%s' % (path, api_filename), str(uuid4()), serve_api_spec(api_path))
 
         return self
+
 
     def start(self, serve=[]):
         """Load all apis, either as local apis served by the flask app, or as
