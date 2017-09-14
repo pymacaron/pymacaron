@@ -393,6 +393,31 @@ $ curl -H "Authorization: Bearer eyJpc3M[...]y8kNg" http://127.0.0.1:8080/auth/v
 
 ## Recipes
 
+### Reporting errors with 'report_error()'
+
+You can configure klue-microservice to send error reports anywhere you want
+(email, slack, etc.) by setting an 'error_reporter' (see above). Once you have
+done it, any call to 'report_error()' will send a crash report via the
+'error_reporter'.
+
+If you want to report an error that occured while calling an other api:
+
+```python
+from klue_microservice.exceptions import is_error
+from klue_microservice.crash import report_error
+
+profile = ApiPool.user.client.get_profile()
+
+# Did the 'get_profile' endpoint return an Error object?
+if is_error(profile):
+    # Send a crash report to your admins, including the error object
+    report_error("Oops. Failed to get user profile", caught=profile)
+```
+
+The crash report above will have an auto-generated title starting with the
+text 'NON-FATAL BACKEND ERROR', to differentiate from crash reports that resulted
+from an exception in the server, reported as 'FATAL BACKEND ERROR'.
+
 ### Loading api clients from a standalone script
 
 It may come very handy within a standalone script to be able to call REST apis
