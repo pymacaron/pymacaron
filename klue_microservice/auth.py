@@ -103,7 +103,7 @@ def load_auth_token(token, load=True):
     """Validate an auth0 token. Returns the token's payload, or an exception
     of the type:"""
 
-    assert DEFAULT_JWT_SECRET
+    assert DEFAULT_JWT_SECRET, "No JWT secret configured for klue-microservice"
 
     log.info("Extracting issuer of token")
 
@@ -189,14 +189,14 @@ def authenticate_http_request():
 def generate_token(user_id, expire_in=None, data={}, issuer=None, iat=None):
     """Generate a new JWT token for this user_id. Default expiration date
     is 1 year from creation time"""
-    assert user_id
-    assert isinstance(data, dict)
-    assert DEFAULT_JWT_SECRET
+    assert user_id, "No user_id passed to generate_token()"
+    assert isinstance(data, dict), "generate_token(data=) should be a dictionary"
+    assert DEFAULT_JWT_SECRET, "No JWT secret configured in klue-microservice"
 
     if not issuer:
         issuer = DEFAULT_JWT_ISSUER
 
-    assert issuer
+    assert issuer, "No JWT issuer configured for klue-microservice"
 
     if expire_in is None:
         expire_in = DEFAULT_TOKEN_TIMEOUT
