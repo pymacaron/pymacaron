@@ -241,8 +241,8 @@ def backend_token(issuer=None, user_id=None):
     if not user_id:
         user_id = DEFAULT_USER_ID
 
-    assert issuer
-    assert user_id
+    assert issuer, "No JWT issuer configured for klue-microservice"
+    assert user_id, "No user_id passed to generate_token()"
 
     cur_token = ''
 
