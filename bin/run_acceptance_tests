@@ -13,22 +13,23 @@ TARGET_HOST=
 TARGET_PORT=8080
 NO_SSL_CHECK=
 
-RUNPATH=testaccept/
+RUNPATH=
 
 usage() {
     cat << EOF
-USAGE: $0 [--local|--live|<image-id>|--host <name>] [--debug] [--loop]
+USAGE: $0 [--debug] [--loop]
+       [--local|--live|--image <image-id>|--host <name>] <tests_path>
 
-Run acceptance tests against either a local docker container
-or the remote live server.
+Run acceptance tests against a local server, a local docker container or a
+remote live server.
 
 OPTIONS:
-  <image-id>      ID of a docker image to start and test against.
-  --live          Run tests against the server pointed at by 'eb status'.
-  --host <dns>    Run tests against a specific IP address or hostname.
-  --local         Run tests against server specified in KLUE_SERVER_(HOST|PORT)
-  --loop          Run the tests in a loop, until failure
-  --no-ssl-check  Don't check SSL certificate
+  --image <image-id>  ID of a docker image to start and test against.
+  --live              Run tests against the server pointed at by 'eb status'.
+  --host <dns>        Run tests against a specific IP address or hostname.
+  --local             Run tests against server specified in KLUE_SERVER_(HOST|PORT)
+  --loop              Run the tests in a loop, until failure
+  --no-ssl-check      Don't check SSL certificate
 
 EOF
 }
@@ -40,12 +41,13 @@ parse_args() {
             "--debug")        set -x;;
             "--live")         export LIVE=1;;
             "--local")        export LOCAL=1;;
+            "--image")        shift; IMAGE_ID=$1;;
             "--loop")         export LOOP=1;;
             "--host")         shift; TARGET_HOST=$1;;
             "--port")         shift; TARGET_PORT=$1;;
             "--no-ssl-check") export NO_SSL_CHECK=1;;
             "-h" | "--help")  usage; exit 0;;
-            *)                IMAGE_ID=$1;;
+            *)                RUNPATH=$1;;
         esac
         shift
     done
@@ -57,11 +59,8 @@ parse_args $ARGS
 unset KLUE_JWT_TOKEN
 
 set_runpath() {
-    if [ ! -z "$IMAGE_ID" ];
-    then
-        echo "=> Will execute tests $IMAGE_ID"
-        RUNPATH=$IMAGE_ID
-    else
+    if [ -z "$RUNPATH" ]; then
+        RUNPATH="testaccept/"
         HERE=$PWD
         # Let's append all symlinked dirs's testaccept/ to RUNPATH
         for DIR in $(klue_config --include-links)
@@ -115,12 +114,9 @@ elif [ ! -z "$TARGET_HOST" ]; then
 
     set_runpath
 
-else
+elif [ ! -z "$IMAGE_ID" ]; then
 
-    if [ -z "$IMAGE_ID" ]; then
-        usage
-        exit 1
-    fi
+    set_runpath
 
     # Start the container, passing all secrets as environment variables,
     # just like in the amazon EBS setup
