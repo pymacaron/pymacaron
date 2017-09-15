@@ -145,7 +145,7 @@ class Tests(KlueTestCase):
 
         self.assertEqual(body['response']['user_message'], '')
         self.assertEqual(body['response']['type'], 'Response')
-        self.assertEqual(body['response']['status'], 500)
+        self.assertEqual(body['response']['status'], '500')
         self.assertEqual(body['response']['is_error'], 1)
         self.assertEqual(body['response']['error_code'], 'UNHANDLED_SERVER_ERROR')
         self.assertEqual(body['response']['error_description'], 'Raising an internal exception')
