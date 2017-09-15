@@ -11,6 +11,8 @@ import pytz
 log = logging.getLogger(__name__)
 
 
+IS_EC2_INSTANCE = -1
+
 def is_ec2_instance():
     """Try fetching instance metadata at 'curl http://169.254.169.254/latest/meta-data/'
     to see if host is on an ec2 instance"""
@@ -18,14 +20,24 @@ def is_ec2_instance():
     # Note: this code assumes that docker containers running on ec2 instances
     # inherit instances metadata, which they do as of 2016-08-25
 
+    global IS_EC2_INSTANCE
+
+    if IS_EC2_INSTANCE != -1:
+        # Returned the cached value
+        log.debug("IS_EC2_INSTANCE=%s" % IS_EC2_INSTANCE)
+        return IS_EC2_INSTANCE
+
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.settimeout(0.2)
     try:
         s.connect(("169.254.169.254", 80))
+        IS_EC2_INSTANCE = 1
         return True
     except socket.timeout:
+        IS_EC2_INSTANCE = 0
         return False
     except socket.error:
+        IS_EC2_INSTANCE = 0
         return False
 
 
