@@ -81,7 +81,7 @@ class API(object):
         return self
 
 
-    def load_apis(self, path, ignore=[]):
+    def load_apis(self, path, ignore=[], include_crash_api=False):
         """Load all swagger files found at the given path, except those whose
         names are in the 'ignore' list"""
 
@@ -107,11 +107,15 @@ class API(object):
                     apis[api_name] = os.path.join(path, f)
                     log.debug("Found api %s in %s" % (api_name, f))
 
-        # And add klue-microservice's default ping api
-        ping_path = pkg_resources.resource_filename(__name__, 'klue_microservice/ping.yaml')
-        if not os.path.isfile(ping_path):
-            ping_path = os.path.join(os.path.dirname(sys.modules[__name__].__file__), 'ping.yaml')
-        apis['ping'] = ping_path
+        # And add klue-microservice's default ping and crash apis
+        for name in ['ping', 'crash']:
+            yaml_path = pkg_resources.resource_filename(__name__, 'klue_microservice/%s.yaml' % name)
+            if not os.path.isfile(yaml_path):
+                yaml_path = os.path.join(os.path.dirname(sys.modules[__name__].__file__), '%s.yaml' % name)
+            apis[name] = yaml_path
+
+        if not include_crash_api:
+            del apis['crash']
 
         # Save found apis
         self.path_apis = path

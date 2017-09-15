@@ -9,7 +9,7 @@ from functools import wraps
 from pprint import pformat
 from flask import request, Response
 from klue.swagger.apipool import ApiPool
-from klue_microservice.utils import timenow
+from klue_microservice.utils import timenow, is_ec2_instance
 from klue_microservice.exceptions import UnhandledServerError
 
 
@@ -42,56 +42,58 @@ def set_error_reporter(callback=None):
         error_reporter = callback
 
 
-def report_error(data, msg=None, caught=None, title=None):
+def report_error(title=None, data={}, caught=None, is_fatal=False):
     """Format a crash report and send it somewhere relevant. There are two
     types of crashes: fatal crashes (backend errors) or non-fatal ones (just
     reporting a glitch, but the api call did not fail)"""
 
-    if isinstance(data, dict):
-        # That's a fatal error
-
-        status, code = 'unknown_status', 'unknown_error_code'
-        if 'response' in data:
-            status = data['response'].get('status', status)
-            code = data['response'].get('error_code', code)
-        if not title:
-            title = "BACKEND ERROR"
-        if not msg:
-            msg = "%s: %s %s %s" % (title, status, code, ApiPool().current_server_name)
-    else:
-        # That's a non-fatal error
-
-        message = data
-        log.error(message)
-
-        data = {}
-        data['message'] = message
-
-        # Formatting traceback may raise a UnicodeDecodeError...
-        data['stack'] = []
-        try:
-            data['stack'] = [l for l in traceback.format_stack()]
-        except Exception as ee:
-            pass
-
+    # Fill error report with tons of usefull data
+    if 'user' not in data:
         populate_error_report(data)
-        if caught:
-            data['error_caught'] = "%s" % caught
 
-        # inspect may raise a UnicodeDecodeError...
-        fname = ''
-        try:
-            fname = inspect.stack()[1][3]
-        except Exception as e:
-            pass
+    # Add the message
+    data['title'] = title
+    data['is_fatal_error'] = is_fatal
 
-        if title:
-            msg = title
-        else:
-            title = "NON-FATAL BACKEND ERROR"
-            msg = "%s %s %s(): %s" % (title, ApiPool().current_server_name, fname, message)
+    # Add the error caught, if any:
+    if caught:
+        data['error_caught'] = "%s" % caught
 
-    if os.environ.get('NO_ERROR_REPORTING', '') == '1':
+    # Add a trace - Formatting traceback may raise a UnicodeDecodeError...
+    data['stack'] = []
+    try:
+        data['stack'] = [l for l in traceback.format_stack()]
+    except Exception as ee:
+        data['stack'] = 'Skipped trace - contained non-ascii chars'
+
+    # inspect may raise a UnicodeDecodeError...
+    fname = ''
+    try:
+        fname = inspect.stack()[1][3]
+    except Exception as e:
+        fname = 'unknown-method'
+
+    # Format the error's title
+    status, code = 'unknown_status', 'unknown_error_code'
+    if 'response' in data:
+        status = data['response'].get('status', status)
+        code = data['response'].get('error_code', code)
+        title_details = "%s %s %s" % (ApiPool().current_server_name, status, code)
+    else:
+        title_details = "%s %s()" % (ApiPool().current_server_name, fname)
+
+    if is_fatal:
+        title_details = 'FATAL ERROR %s' % title_details
+    else:
+        title_details = 'NON-FATAL ERROR %s' % title_details
+
+    if title:
+        title = "%s: %s" % (title_details, title)
+    else:
+        title = title_details
+
+    # Don't report errors if NO_ERROR_REPORTING set to 1 (set by run_acceptance_tests)
+    if not os.environ.get('DO_REPORT_ERROR', None) and os.environ.get('NO_ERROR_REPORTING', '') == '1':
         log.info("NO_ERROR_REPORTING is set: not sending error to slack or email")
         return
 
@@ -99,7 +101,7 @@ def report_error(data, msg=None, caught=None, title=None):
     log.info("Reporting crash...")
 
     try:
-        error_reporter(msg, json.dumps(data, sort_keys=True, indent=4))
+        error_reporter(title, json.dumps(data, sort_keys=True, indent=4))
     except Exception as e:
         # Don't block on replying to api caller
         log.error("Failed to send email report: %s" % str(e))
@@ -120,6 +122,8 @@ def populate_error_report(data):
     data['call_id'] = call_id
     data['call_path'] = call_path
 
+    # Are we in aws?
+    data['is_ec2_instance'] = is_ec2_instance()
 
     # If user is authenticated, get her id
     user_data = {
@@ -188,16 +192,19 @@ def crash_handler(f):
 
         data = {}
         t0 = timenow()
+        exception_string = ''
 
         # Call endpoint and log execution time
         try:
             res = f(*args, **kwargs)
         except Exception as e:
             # An unhandled exception occured. Forge a Response
+            exception_string = str(e)
             exc_type, exc_value, exc_traceback = sys.exc_info()
-            s = ''.join((traceback.format_exception(exc_type, exc_value, exc_traceback, 30)))
-            e = UnhandledServerError(s)
-            log.error("UNHANDLED EXCEPTION: %s" % s)
+            trace = traceback.format_exception(exc_type, exc_value, exc_traceback, 30)
+            data['trace'] = trace
+            e = UnhandledServerError(exception_string)
+            log.error("UNHANDLED EXCEPTION: %s" % '\n'.join(trace))
             res = e.http_reply()
 
         t1 = timenow()
@@ -255,7 +262,7 @@ def crash_handler(f):
         if kwargs:
             request_args.append(kwargs)
 
-        data = {
+        data.update({
             # Set only on the original error, not on forwarded ones, not on
             # success responses
             'error_id': error_id,
@@ -264,7 +271,7 @@ def crash_handler(f):
             'time': {
                 'start': t0.isoformat(),
                 'end': t1.isoformat(),
-                'microsecs': (t1 - t0).microseconds,
+                'microsecs': (t1.timestamp() - t0.timestamp()) * 1000000,
             },
 
             # Response details
@@ -281,10 +288,13 @@ def crash_handler(f):
             'request': {
                 'params': pformat(request_args),
             },
-        }
+        })
 
         populate_error_report(data)
         log.info("Analytics: " + pformat(data))
+
+        # inspect may raise a UnicodeDecodeError...
+        fname = f.__name__
 
         #
         # Should we report this call?
@@ -295,16 +305,22 @@ def crash_handler(f):
             pass
         else:
             fqdn = data['server']['fqdn']
-            if '192.168' in fqdn or '127.0.0' in fqdn:
+            if not data['is_ec2_instance'] and not os.environ.get('DO_REPORT_ERROR'):
                 log.info("This is a test setup: not reporting error")
-                pass
             else:
                 # If it is an internal errors, report it
                 # If it is too slow, report it
                 if str(data['response']['status']) in ('500'):
-                    report_error(data)
-                elif int(data['time']['microsecs']) > 3000000:
-                    report_error(data, msg="SLOW BACKEND CALL: %s %s" % (ApiPool().current_server_name, data['endpoint']['path']))
+                    report_error(
+                        title="%s(): %s" % (fname, exception_string),
+                        data=data,
+                        is_fatal=True
+                    )
+                elif int(data['time']['microsecs']) > 5000000:
+                    report_error(
+                        title='%s() calltime exceeded 5 sec!' % fname,
+                        data=data
+                    )
 
         return res
 

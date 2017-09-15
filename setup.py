@@ -41,6 +41,7 @@ setup(
     install_requires=[
         'klue-unit',
         'klue-client-server',
+        'flask',
         'flask-cors',
         'flask-compress',
         'click',
@@ -48,11 +49,13 @@ setup(
         'PyJWT',
     ],
     tests_require=[
+        'psutil',
         'nose',
         'mock',
         'pep8'
         'klue-unit',
         'klue-client-server',
+        'flask',
         'flask-cors',
         'flask-compress',
         'click',
