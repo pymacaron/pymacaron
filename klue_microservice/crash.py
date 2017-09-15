@@ -299,7 +299,7 @@ def crash_handler(f):
             # Response details
             'response': {
                 'type': response_type,
-                'status': int(status_code),
+                'status': status_code,
                 'is_error': is_an_error,
                 'error_code': error,
                 'error_description': error_description,

@@ -236,7 +236,7 @@ class Tests(KlueTestCase):
 
         self.assertEqual(body['response']['user_message'], '')
         self.assertEqual(body['response']['type'], 'Response')
-        self.assertEqual(body['response']['status'], 200)
+        self.assertEqual(body['response']['status'], '200')
         self.assertEqual(body['response']['is_error'], 0)
         self.assertEqual(body['response']['error_code'], '')
         self.assertEqual(body['response']['error_description'], '')
