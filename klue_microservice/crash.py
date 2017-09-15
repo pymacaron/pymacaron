@@ -257,7 +257,7 @@ def crash_handler(f):
 
                 # Make sure that the response gets the same status as the Klue Error it contained
                 status_code = j['status']
-                res.status_code = status_code
+                res.status_code = int(status_code)
 
                 error = j.get('error', 'NO_ERROR_IN_JSON')
                 error_description = j.get('error_description', res_data)
