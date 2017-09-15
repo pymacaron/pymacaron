@@ -147,7 +147,6 @@ def populate_error_report(data):
         user_data['id'] = stack.top.current_user.get('sub', '')
         for k in ('name', 'email', 'is_expert', 'is_admin', 'is_support', 'is_tester', 'language'):
             v = stack.top.current_user.get(k, None)
-            log.info("Got %s=%s" % (k, v))
             if v:
                 user_data[k] = v
 
@@ -211,7 +210,7 @@ def crash_handler(f):
 
         # Is the response an Error instance?
         response_type = type(res).__name__
-        status_code = ''
+        status_code = 200
         is_an_error = 0
         error = ''
         error_description = ''
@@ -230,10 +229,6 @@ def crash_handler(f):
                 # It could be any valid json response, but it could also be an Error model
                 # that klue-client-server handled as a status 200 because it does not know of
                 # klue-microservice Errors
-                log.info("Res is %s" % dir(res))
-                log.info("content-type is %s" % res.content_type)
-                log.info("data is %s" % res.data)
-
                 if res.content_type == 'application/json':
                     s = str(res.data)
                     if '"error":' in s and '"error_description":' in s and '"status":' in s:
@@ -299,7 +294,7 @@ def crash_handler(f):
             # Response details
             'response': {
                 'type': response_type,
-                'status': status_code,
+                'status': str(status_code),
                 'is_error': is_an_error,
                 'error_code': error,
                 'error_description': error_description,
@@ -332,7 +327,7 @@ def crash_handler(f):
             else:
                 # If it is an internal errors, report it
                 # If it is too slow, report it
-                if int(data['response']['status']) >= 500:
+                if data['response']['status'] and int(data['response']['status']) >= 500:
                     report_error(
                         title="%s(): %s" % (fname, exception_string),
                         data=data,
