@@ -238,32 +238,6 @@ api = API(
 )
 ```
 
-### Defining new Errors
-
-You can define your own Exceptions extending 'KlueMicroServiceException' by
-calling the 'add_error' method as below:
-
-```
-from klue_microservice.exceptions import add_error
-
-# add_error() generates a class named MyOwnException that inherits from
-# KlueMicroServiceException and is properly handled by
-# klue-microservice. add_error() returns the MyOwnException class
-
-exceptionclass = add_error(
-    name='MyOwnException',
-    code='MY_OWN_EXCEPTION',
-    status=401,
-)
-
-# You can then inject the MyOwnException into the current module's namespace
-globals()['MyOwnException'] = exceptionclass
-
-# And now you can import it in other modules as well
-# from myexceptions import MyOwnException
-
-```
-
 ### Testing strategy
 
 klue microservices are developed around two sets of tests:
@@ -392,6 +366,68 @@ $ curl -H "Authorization: Bearer eyJpc3M[...]y8kNg" http://127.0.0.1:8080/auth/v
 ```
 
 ## Recipes
+
+### Defining new Errors
+
+You can define your own Exceptions extending 'KlueMicroServiceException' by
+calling the 'add_error' method as below:
+
+```
+from klue_microservice.exceptions import add_error
+
+# add_error() generates a class named MyOwnException that inherits from
+# KlueMicroServiceException and is properly handled by
+# klue-microservice. add_error() returns the MyOwnException class
+
+exceptionclass = add_error(
+    name='MyOwnException',
+    code='MY_OWN_EXCEPTION',
+    status=401,
+)
+
+# You can then inject the MyOwnException into the current module's namespace
+globals()['MyOwnException'] = exceptionclass
+
+# And now you can import it in other modules as well
+# from myexceptions import MyOwnException
+
+```
+
+### Returning errors
+
+You have multiple ways to let your API endpoint return an Error object. Pick one of the following:
+
+```
+
+from myexceptions import MyChildOfKlueMicroServiceException
+
+def my_endpoint_implementation():
+
+    # You can raise an exception: it will be considered as an internal server error
+    raise Exception('wtf!')
+
+    # You can return an object instance that subclasses KlueMicroServiceException
+    return MyChildOfKlueMicroServiceException('wtf!')
+
+    # Or you can return a custom Error model instance (not recommended)
+    return ApiPool.myapi.model.Error(
+        status=543,
+        error='ANOTHER_CUSTOM_ERROR',
+        error_description='wtf!',
+    )
+```
+
+All the methods above will make your endpoint return a flask Response object
+with the Error model json-encoded in its body and a status code set to that of
+the Error instance.
+
+### Automated crash reporting
+
+Any api endpoint returning an Error instance with a status code above or equal
+to 500 will trigger a crash report (ie a call to the error_reporter callback).
+
+And endpoint that takes longer than 5sec to execute will also trigger a crash
+report.
 
 ### Reporting errors with 'report_error()'
 
