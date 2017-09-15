@@ -60,4 +60,4 @@ def do_crash_return_error_model():
     )
 
 def do_crash_return_error_instance():
-    return MyCustomError("endpoint returns an Error instance")
+    return MyFatalCustomError("endpoint returns an Error instance")

@@ -211,6 +211,19 @@ class Tests(KlueTestCase):
         self.assertEqual(title, 'FATAL ERROR %s 543 ANOTHER_CUSTOM_ERROR: do_crash_return_error_model(): Testing error model' % body['server']['api_name'])
 
 
+    def test_report_error_instance(self):
+        j = self.assertGetReturnError(
+            'crash/returnerrorinstance',
+            543,
+            'FATAL_CUSTOM_ERROR'
+        )
+        title, body = self.assertServerErrorReportOk(
+            path='crash/returnerrorinstance',
+            fatal=True,
+        )
+        self.assertEqual(title, 'FATAL ERROR %s 543 FATAL_CUSTOM_ERROR: do_crash_return_error_instance(): endpoint returns an Error instance' % body['server']['api_name'])
+
+
     def test_report_slow_call(self):
         j = self.assertGetReturnOk(
             'crash/slowcall'
