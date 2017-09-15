@@ -47,6 +47,8 @@ def report_error(title=None, data={}, caught=None, is_fatal=False):
     types of crashes: fatal crashes (backend errors) or non-fatal ones (just
     reporting a glitch, but the api call did not fail)"""
 
+    log.info("REPORTING ERROR!")
+
     # Fill error report with tons of usefull data
     if 'user' not in data:
         populate_error_report(data)
@@ -223,8 +225,7 @@ def crash_handler(f):
             # Got a flask.Response object
             status_code = res.status_code
             if (str(status_code) != '200'):
-                # Assuming it is a PntCommonError.http_reply()
-
+                # Assuming it is a KlueMicroServiceException.http_reply()
                 res_data = res.get_data()
 
                 if type(res_data) is bytes:
@@ -242,6 +243,9 @@ def crash_handler(f):
                 error_description = j.get('error_description', res_data)
                 if error_description == '':
                     error_description = res_data
+
+                if not exception_string:
+                    exception_string = error_description
 
                 error_user_message = j.get('user_message', '')
                 is_an_error = 1
@@ -310,7 +314,7 @@ def crash_handler(f):
             else:
                 # If it is an internal errors, report it
                 # If it is too slow, report it
-                if str(data['response']['status']) in ('500'):
+                if int(data['response']['status']) >= 500:
                     report_error(
                         title="%s(): %s" % (fname, exception_string),
                         data=data,

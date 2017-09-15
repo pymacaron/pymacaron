@@ -89,6 +89,75 @@ paths:
           schema:
             $ref: '#/definitions/Error'
 
+  /crash/returnerrorinstance:
+    get:
+      summary: Return an error instance.
+      description: |
+
+        Return an Error instance, caught and reported by the crash handler.
+
+      tags:
+        - Crash
+      produces:
+        - application/json
+      x-bind-server: klue_microservice.api.do_crash_return_error_instance
+      responses:
+        '200':
+          description: Ok.
+          schema:
+            $ref: '#/definitions/Ok'
+        default:
+          description: Error
+          schema:
+            $ref: '#/definitions/Error'
+
+
+  /crash/returnfatalerrorresponse:
+    get:
+      summary: Return a fatal error response.
+      description: |
+
+        Return an Error Flask Response, caught and reported by the crash handler.
+
+      tags:
+        - Crash
+      produces:
+        - application/json
+      x-bind-server: klue_microservice.api.do_crash_return_fatal_error_response
+      responses:
+        '200':
+          description: Ok.
+          schema:
+            $ref: '#/definitions/Ok'
+        default:
+          description: Error
+          schema:
+            $ref: '#/definitions/Error'
+
+
+  /crash/returnnonfatalerrorresponse:
+    get:
+      summary: Return a non-fatal error response.
+      description: |
+
+        Return an Error Flask Response, caught but not reported by the crash handler.
+
+      tags:
+        - Crash
+      produces:
+        - application/json
+      x-bind-server: klue_microservice.api.do_crash_return_non_fatal_error_response
+      responses:
+        '200':
+          description: Ok.
+          schema:
+            $ref: '#/definitions/Ok'
+        default:
+          description: Error
+          schema:
+            $ref: '#/definitions/Error'
+
+
   /crash/returnerrormodel:
     get:
       summary: Return an error response.

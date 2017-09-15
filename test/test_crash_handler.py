@@ -49,6 +49,9 @@ class Tests(KlueTestCase):
                 p.terminate()
 
 
+    def assertNoErrorReport(self):
+        self.assertFalse(os.path.isfile(reportpath))
+
     def load_report(self):
         with open(reportpath) as f:
             s = f.read()
@@ -168,6 +171,28 @@ class Tests(KlueTestCase):
         self.assertTrue('request' not in body)
         self.assertEqual(body['is_fatal_error'], False)
         self.assertEqual(body['title'], 'called crash/reporterror to test error reporting')
+
+
+    def test_report_fatal_error_response(self):
+        j = self.assertGetReturnError(
+            'crash/returnfatalerrorresponse',
+            543,
+            'CUSTOM_ERROR'
+        )
+        title, body = self.assertServerErrorReportOk(
+            path='crash/returnfatalerrorresponse',
+            fatal=True,
+        )
+        self.assertEqual(title, 'FATAL ERROR %s 543 CUSTOM_ERROR: do_crash_return_fatal_error_response(): endpoint returns an Error response' % body['server']['api_name'])
+
+
+    def test_report_non_fatal_error_response(self):
+        j = self.assertGetReturnError(
+            'crash/returnnonfatalerrorresponse',
+            401,
+            'CUSTOM_ERROR'
+        )
+        self.assertNoErrorReport()
 
 
     def test_report_slow_call(self):

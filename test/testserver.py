@@ -30,6 +30,7 @@ def test_crash_reporter(msg, body):
         'body': json.loads(body),
     }
 
+    log.info("Storing crash report into %s/error_report.json" % tmpdir)
     with open(os.path.join(tmpdir, "error_report.json"), "a+") as f:
         f.write(json.dumps(data))
 

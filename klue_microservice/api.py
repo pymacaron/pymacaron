@@ -5,9 +5,19 @@ from time import sleep
 from klue.swagger.apipool import ApiPool
 from klue_microservice.utils import get_container_version
 from klue_microservice.crash import report_error
+from klue_microservice.exceptions import KlueMicroServiceException
 
 
 log = logging.getLogger(__name__)
+
+
+class MyCustomError(KlueMicroServiceException):
+    code = 'CUSTOM_ERROR'
+    status = 543
+
+class MyNonFatalCustomError(KlueMicroServiceException):
+    code = 'CUSTOM_ERROR'
+    status = 401
 
 
 def do_ping():
@@ -36,12 +46,18 @@ def do_crash_slow_call():
     sleep(6)
     return ApiPool.crash.model.Ok()
 
+def do_crash_return_fatal_error_response():
+    return MyCustomError("endpoint returns an Error response").http_reply()
+
+def do_crash_return_non_fatal_error_response():
+    return MyNonFatalCustomError("endpoint returns a non-fatal Error response").http_reply()
+
+def do_crash_return_error_instance():
+    return MyCustomError("endpoint returns an Error instance")
+
 def do_crash_return_error_model():
     return ApiPool.crash.model.Error(
         status=543,
-        error="CRASH_TEST",
-        error_description="endpoint returns an Error model",
+        code='ANOTHER_CUSTOM_ERROR',
+        error_description='Testing error model',
     )
-
-def do_crash_return_error_response():
-    return make_response('', 543)
