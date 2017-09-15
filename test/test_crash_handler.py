@@ -177,22 +177,38 @@ class Tests(KlueTestCase):
         j = self.assertGetReturnError(
             'crash/returnfatalerrorresponse',
             543,
-            'CUSTOM_ERROR'
+            'FATAL_CUSTOM_ERROR'
         )
         title, body = self.assertServerErrorReportOk(
             path='crash/returnfatalerrorresponse',
             fatal=True,
         )
-        self.assertEqual(title, 'FATAL ERROR %s 543 CUSTOM_ERROR: do_crash_return_fatal_error_response(): endpoint returns an Error response' % body['server']['api_name'])
+        self.assertEqual(title, 'FATAL ERROR %s 543 FATAL_CUSTOM_ERROR: do_crash_return_fatal_error_response(): endpoint returns an Error response' % body['server']['api_name'])
 
 
     def test_report_non_fatal_error_response(self):
         j = self.assertGetReturnError(
             'crash/returnnonfatalerrorresponse',
             401,
-            'CUSTOM_ERROR'
+            'NON_FATAL_CUSTOM_ERROR'
         )
         self.assertNoErrorReport()
+
+
+    def test_report_error_model(self):
+        j = self.assertGetReturnError(
+            'crash/returnerrormodel',
+            543,
+            'ANOTHER_CUSTOM_ERROR'
+        )
+        self.assertEqual(j['error_description'], 'Testing error model')
+        self.assertEqual(j['status'], 543)
+        self.assertEqual(j['error'], 'ANOTHER_CUSTOM_ERROR')
+        title, body = self.assertServerErrorReportOk(
+            path='crash/returnerrormodel',
+            fatal=True,
+        )
+        self.assertEqual(title, 'FATAL ERROR %s 543 ANOTHER_CUSTOM_ERROR: do_crash_return_error_model(): Testing error model' % body['server']['api_name'])
 
 
     def test_report_slow_call(self):

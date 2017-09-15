@@ -47,8 +47,6 @@ def report_error(title=None, data={}, caught=None, is_fatal=False):
     types of crashes: fatal crashes (backend errors) or non-fatal ones (just
     reporting a glitch, but the api call did not fail)"""
 
-    log.info("REPORTING ERROR!")
-
     # Fill error report with tons of usefull data
     if 'user' not in data:
         populate_error_report(data)
@@ -223,11 +221,29 @@ def crash_handler(f):
 
         if isinstance(res, Response):
             # Got a flask.Response object
-            status_code = res.status_code
-            if (str(status_code) != '200'):
+            res_data = None
+
+            status_code = str(res.status_code)
+
+            if str(status_code) == '200':
+
+                # It could be any valid json response, but it could also be an Error model
+                # that klue-client-server handled as a status 200 because it does not know of
+                # klue-microservice Errors
+                log.info("Res is %s" % dir(res))
+                log.info("content-type is %s" % res.content_type)
+                log.info("data is %s" % res.data)
+
+                if res.content_type == 'application/json':
+                    s = str(res.data)
+                    if '"error":' in s and '"error_description":' in s and '"status":' in s:
+                        # This looks like an error, let's decode it
+                        res_data = res.get_data()
+            else:
                 # Assuming it is a KlueMicroServiceException.http_reply()
                 res_data = res.get_data()
 
+            if res_data:
                 if type(res_data) is bytes:
                     res_data = res_data.decode("utf-8")
 
@@ -237,7 +253,11 @@ def crash_handler(f):
                 except ValueError as e:
                     # This was a plain html response. Fake an error
                     is_json = False
-                    j = {'error': res_data}
+                    j = {'error': res_data, 'status': status_code}
+
+                # Make sure that the response gets the same status as the Klue Error it contained
+                status_code = j['status']
+                res.status_code = status_code
 
                 error = j.get('error', 'NO_ERROR_IN_JSON')
                 error_description = j.get('error_description', res_data)
@@ -257,8 +277,6 @@ def crash_handler(f):
                     error_id = str(uuid.uuid4())
                     j['error_id'] = error_id
                     res.set_data(json.dumps(j))
-            else:
-                status_code = 200
 
         request_args = []
         if len(args):
@@ -281,7 +299,7 @@ def crash_handler(f):
             # Response details
             'response': {
                 'type': response_type,
-                'status': status_code,
+                'status': int(status_code),
                 'is_error': is_an_error,
                 'error_code': error,
                 'error_description': error_description,
