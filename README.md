@@ -99,21 +99,17 @@ def start(port=80, debug=False):
     path_apis = os.path.join(here, "apis")
 
     # Tell klue-microservice to spawn apis inside this Flask app.  Set the
-    # server's listening port, whether Flask debug mode is on or not, and, if
-    # some of your endpoints use klue-microservice's builtin JWT token-based
-    # authentication scheme, initialise a jwt token and audience
+    # server's listening port, whether Flask debug mode is on or not. Other
+    # configuration parameters, such as JWT issuer, audience and secret, are
+    # fetched from klue.config.yaml or the environment variables it refers to.
 
     api = API(
         app,
         port=port,
         debug=debug,
-        jwt_secret=os.environ.get("KLUE_JWT_SECRET"),
-        jwt_audience=os.environ.get("KLUE_JWT_AUDIENCE"),
-        jwt_issuer=os.environ.get("KLUE_JWT_ISSUER"),
     )
 
     # Find all swagger files and load them into klue-client-server
-
     api.load_apis(path_apis)
 
     # Optinally, publish the apis' specifications under the /doc/<api-name>
@@ -122,7 +118,6 @@ def start(port=80, debug=False):
 
     # Start the Flask app and serve all endpoints defined in
     # apis/myservice.yaml
-
     api.start(serve="myservice")
 
 

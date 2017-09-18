@@ -1,0 +1,17 @@
+name: test
+docker_repo: <MYREPO>
+docker_bucket: <DOCKER_CFG_BUCKET>
+aws_user: <IAM_USER_NAME>
+aws_keypair: aws-eb
+aws_instance_type: t2.micro
+aws_cert_arn: <ARN_OF_SSL_CERTIFICATE>
+
+env_jwt_issuer: KLUE_JWT_ISSUER
+env_jwt_secret: KLUE_JWT_SECRET
+env_jwt_audience: KLUE_JWT_AUDIENCE
+live_host: helloworld.com
+
+env_secrets:
+  - KLUE_JWT_SECRET
+  - KLUE_JWT_AUDIENCE
+  - KLUE_JWT_ISSUER

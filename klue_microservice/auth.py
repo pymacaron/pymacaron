@@ -9,6 +9,7 @@ from flask import request
 from klue_microservice.exceptions import AuthInvalidTokenError, AuthTokenExpiredError
 from klue_microservice.exceptions import AuthMissingHeaderError, KlueMicroServiceException
 from klue_microservice.utils import timenow, to_epoch
+from klue_microservice.config import get_config
 
 try:
     from flask import _app_ctx_stack as stack
@@ -23,41 +24,14 @@ log = logging.getLogger(__name__)
 # Configuration
 #
 
-DEFAULT_JWT_ISSUER = None
-DEFAULT_JWT_AUDIENCE = 'HFhAcAZ1VdRt0anWpefDfGYnW8F79uLF'
-DEFAULT_USER_ID = None
-DEFAULT_TOKEN_TIMEOUT = 86400
-# Automatically renew token if expires in less than this time (in sec) 3 hours
-# in sec
-DEFAULT_TOKEN_RENEW_AFTER = 10800
-DEFAULT_JWT_SECRET = None
-
-def set_jwt_defaults(issuer=None, user_id=None, token_timeout=None, token_renew=None, secret=None, audience=None):
-    if issuer:
-        global DEFAULT_JWT_ISSUER
-        log.info("Setting JWT issuer to %s" % issuer)
-        DEFAULT_JWT_ISSUER = issuer
-    if user_id:
-        global DEFAULT_USER_ID
-        log.info("Setting JWT default user_id to %s" % user_id)
-        DEFAULT_USER_ID = user_id
-    if token_timeout:
-        global DEFAULT_TOKEN_TIMEOUT
-        log.info("Setting JWT timeout to %s" % token_timeout)
-        DEFAULT_TOKEN_TIMEOUT = token_timeout
-    if token_renew:
-        global DEFAULT_TOKEN_RENEW_AFTER
-        log.info("Setting JWT renew timeout to %s" % token_renew)
-        DEFAULT_TOKEN_RENEW_AFTER = token_renew
-    if secret:
-        global DEFAULT_JWT_SECRET
-        log.info("Setting JWT secret %s*****.." % secret[0:5])
-        DEFAULT_JWT_SECRET = base64.b64decode(secret.replace("_", "/").replace("-", "+"))
-    if audience:
-        global DEFAULT_JWT_AUDIENCE
-        log.info("Setting JWT audience: %s" % audience)
-        DEFAULT_JWT_AUDIENCE = audience
-
+def init_jwt_config():
+    conf = get_config()
+    conf.jwt_issuer = None
+    conf.jwt_audience = None
+    conf.jwt_secret = None
+    conf.jwt_token_timeout = 86400
+    conf.jwt_token_renew_after = 10800
+    conf.default_user_id = None
 
 #
 # Decorators used to add authentication to endpoints in swagger specs
@@ -103,12 +77,14 @@ def load_auth_token(token, load=True):
     """Validate an auth0 token. Returns the token's payload, or an exception
     of the type:"""
 
-    assert DEFAULT_JWT_SECRET, "No JWT secret configured for klue-microservice"
+    assert get_config().jwt_secret, "No JWT secret configured for klue-microservice"
+    assert get_config().jwt_issuer, "No JWT issuer configured for klue-microservice"
+    assert get_config().jwt_audience, "No JWT audience configured for klue-microservice"
 
     log.info("Extracting issuer of token")
 
     # First extract the issuer (default to 'klue')
-    issuer = DEFAULT_JWT_ISSUER
+    issuer = get_config().jwt_issuer
     try:
         headers = jwt.get_unverified_header(token)
     except jwt.DecodeError:
@@ -124,8 +100,8 @@ def load_auth_token(token, load=True):
     try:
         payload = jwt.decode(
             token,
-            DEFAULT_JWT_SECRET,
-            audience=DEFAULT_JWT_AUDIENCE,
+            get_config().jwt_secret,
+            audience=get_config().jwt_audience,
             # Allow for a time difference of up to 5min (300sec)
             leeway=300
         )
@@ -191,15 +167,15 @@ def generate_token(user_id, expire_in=None, data={}, issuer=None, iat=None):
     is 1 year from creation time"""
     assert user_id, "No user_id passed to generate_token()"
     assert isinstance(data, dict), "generate_token(data=) should be a dictionary"
-    assert DEFAULT_JWT_SECRET, "No JWT secret configured in klue-microservice"
+    assert get_config().jwt_secret, "No JWT secret configured in klue-microservice"
 
     if not issuer:
-        issuer = DEFAULT_JWT_ISSUER
+        issuer = get_config().jwt_issuer
 
     assert issuer, "No JWT issuer configured for klue-microservice"
 
     if expire_in is None:
-        expire_in = DEFAULT_TOKEN_TIMEOUT
+        expire_in = get_config().jwt_token_timeout
 
     if iat:
         epoch_now = iat
@@ -209,7 +185,7 @@ def generate_token(user_id, expire_in=None, data={}, issuer=None, iat=None):
 
     data['iss'] = issuer
     data['sub'] = user_id
-    data['aud'] = DEFAULT_JWT_AUDIENCE
+    data['aud'] = get_config().jwt_audience
     data['exp'] = epoch_end
     data['iat'] = epoch_now
 
@@ -223,7 +199,7 @@ def generate_token(user_id, expire_in=None, data={}, issuer=None, iat=None):
 
     t = jwt.encode(
         data,
-        DEFAULT_JWT_SECRET,
+        get_config().jwt_secret,
         headers=headers,
     )
 
@@ -237,9 +213,9 @@ def generate_token(user_id, expire_in=None, data={}, issuer=None, iat=None):
 def backend_token(issuer=None, user_id=None):
 
     if not issuer:
-        issuer = DEFAULT_JWT_ISSUER
+        issuer = get_config().jwt_issuer
     if not user_id:
-        user_id = DEFAULT_USER_ID
+        user_id = get_config().default_user_id
 
     assert issuer, "No JWT issuer configured for klue-microservice"
     assert user_id, "No user_id passed to generate_token()"

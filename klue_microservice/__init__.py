@@ -4,7 +4,6 @@ import logging
 import click
 import pkg_resources
 from uuid import uuid4
-import yaml
 from flask import Response, redirect
 from flask_compress import Compress
 from flask_cors import CORS
@@ -13,7 +12,8 @@ from klue_microservice.log import set_level
 from klue_microservice.api import do_ping
 from klue_microservice.crash import set_error_reporter, crash_handler
 from klue_microservice.exceptions import format_error
-from klue_microservice.auth import set_jwt_defaults
+from klue_microservice.config import get_config
+from klue_microservice.auth import init_jwt_config
 
 
 log = logging.getLogger(__name__)
@@ -26,7 +26,7 @@ log = logging.getLogger(__name__)
 class API(object):
 
 
-    def __init__(self, app, host='localhost', port=80, debug=False, log_level=logging.DEBUG, formats=None, timeout=20, error_reporter=None, jwt_secret=None, jwt_audience=None, jwt_issuer=None, default_user_id=None, error_callback=format_error):
+    def __init__(self, app, host='localhost', port=80, debug=False, log_level=logging.DEBUG, formats=None, timeout=20, error_reporter=None, default_user_id=None, error_callback=format_error):
         """Take the flask app, and optionally the http port to listen on, and
         whether flask's debug mode is one or not, which callback to call when
         catching exceptions, and the api's log level"""
@@ -38,15 +38,16 @@ class API(object):
         self.formats = formats
         self.timeout = timeout
         self.error_callback = error_callback
-        set_jwt_defaults(
-            secret=jwt_secret,
-            audience=jwt_audience,
-            issuer=jwt_issuer,
-            user_id=default_user_id,
-        )
+
+        if default_user_id:
+            self.default_user_id = default_user_id
+
+        init_jwt_config()
         set_level(log_level)
+
         if error_reporter:
             set_error_reporter(error_reporter)
+
         log.info("Initialized API (%s:%s) (Flask debug:%s)" % (host, port, debug))
 
 
@@ -91,6 +92,9 @@ class API(object):
         if type(ignore) is not list:
             raise Exception("'ignore' should be a list of api names")
 
+        # Always ignore klue-config.yaml
+        ignore.append('klue-config')
+
         # Find all swagger apis under 'path'
         apis = {}
 
@@ -134,23 +138,12 @@ class API(object):
         if not self.apis:
             raise Exception("You must call .load_apis() before .publish_apis()")
 
-        # Get the live host from klue-config.yaml
-        config_path = os.path.join(os.path.dirname(sys.argv[0]), 'klue-config.yaml')
-        if not os.path.isfile(config_path):
-            config_path = '/klue/klue-config.yaml'
-
-        config = None
-        with open(config_path, 'r') as stream:
-            config = yaml.load(stream)
-
-        if 'live_host' not in config:
-            raise Exception("Cannot publish apis: klue-config.yaml lacks the 'live_host' key")
-
+        # Infer the live host url from klue-config.yaml
         proto = 'http'
-        if 'aws_cert_arn' in config:
+        if hasattr(get_config(), 'aws_cert_arn'):
             proto = 'https'
 
-        live_host = "%s://%s" % (proto, config['live_host'])
+        live_host = "%s://%s" % (proto, get_config().live_host)
 
         # Allow cross-origin calls
         cors = CORS(self.app, resources={r"/%s/*" % path: {"origins": "*"}})
@@ -204,6 +197,12 @@ class API(object):
 
         app = self.app
         app.secret_key = os.urandom(24)
+
+        # Initialize JWT config
+        conf = get_config()
+        conf.jwt_issuer = os.environ.get(conf.env_jwt_issuer)
+        conf.jwt_secret = os.environ.get(conf.env_jwt_secret)
+        conf.jwt_audience = os.environ.get(conf.env_jwt_audience)
 
         # Always serve the ping api
         serve.append('ping')
