@@ -42,9 +42,6 @@ def start(port, debug):
         port=8765,
         debug=False,
         error_reporter=test_crash_reporter,
-        jwt_secret=os.environ.get("KLUE_JWT_SECRET"),
-        jwt_audience=os.environ.get("KLUE_JWT_AUDIENCE"),
-        jwt_issuer=os.environ.get("KLUE_JWT_ISSUER"),
     )
     api.load_apis('.', include_crash_api=True)
     api.start(serve="crash")
