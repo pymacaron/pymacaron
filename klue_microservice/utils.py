@@ -24,7 +24,6 @@ def is_ec2_instance():
 
     if IS_EC2_INSTANCE != -1:
         # Returned the cached value
-        log.debug("IS_EC2_INSTANCE=%s" % IS_EC2_INSTANCE)
         return IS_EC2_INSTANCE
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
