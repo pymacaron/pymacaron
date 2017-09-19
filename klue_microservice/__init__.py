@@ -203,6 +203,11 @@ class API(object):
         conf.jwt_issuer = os.environ.get(conf.env_jwt_issuer)
         conf.jwt_secret = os.environ.get(conf.env_jwt_secret)
         conf.jwt_audience = os.environ.get(conf.env_jwt_audience)
+        log.info("Set JWT parameters to issuer=%s audience=%s secret=%s***" % (
+            conf.jwt_issuer,
+            conf.jwt_audience,
+            conf.jwt_secret[0:8],
+        ))
 
         # Always serve the ping api
         serve.append('ping')
