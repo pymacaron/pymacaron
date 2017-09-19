@@ -197,14 +197,20 @@ def crash_handler(f):
         try:
             res = f(*args, **kwargs)
         except Exception as e:
-            # An unhandled exception occured. Forge a Response
+            # An unhandled exception occured!
             exception_string = str(e)
             exc_type, exc_value, exc_traceback = sys.exc_info()
             trace = traceback.format_exception(exc_type, exc_value, exc_traceback, 30)
             data['trace'] = trace
-            e = UnhandledServerError(exception_string)
-            log.error("UNHANDLED EXCEPTION: %s" % '\n'.join(trace))
-            res = e.http_reply()
+
+            # If it is a KlueMicroServiceException, just call its http_reply()
+            if hasattr(e, 'http_reply'):
+                res = e.http_reply()
+            else:
+                # Otherwise, forge a Response
+                e = UnhandledServerError(exception_string)
+                log.error("UNHANDLED EXCEPTION: %s" % '\n'.join(trace))
+                res = e.http_reply()
 
         t1 = timenow()
 

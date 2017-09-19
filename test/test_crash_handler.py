@@ -125,6 +125,15 @@ class Tests(utils.KlueMicroServiceTests):
         self.assertEqual(body['request']['params'], '[]')
 
 
+    def test_klue_exception(self):
+        j = self.assertGetReturnError(
+            'crash/klueexception',
+            401,
+            'NON_FATAL_CUSTOM_ERROR'
+        )
+        self.assertNoErrorReport()
+
+
     def test_report_error(self):
         j = self.assertGetReturnOk(
             'crash/reporterror'

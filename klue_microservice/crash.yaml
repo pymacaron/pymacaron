@@ -43,6 +43,30 @@ paths:
             $ref: '#/definitions/Error'
 
 
+  /crash/klueexception:
+    get:
+      summary: Raise a KlueMicroService exception.
+      description: |
+
+        Raise a KlueMicroService exception, that the crash handler will pass
+        through as a response and report if status >= 500.
+
+      tags:
+        - Crash
+      produces:
+        - application/json
+      x-bind-server: klue_microservice.api.do_crash_klue_exception
+      responses:
+        '200':
+          description: Ok.
+          schema:
+            $ref: '#/definitions/Ok'
+        default:
+          description: Error
+          schema:
+            $ref: '#/definitions/Error'
+
+
   /crash/reporterror:
     get:
       summary: Report a non-fatal error.

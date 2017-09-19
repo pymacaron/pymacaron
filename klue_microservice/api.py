@@ -38,6 +38,9 @@ def do_version():
 def do_crash_internal_exception():
     raise Exception("Raising an internal exception")
 
+def do_crash_klue_exception():
+    raise MyNonFatalCustomError("Raising a non-fatal custom error")
+
 def do_crash_report_error():
     report_error("called crash/reporterror to test error reporting")
     return ApiPool.crash.model.Ok()

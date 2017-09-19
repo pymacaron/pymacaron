@@ -124,7 +124,7 @@ def format_error(e):
     if isinstance(e, KlueException) and e.__class__.__name__ == 'ValidationError':
         return ValidationError(str(e)).to_model()
 
-    # Turn this exception into a PntCommonException
+    # Turn this exception into a Klue Error model
     return UnhandledServerError(str(e)).to_model()
 
 

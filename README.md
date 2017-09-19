@@ -398,13 +398,21 @@ from myexceptions import MyChildOfKlueMicroServiceException
 
 def my_endpoint_implementation():
 
-    # You can raise an exception: it will be considered as an internal server error
+    # You can raise an exception: it will be considered as an internal server
+    # error and reported as a json Error with status=500 and error code set to
+    # 'UNHANDLED_SERVER_ERROR' and error message set to 'wtf!'
     raise Exception('wtf!')
 
-    # You can return an object instance that subclasses KlueMicroServiceException
+    # Or, much better, you can raise a custom exception that subclasses
+    # KlueMicroServiceException: it will automatically be converted into an
+    # Error json, with the proper status, error code and error message set, and
+    # returned to the caller
+    raise MyChildOfKlueMicroServiceException('wtf!')
+
+    # You could also just return an instance of KlueMicroServiceException
     return MyChildOfKlueMicroServiceException('wtf!')
 
-    # Or you can return a custom Error model instance (not recommended)
+    # Or you can return an Error model instance (not recommended)
     return ApiPool.myapi.model.Error(
         status=543,
         error='ANOTHER_CUSTOM_ERROR',
