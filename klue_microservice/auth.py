@@ -81,7 +81,11 @@ def load_auth_token(token, load=True):
     assert get_config().jwt_issuer, "No JWT issuer configured for klue-microservice"
     assert get_config().jwt_audience, "No JWT audience configured for klue-microservice"
 
-    log.info("Extracting issuer of token")
+    log.info("Validating token, using issuer:%s, audience:%s, secret:%s***" % (
+        get_config().jwt_issuer,
+        get_config().jwt_audience,
+        get_config().jwt_secret[1:8],
+    ))
 
     # First extract the issuer (default to 'klue')
     issuer = get_config().jwt_issuer
@@ -195,7 +199,7 @@ def generate_token(user_id, expire_in=None, data={}, issuer=None, iat=None):
         "iss": issuer,
     }
 
-    log.debug("Encoding token with data %s and headers %s" % (data, headers))
+    log.debug("Encoding token with data %s and headers %s (secret:%s****)" % (data, headers, get_config().jwt_secret[0:8]))
 
     t = jwt.encode(
         data,
