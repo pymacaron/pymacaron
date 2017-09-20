@@ -129,7 +129,7 @@ elif [ ! -z "$IMAGE_ID" ]; then
             echo "ERROR: variable $VAR has no value in env"
             exit 1
         fi
-        CMD="$CMD -e $VAR=$VALUE"
+        CMD="$CMD -e $VAR='$VALUE'"
     done
     CMD="$CMD --rm -P $IMAGE_ID"
 
