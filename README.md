@@ -48,7 +48,7 @@ looking like this:
 .
 ├── apis                       # Here you put the swagger specifications both of the apis your
 │   └── myservice.yaml         # server is implementing, and of eventual other apis your server
-│   └── login.yaml             # is in its turn caling
+│   └── login.yaml             # is in its turn calling
 │   └── profile.yaml           # See klue-client-server for the supported yaml formats.
 |
 ├── myservice                  # Here is the code implementing your server api's endpoints
@@ -64,9 +64,9 @@ looking like this:
 └── test                       # Standard unitests, executed with nosetests
 |   └── test_pep8.py
 |
-└── testaccept                 # Acceptance tests against api endpoints
-    ├── test_v1_user_login.py  # Best practice: name test files after the endpoint they test
-    └── test_version.py        # -> Here to test the generic /ping, /version and /auth/version endpoints
+└── testaccept                 # Acceptance tests against api endpoints:
+    ├── test_v1_user_login.py  # Those are black-box tests against a running server
+    └── test_version.py
 
 ```
 
@@ -84,7 +84,7 @@ log = logging.getLogger(__name__)
 
 # WARNING: you must declare the Flask app as shown below, keeping the variable
 # name 'app' and the file name 'server.py', since gunicorn is configured to
-# lookup the variable app inside the code generated from server.py.
+# lookup the variable 'app' inside the code generated from 'server.py'.
 
 app = Flask(__name__)
 # Here you could add custom routes, etc.
@@ -101,7 +101,7 @@ def start(port=80, debug=False):
     # Tell klue-microservice to spawn apis inside this Flask app.  Set the
     # server's listening port, whether Flask debug mode is on or not. Other
     # configuration parameters, such as JWT issuer, audience and secret, are
-    # fetched from klue.config.yaml or the environment variables it refers to.
+    # fetched from 'klue-config.yaml' or the environment variables it refers to.
 
     api = API(
         app,
@@ -110,18 +110,20 @@ def start(port=80, debug=False):
     )
 
     # Find all swagger files and load them into klue-client-server
+
     api.load_apis(path_apis)
 
     # Optinally, publish the apis' specifications under the /doc/<api-name>
-    # endpoints
+    # endpoints:
     # api.publish_apis()
 
     # Start the Flask app and serve all endpoints defined in
     # apis/myservice.yaml
+
     api.start(serve="myservice")
 
 
-# Let klue-microservice handle argument parsing...
+# Let klue-microservice handle argument parsing and all the scaffholding
 letsgo(__name__, callback=start)
 ```
 
@@ -139,12 +141,25 @@ cd projectroot
 run_acceptance_tests --local
 ```
 
+You deploy your api to Amazon Elasticbean like this:
+
+```bash
+deploy_pipeline --push --deploy
+```
+
+
 ## Deep dive
 
 ### Installing
 
 ```
 pip install klue-microservice
+```
+
+Optionally, to deploy to Amazon:
+
+```
+pip install klue-microservice-deploy
 ```
 
 ### Swagger specifications
@@ -156,24 +171,24 @@ supported by
 klue-client-server uses [Bravado](https://github.com/Yelp/bravado) to handle
 marshalling/unmarshalling and validation of your api objects to and from json,
 and does all the magic of spawning client and server stubs for all api
-endpoints, as well as supporting optional database serialization for your api
-objects.
+endpoints, catching errors, and providing optional database serialization for
+your api objects.
 
 ### JWT authentication
 
-klue-microservice allows you to add JWT token authentication around the
-endpoints that require authentication.
+klue-microservice allows you to add JWT token authentication around api
+endpoints.
 
 Authentication is achieved by passing a JWT session token in the HTTP
-Authorization header:
+Authorization header of api requests:
 
 ```Authorization: Bearer {session token}```
 
 Your service may generate JWT tokens using the 'generate_token()' method from
 [klue-microservice.auth](https://github.com/erwan-lemonnier/klue-microservice/blob/master/klue_microservice/auth.py).
 
-The JWT issuer, audience and secret are passed when starting the service, as
-arguments to the 'API()' constructor. By default, tokens are valid for 24
+The JWT issuer, audience and secret are set via environment variables, whose
+names are defined in 'klue-config.yaml'. By default, tokens are valid for 24
 hours.
 
 ### Error handling and reporting
@@ -181,7 +196,7 @@ hours.
 If an endpoint raises an exception, it will be caught by klue-microservice and returned
 to the caller in the form of an Error json object looking like:
 
-```
+```json
 {
     "error": "INVALID_USER",                      # Code identifying this error
     "error_description": "DB entry not found",    # Developer friendly explanation
@@ -192,9 +207,9 @@ to the caller in the form of an Error json object looking like:
 
 You can create your own errors by subclassing the class
 [KlueMicroServiceException](https://github.com/erwan-lemonnier/klue-microservice/blob/master/klue_microservice/exceptions.py)
-and return them at any time as json reply as follows:
+and return them as json Error replies at any time as follows:
 
-```
+```python
 from klue_microservice.exceptions import KlueMicroServiceException
 
 class InvalidUserError(KlueMicroServiceException):
@@ -203,24 +218,31 @@ class InvalidUserError(KlueMicroServiceException):
 
 # An endpoint implementation...
 def do_login(userdata):
-    return MyException("Sorry, we don't know you").http_reply()
+    raise MyException("Sorry, we don't know you")
 ```
 
 When an exception occurs in your endpoint, you have the choice of:
 
-* If it is a fatal exception, return a KlueMicroServiceException to the caller as shown above.
+* If it is a fatal exception, raise a KlueMicroServiceException to the caller as shown above.
 
 * If it is a non-fatal error, you can just ignore it, or you can send back a
-crash report to the service's admins. This is done by providing the 'API'
-constructor with an 'error_reporter' callback:
+crash report to the service's admins by calling the 'report_error()' method
+from
+[klue-microservice.crash](https://github.com/erwan-lemonnier/klue-microservice/blob/master/klue_microservice/crash.py).
 
-```
+You tell klue-microservice what to do with crash reports by providing the
+'klue-microservice.API' constructor with an 'error_reporter' callback:
+
+```python
 from klue_microservice import API, letsgo
 
 def my_crash_reporter(title, message):
-    # title is a short description of the error, while message is a full crash
-    # dump, containing a traceback of the exception caught, data on the caller
-    # and runtime, etc. Now, send it to who you want!
+
+    # title is a short description of the error, while message is a full json
+    # crash dump in string format, containing a traceback of the exception
+    # caught, data on the caller and runtime, etc. Now, send it to who you
+    # want!
+
     send_email(to='admin@mysite.com', subject=title, body=message)
     tell_slack(channel='crashes', msg="%s\n%s" % (title, message))
 
@@ -240,26 +262,26 @@ klue microservices are developed around two sets of tests:
 * Standard Python unitests that should be located under 'test/' and will be
 executed via nosetests at the start of the deployment pipeline.
 
-* Blackbox acceptance tests that target the apis endpoints, and are executed
-via the tool
+* Blackbox acceptance tests that target the api endpoints, and are executed via
+the tool
 [run_acceptance_tests](https://github.com/erwan-lemonnier/klue-microservice/blob/master/bin/run_acceptance_tests)
 that comes packaged with klue-microservice. Those acceptance tests should be
-located under the 'testaccept' dir, and it is recommended to name them after
-the endpoint they target. So one test file per tested API endpoint. Acceptance
-tests are designed to be executed against a running instance of the API server,
-be it a server you are running locally in a separate terminal, a docker
-container, or a live instance in Elastic Beanstalk.  Those tests should
-therefore treat the API as a blackbox and focus solely on making API calls and
-testing the results. API calls should be made using test methods from
-[klue-unit](https://github.com/erwan-lemonnier/klue-unit). See
+located under the 'testaccept' directory, and it is recommended to name them
+after the endpoint they target. So one test file per tested API
+endpoint. Acceptance tests are designed to be executed against a running
+instance of the API server, be it a server you are running locally in a
+separate terminal, a docker container, or a live instance in Elastic Beanstalk.
+Those tests should therefore treat the API as a blackbox and focus solely on
+making API calls and testing the results. API calls should be made using test
+methods from [klue-unit](https://github.com/erwan-lemonnier/klue-unit). See
 [klue-microservice-helloworld](https://github.com/erwan-lemonnier/klue-microservice-helloworld/blob/master/testaccept/test_version.py)
-for an example of acceptance test.
+for an example of acceptance tests.
 
 ### Deployment pipeline
 
 Klue microservices come with a ready-to-use deployment pipeline that packages
 the service as a docker image and deploys it on Amazon Elastic Beanstalk with
-minimal configuration.
+little configuration required.
 
 For details, see
 [klue-microservice-deploy](https://github.com/erwan-lemonnier/klue-microservice-deploy).
@@ -269,8 +291,10 @@ For details, see
 The Klue microservice toolchain is built to deploy services as Docker images
 running inside Amazon EC2 instances in Elastic Beanstalk, behind an Elastic
 Load Balancer. All the details of setting up those Amazon services is handled
-by [klue-microservice-deploy] and should be left untouched. A few parameters can be
-adjusted, though. They are described in the 'klue-config.yaml' section below.
+by
+[klue-microservice-deploy](https://github.com/erwan-lemonnier/klue-microservice-deploy)
+and should be left untouched. A few parameters can be adjusted, though. They
+are described in the 'klue-config.yaml' section below.
 
 ### klue-config.yaml
 
@@ -287,18 +311,17 @@ beanstalk environments.
   and JWT issuer used for generating and validating JWT tokens. Not needed if
   the API does not use authentication.
 
-* 'env_secrets' (OPTIONAL): names of environemt variables that will be passed
-  to Elastic Beanstalk and loaded into Docker containers at runtime in Elastic
-  Beanstalk . This is the recommended way of passing secrets to the container
-  without commiting them inside your code.
+* 'env_secrets' (OPTIONAL): names of environment variables that will be passed
+  to Elastic Beanstalk and loaded at runtime into the Docker container in
+  Elastic Beanstalk. This is the recommended way of passing secrets to the
+  container without commiting them inside your code.
 
 The following variables are needed if you want to deploy to Elastic Beanstalk
-using klue-microservice-deploy:
+using
+[klue-microservice-deploy](https://github.com/erwan-lemonnier/klue-microservice-deploy):
 
 * 'aws_user' (MANDATORY): name of the IAM user to use when creating the
-  Beanstalk environment (see
-  [klue-microservice-deploy](https://github.com/erwan-lemonnier/klue-microservice-deploy)
-  for details).
+  Beanstalk environment.
 
 * 'aws_keypair' (MANDATORY): name of the ssh keypair to deploy on the server's
   EC2 instances.
@@ -311,18 +334,30 @@ using klue-microservice-deploy:
   listen on port 443 (https). If not, if will listen on port 80 (http).
 
 * 'docker_repo' (MANDATORY): name of the hub.docker.com organization or user to
-  which to upload docker images (see
-  [klue-microservice-deploy](https://github.com/erwan-lemonnier/klue-microservice-deploy)
-  for details).
+  which to upload docker images, and from which Amazon will retrieve those
+  images.
 
 * 'docker_bucket' (MANDATORY): name of the Amazon S3 bucket to which to upload
-  the service's Amazon configuration (see
-  [klue-microservice-deploy](https://github.com/erwan-lemonnier/klue-microservice-deploy)
-  for details).
+  the service's Amazon configuration.
 
 [Here is an
 example](https://github.com/erwan-lemonnier/klue-microservice-helloworld/blob/master/klue-config.yaml)
 of 'klue-config.yaml'.
+
+### Configuration file object
+
+The content of 'klue-config.yaml' is loaded into a singleton KlueConfig object,
+accessible at any time. It is recommended to use this object to store any other
+configuration parameters your api requires:
+
+```python
+from klue-microservice.config import get_config
+
+# Add your own parameters to the KlueConfig object:
+conf = get_config()
+conf.my_api_key = 'aeouaeouaeouaeouaeou'
+conf.my_api_secret = '2348172438172364'
+```
 
 ### Built-in endpoints
 
