@@ -256,7 +256,7 @@ def get_token_issuer():
     """Return the issuer in which this user's token was created"""
     try:
         current_user = stack.top.current_user
-        return current_user.get('iss', DEFAULT_JWT_ISSUER)
+        return current_user.get('iss', get_config().jwt_issuer)
     except Exception:
         pass
-    return DEFAULT_JWT_ISSUER
+    return get_config().jwt_issuer
