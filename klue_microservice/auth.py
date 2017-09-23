@@ -21,19 +21,6 @@ log = logging.getLogger(__name__)
 
 
 #
-# Configuration
-#
-
-def init_jwt_config():
-    conf = get_config()
-    conf.jwt_issuer = None
-    conf.jwt_audience = None
-    conf.jwt_secret = None
-    conf.jwt_token_timeout = 86400
-    conf.jwt_token_renew_after = 10800
-    conf.default_user_id = None
-
-#
 # Decorators used to add authentication to endpoints in swagger specs
 #
 

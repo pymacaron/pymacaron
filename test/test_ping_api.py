@@ -7,7 +7,7 @@ import pprint
 import subprocess
 from time import sleep
 from klue_microservice.config import get_config
-from klue_microservice.auth import generate_token, init_jwt_config
+from klue_microservice.auth import generate_token
 
 
 utils = imp.load_source('utils', os.path.join(os.path.dirname(__file__), 'utils.py'))
@@ -21,9 +21,6 @@ class Tests(utils.KlueMicroServiceTests):
     def setUp(self):
         super().setUp()
         self.verify_ssl = False
-        assert os.environ['KLUE_JWT_ISSUER']
-        assert os.environ['KLUE_JWT_AUDIENCE']
-        assert os.environ['KLUE_JWT_SECRET']
         self.kill_server()
         self.start_server()
         self.port = 8765
@@ -41,12 +38,7 @@ class Tests(utils.KlueMicroServiceTests):
 
         # Load klue-config.yaml
         path = os.path.join(root_dir, 'test/klue-config.yaml')
-        conf = get_config(path)
-        init_jwt_config()
-        conf.jwt_issuer = os.environ['KLUE_JWT_ISSUER']
-        conf.jwt_secret = os.environ['KLUE_JWT_SECRET']
-        conf.jwt_audience = os.environ['KLUE_JWT_AUDIENCE']
-
+        get_config(path)
         log.debug("Config is:\n%s" % pprint.pformat(vars(get_config()), indent=4))
 
         self.token = generate_token(user_id='killroy was here')

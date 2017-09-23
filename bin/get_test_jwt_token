@@ -6,7 +6,7 @@ import logging
 import click
 import subprocess
 import yaml
-from klue_microservice.auth import generate_token, init_jwt_config
+from klue_microservice.auth import generate_token
 from klue_microservice.config import get_config
 
 # What is the repo's root directory?
@@ -17,12 +17,6 @@ root_dir = root_dir.decode("utf-8").strip()
 path = os.path.join(root_dir, 'klue-config.yaml')
 
 conf = get_config(path)
-
-init_jwt_config()
-
-conf.jwt_issuer = os.environ.get(conf.env_jwt_issuer)
-conf.jwt_secret = os.environ.get(conf.env_jwt_secret)
-conf.jwt_audience = os.environ.get(conf.env_jwt_audience)
 
 t = generate_token(user_id='test-jwt-token')
 print("token:%s" % t)

@@ -162,6 +162,7 @@ Optionally, to deploy to Amazon:
 pip install klue-microservice-deploy
 ```
 
+
 ### Swagger specifications
 
 All api endpoints that your service needs, both those it implements and those
@@ -173,6 +174,7 @@ marshalling/unmarshalling and validation of your api objects to and from json,
 and does all the magic of spawning client and server stubs for all api
 endpoints, catching errors, and providing optional database serialization for
 your api objects.
+
 
 ### JWT authentication
 
@@ -187,9 +189,15 @@ Authorization header of api requests:
 Your service may generate JWT tokens using the 'generate_token()' method from
 [klue-microservice.auth](https://github.com/erwan-lemonnier/klue-microservice/blob/master/klue_microservice/auth.py).
 
-The JWT issuer, audience and secret are set via environment variables, whose
-names are defined in 'klue-config.yaml'. By default, tokens are valid for 24
-hours.
+The JWT issuer, audience and secret should be set via 'klue-config.yaml'
+(details further down). By default, tokens are valid for 24 hours.
+
+JWT tokens issued by klue-microservice always have a 'sub' field set to a user
+ID. You may set this user ID when generating tokens as an argument to
+'klue_microservice.auth.generate_token()', or let klue-microservice use the
+default user ID defined in
+'klue_microservice.config.get_config().default_user_id'.
+
 
 ### Error handling and reporting
 
@@ -255,6 +263,7 @@ api = API(
 )
 ```
 
+
 ### Testing strategy
 
 klue microservices are developed around two sets of tests:
@@ -277,6 +286,7 @@ methods from [klue-unit](https://github.com/erwan-lemonnier/klue-unit). See
 [klue-microservice-helloworld](https://github.com/erwan-lemonnier/klue-microservice-helloworld/blob/master/testaccept/test_version.py)
 for an example of acceptance tests.
 
+
 ### Deployment pipeline
 
 Klue microservices come with a ready-to-use deployment pipeline that packages
@@ -285,6 +295,7 @@ little configuration required.
 
 For details, see
 [klue-microservice-deploy](https://github.com/erwan-lemonnier/klue-microservice-deploy).
+
 
 ### Elastic Beanstalk configuration
 
@@ -296,25 +307,80 @@ by
 and should be left untouched. A few parameters can be adjusted, though. They
 are described in the 'klue-config.yaml' section below.
 
-### klue-config.yaml
 
-The file 'klue-config.yaml' is the one place to find all configurable aspects
-of a 'klue-microservice'. The file accepts the following attributes:
+### klue-config.yaml - A global configuration object
 
-* 'name' (MANDATORY): a short name for this project, used when naming elastic
-beanstalk environments.
+The file 'klue-config.yaml' is the one place to find all configurable variables
+used by Klue microservices.
+
+The content of 'klue-config.yaml' is automatically loaded into a singleton
+object, accessible at any time by calling:
+
+```python
+from klue-microservice.config import get_config
+
+# You can access all key-values defined in klue-config.yaml:
+
+print get_config().live_host
+
+# And you can defined additional values of your own, though it is recommended
+# to add all static values directly in klue-config.yaml to avoid race
+# conditions at import time
+
+get_config().my_api_key = 'aeouaeouaeouaeouaeou'
+get_config().my_api_secret = '2348172438172364'
+```
+
+As described below, one attribute of 'klue-config.yaml' that klue-microservice
+supports is 'env_secrets': its value should be a list of environment variables
+that will be automatically imported into Elastic Beanstalk and loaded at
+runtime into the server's Docker container. This is the recommended way of
+passing secrets into EC2 instances without commiting them inside your code.
+
+All config attributes whose value matches one of the names listed in
+'env_secrets' will automatically have the content of the corresponding
+environment variable substituted to their value. This is very convenient when
+putting secrets in 'klue-config.yaml', as shown below:
+
+```yaml
+# So, assuming you have set the environment variable MY_AWS_SECRET,
+# your aws user configuration becomes as simple as:
+
+aws_default_region: eu-central-1
+aws_access_key_id: OTh0KhP89JKiudehIasd90blr
+aws_secret_access_key: MY_AWS_SECRET
+
+env_secrets:
+  - MY_AWS_SECRET
+
+# And 'aws_secret_access_key' will automagically have its value replaced with
+# the value of the environment variable MY_AWS_SECRET
+```
+
+### klue-config.yaml - Expected key-values
+
+klue-microservice expects the following attributes to be set in
+'klue-config.yaml':
+
+* 'name' (MANDATORY): a short name for this project, also used when naming
+  elastic beanstalk environments.
 
 * 'live_host' (MANDATORY): url to the live server running this api.
-
-* 'env_jwt_secret', 'env_jwt_audience', 'env_jwt_issuer' (OPTIONAL): name of
-  environment variables containing respectively the JWT secret, JWT audience
-  and JWT issuer used for generating and validating JWT tokens. Not needed if
-  the API does not use authentication.
 
 * 'env_secrets' (OPTIONAL): names of environment variables that will be passed
   to Elastic Beanstalk and loaded at runtime into the Docker container in
   Elastic Beanstalk. This is the recommended way of passing secrets to the
-  container without commiting them inside your code.
+  container without commiting them inside your code. Other config attributes
+  whose value is one of the names listed in 'env_secrets' will have their value
+  automatically substituted with the content of the environment variable.
+
+* 'jwt_secret', 'jwt_audience', 'jwt_issuer' (OPTIONAL): values, or names of
+  environment variables containing these values, setting respectively the JWT
+  secret, JWT audience and JWT issuer used for generating and validating JWT
+  tokens. Not needed if the API does not use authentication.
+
+* 'default_user_id' (OPTIONAL): the default user ID to use when generating JWT
+  tokens.
 
 The following variables are needed if you want to deploy to Elastic Beanstalk
 using
@@ -344,20 +410,6 @@ using
 example](https://github.com/erwan-lemonnier/klue-microservice-helloworld/blob/master/klue-config.yaml)
 of 'klue-config.yaml'.
 
-### Configuration file object
-
-The content of 'klue-config.yaml' is loaded into a singleton KlueConfig object,
-accessible at any time. It is recommended to use this object to store any other
-configuration parameters your api requires:
-
-```python
-from klue-microservice.config import get_config
-
-# Add your own parameters to the KlueConfig object:
-conf = get_config()
-conf.my_api_key = 'aeouaeouaeouaeouaeou'
-conf.my_api_secret = '2348172438172364'
-```
 
 ### Built-in endpoints
 
@@ -395,7 +447,9 @@ $ curl -H "Authorization: Bearer eyJpc3M[...]y8kNg" http://127.0.0.1:8080/auth/v
 
 ```
 
+
 ## Recipes
+
 
 ### Defining new Errors
 
@@ -422,6 +476,7 @@ globals()['MyOwnException'] = exceptionclass
 # from myexceptions import MyOwnException
 
 ```
+
 
 ### Returning errors
 
@@ -459,6 +514,7 @@ All the methods above will make your endpoint return a flask Response object
 with the Error model json-encoded in its body and a status code set to that of
 the Error instance.
 
+
 ### Automated crash reporting
 
 Any api endpoint returning an Error instance with a status code above or equal
@@ -466,6 +522,7 @@ to 500 will trigger a crash report (ie a call to the error_reporter callback).
 
 And endpoint that takes longer than 5sec to execute will also trigger a crash
 report.
+
 
 ### Reporting errors with 'report_error()'
 
@@ -491,6 +548,7 @@ if is_error(profile):
 The crash report above will have an auto-generated title starting with the
 text 'NON-FATAL BACKEND ERROR', to differentiate from crash reports that resulted
 from an exception in the server, reported as 'FATAL BACKEND ERROR'.
+
 
 ### Loading api clients from a standalone script
 

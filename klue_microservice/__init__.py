@@ -13,7 +13,6 @@ from klue_microservice.api import do_ping
 from klue_microservice.crash import set_error_reporter, crash_handler
 from klue_microservice.exceptions import format_error
 from klue_microservice.config import get_config
-from klue_microservice.auth import init_jwt_config
 
 
 log = logging.getLogger(__name__)
@@ -42,7 +41,6 @@ class API(object):
         if default_user_id:
             self.default_user_id = default_user_id
 
-        init_jwt_config()
         set_level(log_level)
 
         if error_reporter:
@@ -200,14 +198,12 @@ class API(object):
 
         # Initialize JWT config
         conf = get_config()
-        conf.jwt_issuer = os.environ.get(conf.env_jwt_issuer)
-        conf.jwt_secret = os.environ.get(conf.env_jwt_secret)
-        conf.jwt_audience = os.environ.get(conf.env_jwt_audience)
-        log.info("Set JWT parameters to issuer=%s audience=%s secret=%s***" % (
-            conf.jwt_issuer,
-            conf.jwt_audience,
-            conf.jwt_secret[0:8],
-        ))
+        if hasattr(conf, 'jwt_secret'):
+            log.info("Set JWT parameters to issuer=%s audience=%s secret=%s***" % (
+                conf.jwt_issuer,
+                conf.jwt_audience,
+                conf.jwt_secret[0:8],
+            ))
 
         # Always serve the ping api
         serve.append('ping')
