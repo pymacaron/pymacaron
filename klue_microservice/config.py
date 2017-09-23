@@ -3,6 +3,7 @@ import sys
 import yaml
 import pprint
 import logging
+from copy import deepcopy
 
 
 log = logging.getLogger(__name__)
@@ -44,9 +45,10 @@ class KlueConfig(object):
 
         log.info("Loading config file at %s" % config_path)
         all_keys = []
+        config_dict = {}
         with open(config_path, 'r') as stream:
-            c = yaml.load(stream)
-            for k, v in c.items():
+            config_dict = yaml.load(stream)
+            for k, v in config_dict.items():
                 setattr(self, k, v)
                 all_keys.append(k)
 
@@ -62,6 +64,11 @@ class KlueConfig(object):
             for k in all_keys:
                 if getattr(self, k) in self.env_secrets:
                     setattr(self, k, os.environ.get(getattr(self, k), k))
+                    config_dict[k] = str(getattr(self, k))[0:8] + '****'
+
+        # Print config file to log, but obfuscate secrets
+        log.debug("Loaded configuration:\n%s" % pprint.pformat(config_dict, indent=4))
+
 
 config = None
 
@@ -69,5 +76,4 @@ def get_config(path=None):
     global config
     if not config:
         config = KlueConfig(path=path)
-        log.debug("Loaded configuration:\n%s" % pprint.pformat(vars(config), indent=4))
     return config
