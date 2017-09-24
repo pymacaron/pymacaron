@@ -550,6 +550,37 @@ text 'NON-FATAL BACKEND ERROR', to differentiate from crash reports that resulte
 from an exception in the server, reported as 'FATAL BACKEND ERROR'.
 
 
+### Automated reporting of slow calls
+
+If an endpoint call exceeds the value 'get_config().report_call_exceeding_ms',
+which by default is set to 1000 milliseconds, an error report will be sent with
+the 'error_reporter' callback warning of a slow call.
+
+You can change this default limit globally with:
+
+```python
+from klue_microservice.config import get_config()
+
+# Set the maximum call time to 5 sec - Slower calls trigger an error report
+get_config().report_call_exceeding_ms = 5000
+
+```
+
+Or you can do it on a per endpoint basis, using a decorator around the endpoint
+methods:
+
+```python
+from klue_microservice.crash import report_slow
+
+# Set the maximum call time for 'do_login_user' to 5 sec
+# Slower calls trigger an error report
+@report_slow(max_ms=5000)
+def do_login_user(login_data):
+    ...
+    return ApiPool.login.model.AuthToken(...)
+```
+
+
 ### Loading api clients from a standalone script
 
 It may come very handy within a standalone script to be able to call REST apis

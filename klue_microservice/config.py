@@ -21,6 +21,9 @@ class KlueConfig(object):
         self.jwt_token_renew_after = 10800
         self.default_user_id = 'KLUE_DEFAULT_USER_ID'
 
+        # Default time-limit for the slow-call report
+        self.report_call_exceeding_ms = 1000
+
         # Get the live host from klue-config.yaml
         paths = [
             os.path.join(os.path.dirname(sys.argv[0]), 'klue-config.yaml'),

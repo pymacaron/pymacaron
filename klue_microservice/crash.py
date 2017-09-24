@@ -2,6 +2,7 @@ import logging
 import json
 import uuid
 import os
+import inspect
 import sys
 import traceback
 import inspect
@@ -9,6 +10,7 @@ from functools import wraps
 from pprint import pformat
 from flask import request, Response
 from klue.swagger.apipool import ApiPool
+from klue_microservice.config import get_config
 from klue_microservice.utils import timenow, is_ec2_instance
 from klue_microservice.exceptions import UnhandledServerError
 
@@ -21,6 +23,33 @@ try:
 except ImportError:
     from flask import _request_ctx_stack as stack
 
+
+#
+# Customize the slow-call report time-limit per function
+#
+
+slow_calls = {}
+
+def function_name(f):
+    return "%s.%s" % (inspect.getmodule(f).__name__, f.__name__)
+
+class report_slow(object):
+
+    def __init__(self, max_ms=None):
+        self.max_ms = max_ms
+
+    def __call__(self, f):
+        global slow_calls
+        fname = function_name(f)
+        log.info("Setting custom slow_call report time limit on function %s to %s msec" % (fname, self.max_ms))
+        if self.max_ms:
+            slow_calls[fname] = self.max_ms
+
+        @wraps(f)
+        def wrapped(*args, **kwargs):
+            return f(*args, **kwargs)
+
+        return wrapped
 
 #
 # Default error reporting
@@ -46,6 +75,17 @@ def report_error(title=None, data={}, caught=None, is_fatal=False):
     """Format a crash report and send it somewhere relevant. There are two
     types of crashes: fatal crashes (backend errors) or non-fatal ones (just
     reporting a glitch, but the api call did not fail)"""
+
+    # Don't report errors if NO_ERROR_REPORTING set to 1 (set by run_acceptance_tests)
+    if not os.environ.get('DO_REPORT_ERROR', None) and os.environ.get('NO_ERROR_REPORTING', '') == '1':
+        log.info("NO_ERROR_REPORTING is set: not reporting error!")
+        return
+
+    if data.get('is_ec2_instance', False) and data['is_ec2_instance']:
+        pass
+    else:
+        log.info("This is a test setup: not reporting error!")
+        return
 
     # Fill error report with tons of usefull data
     if 'user' not in data:
@@ -91,11 +131,6 @@ def report_error(title=None, data={}, caught=None, is_fatal=False):
         title = "%s: %s" % (title_details, title)
     else:
         title = title_details
-
-    # Don't report errors if NO_ERROR_REPORTING set to 1 (set by run_acceptance_tests)
-    if not os.environ.get('DO_REPORT_ERROR', None) and os.environ.get('NO_ERROR_REPORTING', '') == '1':
-        log.info("NO_ERROR_REPORTING is set: not sending error to slack or email")
-        return
 
     global error_reporter
     log.info("Reporting crash...")
@@ -317,33 +352,32 @@ def crash_handler(f):
         log.info("Analytics: " + pformat(data))
 
         # inspect may raise a UnicodeDecodeError...
-        fname = f.__name__
+        fname = function_name(f)
 
         #
         # Should we report this call?
         #
 
-        if 'server' not in data:
-            log.info("This is a unitest running: not reporting error")
-            pass
+        # If it is an internal errors, report it
+        if data['response']['status'] and int(data['response']['status']) >= 500:
+            report_error(
+                title="%s(): %s" % (fname, exception_string),
+                data=data,
+                is_fatal=True
+            )
         else:
-            fqdn = data['server']['fqdn']
-            if not data['is_ec2_instance'] and not os.environ.get('DO_REPORT_ERROR'):
-                log.info("This is a test setup: not reporting error")
-            else:
-                # If it is an internal errors, report it
-                # If it is too slow, report it
-                if data['response']['status'] and int(data['response']['status']) >= 500:
-                    report_error(
-                        title="%s(): %s" % (fname, exception_string),
-                        data=data,
-                        is_fatal=True
-                    )
-                elif int(data['time']['microsecs']) > 5000000:
-                    report_error(
-                        title='%s() calltime exceeded 5 sec!' % fname,
-                        data=data
-                    )
+            # Looking this function's time-limit, else use default
+            global slow_calls
+            max_ms = get_config().report_call_exceeding_ms
+            if fname in slow_calls:
+                max_ms = slow_calls[fname]
+            log.info("Checking if call to %s exceeds %s msec" % (fname, max_ms))
+            if int(data['time']['microsecs']) > max_ms * 1000:
+                log.warn("SLOW CALL to %s: exceeded %s millisec"% (fname, max_ms))
+                report_error(
+                    title='%s() calltime exceeded %s millisec!' % (fname, max_ms),
+                    data=data
+                )
 
         return res
 
