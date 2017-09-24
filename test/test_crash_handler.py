@@ -111,7 +111,7 @@ class Tests(utils.KlueMicroServiceTests):
         title, body = self.assertServerErrorReportOk(
             path='crash/internalexception',
         )
-        self.assertEqual(title, 'FATAL ERROR %s 500 UNHANDLED_SERVER_ERROR: do_crash_internal_exception(): Raising an internal exception' % body['server']['api_name'])
+        self.assertEqual(title, 'FATAL ERROR %s 500 UNHANDLED_SERVER_ERROR: klue_microservice.api.do_crash_internal_exception(): Raising an internal exception' % body['server']['api_name'])
 
         self.assertEqual(body['response']['user_message'], '')
         self.assertEqual(body['response']['type'], 'Response')
@@ -162,7 +162,7 @@ class Tests(utils.KlueMicroServiceTests):
             path='crash/returnfatalerrorresponse',
             fatal=True,
         )
-        self.assertEqual(title, 'FATAL ERROR %s 543 FATAL_CUSTOM_ERROR: do_crash_return_fatal_error_response(): endpoint returns an Error response' % body['server']['api_name'])
+        self.assertEqual(title, 'FATAL ERROR %s 543 FATAL_CUSTOM_ERROR: klue_microservice.api.do_crash_return_fatal_error_response(): endpoint returns an Error response' % body['server']['api_name'])
 
 
     def test_report_non_fatal_error_response(self):
@@ -187,7 +187,7 @@ class Tests(utils.KlueMicroServiceTests):
             path='crash/returnerrormodel',
             fatal=True,
         )
-        self.assertEqual(title, 'FATAL ERROR %s 543 ANOTHER_CUSTOM_ERROR: do_crash_return_error_model(): Testing error model' % body['server']['api_name'])
+        self.assertEqual(title, 'FATAL ERROR %s 543 ANOTHER_CUSTOM_ERROR: klue_microservice.api.do_crash_return_error_model(): Testing error model' % body['server']['api_name'])
 
 
     def test_report_error_instance(self):
@@ -200,7 +200,7 @@ class Tests(utils.KlueMicroServiceTests):
             path='crash/returnerrorinstance',
             fatal=True,
         )
-        self.assertEqual(title, 'FATAL ERROR %s 543 FATAL_CUSTOM_ERROR: do_crash_return_error_instance(): endpoint returns an Error instance' % body['server']['api_name'])
+        self.assertEqual(title, 'FATAL ERROR %s 543 FATAL_CUSTOM_ERROR: klue_microservice.api.do_crash_return_error_instance(): endpoint returns an Error instance' % body['server']['api_name'])
 
 
     def test_report_slow_call(self):
@@ -211,7 +211,7 @@ class Tests(utils.KlueMicroServiceTests):
             path='crash/slowcall',
             fatal=False,
         )
-        self.assertEqual(title, 'NON-FATAL ERROR %s 200 : do_crash_slow_call() calltime exceeded 5 sec!' % body['server']['api_name'])
+        self.assertEqual(title, 'NON-FATAL ERROR %s 200 : klue_microservice.api.do_crash_slow_call() calltime exceeded 1000 millisec!' % body['server']['api_name'])
 
         self.assertEqual(body['response']['user_message'], '')
         self.assertEqual(body['response']['type'], 'Response')
@@ -224,4 +224,4 @@ class Tests(utils.KlueMicroServiceTests):
 
         self.assertEqual(body['request']['params'], '[]')
 
-        self.assertEqual(body['title'], 'do_crash_slow_call() calltime exceeded 5 sec!')
+        self.assertEqual(body['title'], 'klue_microservice.api.do_crash_slow_call() calltime exceeded 1000 millisec!')

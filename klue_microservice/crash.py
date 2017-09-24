@@ -77,11 +77,14 @@ def report_error(title=None, data={}, caught=None, is_fatal=False):
     reporting a glitch, but the api call did not fail)"""
 
     # Don't report errors if NO_ERROR_REPORTING set to 1 (set by run_acceptance_tests)
-    if not os.environ.get('DO_REPORT_ERROR', None) and os.environ.get('NO_ERROR_REPORTING', '') == '1':
+    if os.environ.get('DO_REPORT_ERROR', None):
+        # Force error reporting
+        pass
+    elif os.environ.get('NO_ERROR_REPORTING', '') == '1':
         log.info("NO_ERROR_REPORTING is set: not reporting error!")
         return
-
-    if data.get('is_ec2_instance', False) and data['is_ec2_instance']:
+    elif data.get('is_ec2_instance', False) and data['is_ec2_instance']:
+        # Running on amazon: allow reporting
         pass
     else:
         log.info("This is a test setup: not reporting error!")
