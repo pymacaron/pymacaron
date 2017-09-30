@@ -254,13 +254,17 @@ def my_crash_reporter(title, message):
     send_email(to='admin@mysite.com', subject=title, body=message)
     tell_slack(channel='crashes', msg="%s\n%s" % (title, message))
 
-api = API(
-    app,
-    port=port,
-    debug=debug,
-    error_reporter=my_crash_reporter,
-    ..
-)
+def start(port=80, debug=False):
+
+    api = API(
+        app,
+        port=port,
+        debug=debug,
+        error_reporter=my_crash_reporter,
+        ..
+    )
+
+letsgo(__name__, callback=start)
 ```
 
 
@@ -549,6 +553,34 @@ The crash report above will have an auto-generated title starting with the
 text 'NON-FATAL BACKEND ERROR', to differentiate from crash reports that resulted
 from an exception in the server, reported as 'FATAL BACKEND ERROR'.
 
+
+### Decorating errors with 'error_decorator'
+
+You can optionally intercept and manipulate all errors returned by a klue
+microservice by specifying an 'error_decorator' hook as follows:
+
+```python
+from klue_microservice import API, letsgo
+
+def my_error_decorator(error):
+    # Get errors in json format, and return the decorated error
+    # In this example: we set a generic 'user_message' that is more
+    # friendly that the error_description
+    error['user_message'] = 'Something went really wrong! Try again later'
+    return error
+
+def start(port=80, debug=False):
+
+    api = API(
+        app,
+        port=port,
+        debug=debug,
+        error_decorator=my_error_decorator,
+        ..
+    )
+
+letsgo(__name__, callback=start)
+```
 
 ### Automated reporting of slow calls
 

@@ -10,7 +10,7 @@ from flask_cors import CORS
 from klue.swagger.apipool import ApiPool
 from klue_microservice.log import set_level
 from klue_microservice.api import do_ping
-from klue_microservice.crash import set_error_reporter, crash_handler
+from klue_microservice.crash import set_error_reporter, get_crash_handler
 from klue_microservice.exceptions import format_error
 from klue_microservice.config import get_config
 
@@ -25,7 +25,7 @@ log = logging.getLogger(__name__)
 class API(object):
 
 
-    def __init__(self, app, host='localhost', port=80, debug=False, log_level=logging.DEBUG, formats=None, timeout=20, error_reporter=None, default_user_id=None, error_callback=format_error):
+    def __init__(self, app, host='localhost', port=80, debug=False, log_level=logging.DEBUG, formats=None, timeout=20, error_reporter=None, default_user_id=None, error_callback=format_error, error_decorator=None):
         """Take the flask app, and optionally the http port to listen on, and
         whether flask's debug mode is one or not, which callback to call when
         catching exceptions, and the api's log level"""
@@ -37,6 +37,7 @@ class API(object):
         self.formats = formats
         self.timeout = timeout
         self.error_callback = error_callback
+        self.error_decorator = error_decorator
 
         if default_user_id:
             self.default_user_id = default_user_id
@@ -254,7 +255,7 @@ class API(object):
             if api_name in serve:
                 log.info("Spawning api %s" % api_name)
                 api = getattr(ApiPool, api_name)
-                api.spawn_api(app, decorator=crash_handler)
+                api.spawn_api(app, decorator=get_crash_handler(self.error_decorator))
 
         if os.path.basename(sys.argv[0]) == 'gunicorn':
             # Gunicorn takes care of spawning workers

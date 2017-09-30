@@ -218,170 +218,180 @@ def populate_error_report(data):
         }
 
 
-def crash_handler(f):
-    """Return a decorator that reports failed api calls via the error_reporter,
-    for use on every server endpoint"""
+def get_crash_handler(error_decorator):
+    """Return the crash_handler to pass to klue-client-server, with optional error decoration"""
 
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        """Generate a report of this api call, and if the call failed or was too slow,
-        forward this report via the error_reporter"""
+    def crash_handler(f):
+        """Return a decorator that reports failed api calls via the error_reporter,
+        for use on every server endpoint"""
 
-        data = {}
-        t0 = timenow()
-        exception_string = ''
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            """Generate a report of this api call, and if the call failed or was too slow,
+            forward this report via the error_reporter"""
 
-        # Call endpoint and log execution time
-        try:
-            res = f(*args, **kwargs)
-        except Exception as e:
-            # An unhandled exception occured!
-            exception_string = str(e)
-            exc_type, exc_value, exc_traceback = sys.exc_info()
-            trace = traceback.format_exception(exc_type, exc_value, exc_traceback, 30)
-            data['trace'] = trace
+            data = {}
+            t0 = timenow()
+            exception_string = ''
 
-            # If it is a KlueMicroServiceException, just call its http_reply()
-            if hasattr(e, 'http_reply'):
-                res = e.http_reply()
-            else:
-                # Otherwise, forge a Response
-                e = UnhandledServerError(exception_string)
-                log.error("UNHANDLED EXCEPTION: %s" % '\n'.join(trace))
-                res = e.http_reply()
+            # Call endpoint and log execution time
+            try:
+                res = f(*args, **kwargs)
+            except Exception as e:
+                # An unhandled exception occured!
+                exception_string = str(e)
+                exc_type, exc_value, exc_traceback = sys.exc_info()
+                trace = traceback.format_exception(exc_type, exc_value, exc_traceback, 30)
+                data['trace'] = trace
 
-        t1 = timenow()
+                # If it is a KlueMicroServiceException, just call its http_reply()
+                if hasattr(e, 'http_reply'):
+                    res = e.http_reply()
+                else:
+                    # Otherwise, forge a Response
+                    e = UnhandledServerError(exception_string)
+                    log.error("UNHANDLED EXCEPTION: %s" % '\n'.join(trace))
+                    res = e.http_reply()
 
-        # Is the response an Error instance?
-        response_type = type(res).__name__
-        status_code = 200
-        is_an_error = 0
-        error = ''
-        error_description = ''
-        error_user_message = ''
+            t1 = timenow()
 
-        error_id = ''
+            # Is the response an Error instance?
+            response_type = type(res).__name__
+            status_code = 200
+            is_an_error = 0
+            error = ''
+            error_description = ''
+            error_user_message = ''
 
-        if isinstance(res, Response):
-            # Got a flask.Response object
-            res_data = None
+            error_id = ''
 
-            status_code = str(res.status_code)
+            if isinstance(res, Response):
+                # Got a flask.Response object
+                res_data = None
 
-            if str(status_code) == '200':
+                status_code = str(res.status_code)
 
-                # It could be any valid json response, but it could also be an Error model
-                # that klue-client-server handled as a status 200 because it does not know of
-                # klue-microservice Errors
-                if res.content_type == 'application/json':
-                    s = str(res.data)
-                    if '"error":' in s and '"error_description":' in s and '"status":' in s:
-                        # This looks like an error, let's decode it
-                        res_data = res.get_data()
-            else:
-                # Assuming it is a KlueMicroServiceException.http_reply()
-                res_data = res.get_data()
+                if str(status_code) == '200':
 
-            if res_data:
-                if type(res_data) is bytes:
-                    res_data = res_data.decode("utf-8")
+                    # It could be any valid json response, but it could also be an Error model
+                    # that klue-client-server handled as a status 200 because it does not know of
+                    # klue-microservice Errors
+                    if res.content_type == 'application/json':
+                        s = str(res.data)
+                        if '"error":' in s and '"error_description":' in s and '"status":' in s:
+                            # This looks like an error, let's decode it
+                            res_data = res.get_data()
+                else:
+                    # Assuming it is a KlueMicroServiceException.http_reply()
+                    res_data = res.get_data()
 
-                is_json = True
-                try:
-                    j = json.loads(res_data)
-                except ValueError as e:
-                    # This was a plain html response. Fake an error
-                    is_json = False
-                    j = {'error': res_data, 'status': status_code}
+                if res_data:
+                    if type(res_data) is bytes:
+                        res_data = res_data.decode("utf-8")
 
-                # Make sure that the response gets the same status as the Klue Error it contained
-                status_code = j['status']
-                res.status_code = int(status_code)
+                    is_json = True
+                    try:
+                        j = json.loads(res_data)
+                    except ValueError as e:
+                        # This was a plain html response. Fake an error
+                        is_json = False
+                        j = {'error': res_data, 'status': status_code}
 
-                error = j.get('error', 'NO_ERROR_IN_JSON')
-                error_description = j.get('error_description', res_data)
-                if error_description == '':
-                    error_description = res_data
+                    # Make sure that the response gets the same status as the Klue Error it contained
+                    status_code = j['status']
+                    res.status_code = int(status_code)
 
-                if not exception_string:
-                    exception_string = error_description
+                    error = j.get('error', 'NO_ERROR_IN_JSON')
+                    error_description = j.get('error_description', res_data)
+                    if error_description == '':
+                        error_description = res_data
 
-                error_user_message = j.get('user_message', '')
-                is_an_error = 1
+                    if not exception_string:
+                        exception_string = error_description
 
-                # Patch Response to contain a unique id
-                if is_json and 'error_id' not in j:
-                    # If the error is forwarded by multiple micro-services, we
-                    # want the error_id to be set only on the original error
-                    error_id = str(uuid.uuid4())
-                    j['error_id'] = error_id
-                    res.set_data(json.dumps(j))
+                    error_user_message = j.get('user_message', '')
+                    is_an_error = 1
 
-        request_args = []
-        if len(args):
-            request_args.append(args)
-        if kwargs:
-            request_args.append(kwargs)
+                    # Patch Response to contain a unique id
+                    if is_json:
+                        if 'error_id' not in j:
+                            # If the error is forwarded by multiple micro-services, we
+                            # want the error_id to be set only on the original error
+                            error_id = str(uuid.uuid4())
+                            j['error_id'] = error_id
+                            res.set_data(json.dumps(j))
 
-        data.update({
-            # Set only on the original error, not on forwarded ones, not on
-            # success responses
-            'error_id': error_id,
+                        if error_decorator:
+                            # Apply error_decorator, if any defined
+                            res.set_data(json.dumps(error_decorator(j)))
 
-            # Call results
-            'time': {
-                'start': t0.isoformat(),
-                'end': t1.isoformat(),
-                'microsecs': (t1.timestamp() - t0.timestamp()) * 1000000,
-            },
+            request_args = []
+            if len(args):
+                request_args.append(args)
+            if kwargs:
+                request_args.append(kwargs)
 
-            # Response details
-            'response': {
-                'type': response_type,
-                'status': str(status_code),
-                'is_error': is_an_error,
-                'error_code': error,
-                'error_description': error_description,
-                'user_message': error_user_message,
-            },
+            data.update({
+                # Set only on the original error, not on forwarded ones, not on
+                # success responses
+                'error_id': error_id,
 
-            # Request details
-            'request': {
-                'params': pformat(request_args),
-            },
-        })
+                # Call results
+                'time': {
+                    'start': t0.isoformat(),
+                    'end': t1.isoformat(),
+                    'microsecs': (t1.timestamp() - t0.timestamp()) * 1000000,
+                },
 
-        populate_error_report(data)
-        log.info("Analytics: " + pformat(data))
+                # Response details
+                'response': {
+                    'type': response_type,
+                    'status': str(status_code),
+                    'is_error': is_an_error,
+                    'error_code': error,
+                    'error_description': error_description,
+                    'user_message': error_user_message,
+                },
 
-        # inspect may raise a UnicodeDecodeError...
-        fname = function_name(f)
+                # Request details
+                'request': {
+                    'params': pformat(request_args),
+                },
+            })
 
-        #
-        # Should we report this call?
-        #
+            populate_error_report(data)
+            log.info("Analytics: " + pformat(data))
 
-        # If it is an internal errors, report it
-        if data['response']['status'] and int(data['response']['status']) >= 500:
-            report_error(
-                title="%s(): %s" % (fname, exception_string),
-                data=data,
-                is_fatal=True
-            )
-        else:
-            # Looking this function's time-limit, else use default
-            global slow_calls
-            max_ms = get_config().report_call_exceeding_ms
-            if fname in slow_calls:
-                max_ms = slow_calls[fname]
-            log.info("Checking if call to %s exceeds %s msec" % (fname, max_ms))
-            if int(data['time']['microsecs']) > max_ms * 1000:
-                log.warn("SLOW CALL to %s: exceeded %s millisec"% (fname, max_ms))
+            # inspect may raise a UnicodeDecodeError...
+            fname = function_name(f)
+
+            #
+            # Should we report this call?
+            #
+
+            # If it is an internal errors, report it
+            if data['response']['status'] and int(data['response']['status']) >= 500:
                 report_error(
-                    title='%s() calltime exceeded %s millisec!' % (fname, max_ms),
-                    data=data
+                    title="%s(): %s" % (fname, exception_string),
+                    data=data,
+                    is_fatal=True
                 )
+            else:
+                # Looking this function's time-limit, else use default
+                global slow_calls
+                max_ms = get_config().report_call_exceeding_ms
+                if fname in slow_calls:
+                    max_ms = slow_calls[fname]
+                log.info("Checking if call to %s exceeds %s msec" % (fname, max_ms))
+                if int(data['time']['microsecs']) > max_ms * 1000:
+                    log.warn("SLOW CALL to %s: exceeded %s millisec"% (fname, max_ms))
+                    report_error(
+                        title='%s() calltime exceeded %s millisec!' % (fname, max_ms),
+                        data=data
+                    )
 
-        return res
+            return res
 
-    return wrapper
+        return wrapper
+
+    return crash_handler
