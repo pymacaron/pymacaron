@@ -301,17 +301,6 @@ def get_crash_handler(error_decorator):
                     status_code = j['status']
                     res.status_code = int(status_code)
 
-                    error = j.get('error', 'NO_ERROR_IN_JSON')
-                    error_description = j.get('error_description', res_data)
-                    if error_description == '':
-                        error_description = res_data
-
-                    if not exception_string:
-                        exception_string = error_description
-
-                    error_user_message = j.get('user_message', '')
-                    is_an_error = 1
-
                     # Patch Response to contain a unique id
                     if is_json:
                         if 'error_id' not in j:
@@ -324,6 +313,19 @@ def get_crash_handler(error_decorator):
                         if error_decorator:
                             # Apply error_decorator, if any defined
                             res.set_data(json.dumps(error_decorator(j)))
+
+                    # And extract data from this error
+                    error = j.get('error', 'NO_ERROR_IN_JSON')
+                    error_description = j.get('error_description', res_data)
+                    if error_description == '':
+                        error_description = res_data
+
+                    if not exception_string:
+                        exception_string = error_description
+
+                    error_user_message = j.get('user_message', '')
+                    is_an_error = 1
+
 
             request_args = []
             if len(args):
