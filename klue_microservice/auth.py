@@ -248,6 +248,8 @@ def get_user_token_data():
 
 def get_user_token():
     """Return the authenticated user's auth token"""
+    if not hasattr(stack.top, 'current_user'):
+        return ''
     current_user = stack.top.current_user
     return current_user.get('token', '')
 
