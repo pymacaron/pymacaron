@@ -24,7 +24,8 @@ import yaml
 @click.option('--include-links/--no-include-links', help="Which symlinks to include in the docker image", default=False)
 @click.option('--aws-hosts-min/--no-aws-hosts-min', help="Minimum size of autoscalling group (default: 1)", default=False)
 @click.option('--aws-hosts-max/--no-aws-hosts-max', help="Maximum size of autoscalling group (default: 4)", default=False)
-def main(name, env_jwt_secret, env_jwt_audience, live_host, env_secrets, git_root, docker_repo, docker_bucket, aws_user, aws_keypair, aws_instance_type, aws_cert_arn, include_links, aws_hosts_min, aws_hosts_max):
+@click.option('--with-async/--no-with-async', help="Use asynchronous task support based on celery/rabbitmq", default=False)
+def main(name, env_jwt_secret, env_jwt_audience, live_host, env_secrets, git_root, docker_repo, docker_bucket, aws_user, aws_keypair, aws_instance_type, aws_cert_arn, include_links, aws_hosts_min, aws_hosts_max, with_async):
     """Parse the klue config file (klue-config.yaml) in a shell script friendly
     way."""
 
@@ -63,6 +64,8 @@ def main(name, env_jwt_secret, env_jwt_audience, live_host, env_secrets, git_roo
         if 'include_links' in d:
             for s in d['include_links']:
                 print(s)
+    elif with_async:
+        print(d.get('with_async', False))
     elif docker_repo:
         print(d['docker_repo'])
     elif docker_bucket:
