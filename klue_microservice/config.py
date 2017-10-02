@@ -46,6 +46,8 @@ class KlueConfig(object):
         if not config_path:
             raise Exception("Failed to find klue-config.yaml!")
 
+        self.config_path = config_path
+
         log.info("Loading config file at %s" % config_path)
         all_keys = []
         config_dict = {}
