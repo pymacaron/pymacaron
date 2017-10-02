@@ -257,8 +257,14 @@ class API(object):
                 api = getattr(ApiPool, api_name)
                 api.spawn_api(app, decorator=get_crash_handler(self.error_decorator))
 
+        if 'celery' in sys.argv[0].lower():
+            # This code is loading in a celery server - Don't start the actual flask app.
+            log.info("Running in a Celery worker - Not starting the Flask app")
+            return
+
         if os.path.basename(sys.argv[0]) == 'gunicorn':
             # Gunicorn takes care of spawning workers
+            log.info("Running in Gunicorn - Not starting the Flask app")
             return
 
         # Debug mode is the default when not running via gunicorn
@@ -272,13 +278,24 @@ class API(object):
 def letsgo(name, callback=None):
     assert callback
 
+    with_async = False
+
     @click.command()
     @click.option('--port', help="Set server listening port (default: 80)", default=80)
     @click.option('--debug/--no-debug', default=True)
     def main(port, debug):
+
+        # Start celeryd and rabbitmq?
+        if with_async:
+            from klue_async import start_celery
+            start_celery(port, debug)
+
+        # Proceed to start the API server
         callback(port, debug)
 
     if name == "__main__":
+        if hasattr(get_config(), 'with_async') and get_config().with_async:
+            with_async = True
         main()
 
     if os.path.basename(sys.argv[0]) == 'gunicorn':
