@@ -10,7 +10,7 @@ from flask_cors import CORS
 from klue.swagger.apipool import ApiPool
 from klue_microservice.log import set_level
 from klue_microservice.api import do_ping
-from klue_microservice.crash import set_error_reporter, get_crash_handler
+from klue_microservice.crash import set_error_reporter, generate_crash_handler_decorator
 from klue_microservice.exceptions import format_error
 from klue_microservice.config import get_config
 
@@ -255,7 +255,9 @@ class API(object):
             if api_name in serve:
                 log.info("Spawning api %s" % api_name)
                 api = getattr(ApiPool, api_name)
-                api.spawn_api(app, decorator=get_crash_handler(self.error_decorator))
+                # Spawn api and wrap every endpoint in a crash handler that
+                # catches replies and reports errors
+                api.spawn_api(app, decorator=generate_crash_handler_decorator(self.error_decorator))
 
         if 'celery' in sys.argv[0].lower():
             # This code is loading in a celery server - Don't start the actual flask app.

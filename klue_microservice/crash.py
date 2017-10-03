@@ -218,7 +218,7 @@ def populate_error_report(data):
         }
 
 
-def get_crash_handler(error_decorator):
+def generate_crash_handler_decorator(error_decorator=None):
     """Return the crash_handler to pass to klue-client-server, with optional error decoration"""
 
     def crash_handler(f):
