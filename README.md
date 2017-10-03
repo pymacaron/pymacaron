@@ -455,6 +455,42 @@ $ curl -H "Authorization: Bearer eyJpc3M[...]y8kNg" http://127.0.0.1:8080/auth/v
 ## Recipes
 
 
+### Asynchronous task execution
+
+klue-microservice comes with built-in support for asynchronous method execution
+by way of Celery and rabbitmq. All you need to do is to add the 'with_async'
+key in 'klue-config.yaml':
+
+```yaml
+with_async: true
+```
+
+And decorate asynchronous methods as follows:
+
+```python
+from klue_async import asynctask
+from klue.swagger.apipool import ApiPool
+
+# Make send_email into an asynchronously executable method, called via celery
+@asynctask
+def send_email(title, body):
+    # Call 3-rd party emailing API pass
+    pass
+
+# API endpoint, defined in your swagger API spec
+def do_signup_user():
+    do_stuff()
+
+    # Schedule a task sending this email and go on, not waiting for the result
+    send_email.fire('Welcome!', 'You now have an account')
+
+    return ApiPool.myapi.model.Ok()
+```
+
+That's all. Read more about it on [klue-microservice-async's github
+page](https://github.com/erwan-lemonnier/klue-microservice-async).
+
+
 ### Defining new Errors
 
 You can define your own Exceptions extending 'KlueMicroServiceException' by
