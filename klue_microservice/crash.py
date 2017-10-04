@@ -397,3 +397,11 @@ def generate_crash_handler_decorator(error_decorator=None):
         return wrapper
 
     return crash_handler
+
+#
+# Generic crash-handler as a decorator
+#
+
+def crash_handler(f):
+    """Decorate method with klue-microservice's generic crash handler"""
+    return generate_crash_handler_decorator(None)(f)
