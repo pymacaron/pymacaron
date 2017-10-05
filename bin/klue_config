@@ -65,7 +65,7 @@ def main(name, env_jwt_secret, env_jwt_audience, live_host, env_secrets, git_roo
             for s in d['include_links']:
                 print(s)
     elif with_async:
-        print(d.get('with_async', False))
+        print(d.get('with_async', ''))
     elif docker_repo:
         print(d['docker_repo'])
     elif docker_bucket:
