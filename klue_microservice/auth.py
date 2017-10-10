@@ -201,7 +201,7 @@ def generate_token(user_id, expire_in=None, data={}, issuer=None, iat=None):
 
 
 @contextmanager
-def backend_token(issuer=None, user_id=None):
+def backend_token(issuer=None, user_id=None, data={}):
 
     if not issuer:
         issuer = get_config().jwt_issuer
@@ -221,7 +221,7 @@ def backend_token(issuer=None, user_id=None):
     else:
         cur_token = stack.top.current_user.get('token', '')
 
-    tmp_token = generate_token(user_id, issuer=issuer)
+    tmp_token = generate_token(user_id, issuer=issuer, data=data)
 
     log.debug("Temporarily using custom token for %s and issuer %s: %s" % (user_id, issuer, tmp_token))
     stack.top.current_user['token'] = tmp_token
