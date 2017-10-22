@@ -155,7 +155,7 @@ class API(object):
 
             def redirect_to_petstore(live_host, api_filename):
                 def f():
-                    url = 'http://petstore.swagger.io/?url=%s/doc/%s' % (live_host, api_filename)
+                    url = 'http://petstore.swagger.io/?url=%s/%s/%s' % (live_host, path, api_filename)
                     log.info("Redirecting to %s" % url)
                     return redirect(url, code=302)
                 return f
