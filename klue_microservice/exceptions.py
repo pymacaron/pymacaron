@@ -18,6 +18,10 @@ class KlueMicroServiceException(KlueException):
     user_message = None
     error_caught = None
 
+    def tell_user(self, msg):
+        self.user_message = msg
+        return self
+
     def caught(self, error):
         self.error_caught = error
         return self
