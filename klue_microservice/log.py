@@ -17,6 +17,7 @@ logging.getLogger('boto3').setLevel(logging.WARNING)
 logging.getLogger('botocore').setLevel(logging.WARNING)
 logging.getLogger('bravado_core.spec').setLevel(logging.INFO)
 logging.getLogger('swagger_spec_validator.ref_validators').setLevel(logging.INFO)
+logging.getLogger('celery').setLevel(logging.INFO)
 
 
 def get_logger():
