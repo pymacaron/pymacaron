@@ -9,7 +9,6 @@ from flask_compress import Compress
 from flask_cors import CORS
 from klue.swagger.apipool import ApiPool
 from klue_microservice.log import set_level
-from klue_microservice.api import do_ping
 from klue_microservice.crash import set_error_reporter, generate_crash_handler_decorator
 from klue_microservice.exceptions import format_error
 from klue_microservice.config import get_config
@@ -145,7 +144,7 @@ class API(object):
         live_host = "%s://%s" % (proto, get_config().live_host)
 
         # Allow cross-origin calls
-        cors = CORS(self.app, resources={r"/%s/*" % path: {"origins": "*"}})
+        CORS(self.app, resources={r"/%s/*" % path: {"origins": "*"}})
 
         # Add routes to serve api specs and redirect to petstore ui for each one
         for api_name, api_path in self.apis.items():
@@ -288,7 +287,7 @@ def letsgo(name, callback=None):
     @click.option('--debug/--no-debug', default=True)
     def main(port, debug):
 
-        # Start celeryd and rabbitmq?
+        # Start celeryd and redis?
         if with_async:
             from klue_async import start_celery
             start_celery(port, debug)
