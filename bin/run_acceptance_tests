@@ -47,7 +47,7 @@ parse_args() {
             "--port")         shift; TARGET_PORT=$1;;
             "--no-ssl-check") export NO_SSL_CHECK=1;;
             "-h" | "--help")  usage; exit 0;;
-            *)                RUNPATH=$1;;
+            *)                RUNPATH="$RUNPATH $1";;
         esac
         shift
     done
