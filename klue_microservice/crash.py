@@ -378,6 +378,9 @@ def generate_crash_handler_decorator(error_decorator=None):
                     data=data,
                     is_fatal=True
                 )
+            elif 'celery' in sys.argv[0].lower():
+                # This is an async task running in celery - Slow calls don't matter
+                pass
             else:
                 # Looking this function's time-limit, else use default
                 global slow_calls
