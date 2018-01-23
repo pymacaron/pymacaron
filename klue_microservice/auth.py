@@ -114,7 +114,7 @@ def load_auth_token(token, load=True):
 
     return payload
 
-def authenticate_http_request():
+def authenticate_http_request(token=None):
     """Validate auth0 tokens passed in the request's header, hence ensuring
     that the user is authenticated. Code copied from:
     https://github.com/auth0/auth0-python/tree/master/examples/flask-api
@@ -123,8 +123,10 @@ def authenticate_http_request():
     Otherwise, return the token's payload (Also stored in stack.top.current_user)
     """
 
-
-    auth = request.headers.get('Authorization', None)
+    if token:
+        auth = token
+    else:
+        auth = request.headers.get('Authorization', None)
 
     if not auth:
         auth = request.cookies.get('token', None)
