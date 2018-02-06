@@ -1,7 +1,23 @@
 # klue-microservice
 
-Easily create and deploy a Flask-based REST api running as a Docker container
-on amazon AWS Elastic Beanstalk.
+Create and deploy a Flask-based REST api running as a Docker container on
+amazon AWS Elastic Beanstalk, in 3 steps:
+
+* Write a swagger specification for your api
+* Tell which Python method to execute for every swagger endpoint
+* Implement the Python methods
+
+BOOM! Your are live on Amazon AWS!
+
+Klue Microservice abstracts away all the scaffholding of structuring your
+Python app, defining routes, serializing/deserializing between json, Python
+objects and databases, containerizing your app and deploying it on Amazon.
+
+What's left in your codebase is the only thing that matters: your business
+logic.
+
+
+## In more detail
 
 [klue-microservice](https://github.com/erwan-lemonnier/klue-microservice) uses
 [klue-client-server](https://github.com/erwan-lemonnier/klue-client-server) to
@@ -14,16 +30,16 @@ binding endpoints to Python methods.
 to easily deploy the micro service as a Docker container running inside Amazon
 Elastic Beanstalk.
 
-With [klue-microservice](https://github.com/erwan-lemonnier/klue-microservice),
-you get out-of-the-box:
+[klue-microservice](https://github.com/erwan-lemonnier/klue-microservice) gives
+you:
 
 * A best practice auto-scalling setup on Elastic Beanstalk
-* Error handling and reporting around your api endpoints
+* Error handling and reporting around your api endpoints (via slack or email)
 * Endpoint authentication based on JWT tokens
-* Python objects for all your api's json data, with silent
-marshalling/unmarshalling and validation
-
-Easy peasy now you happy!
+* Transparent mapping from json and DynamoDB to Python objects
+* Automated validation of API data and parameters
+* A structured way of blackbox testing your API, integrated in the deploy pipeline
+* A production-grade stack (docker/gunicorn/Flask)
 
 ## Example
 
@@ -32,14 +48,14 @@ See
 for an example of a minimal REST api implemented with klue-microservice, and
 ready to deploy on docker containers in Amazon EC2.
 
-## Installation
+## Your first server
+
+Install klue-microservice:
 
 ```
 pip install klue-microservice
 pip install klue-microservice-deploy
 ```
-
-## Synopsis
 
 A REST api microservice built with klue-microservice has a directory tree
 looking like this:
@@ -47,46 +63,55 @@ looking like this:
 ```
 .
 ├── apis                       # Here you put the swagger specifications both of the apis your
-│   └── myservice.yaml         # server is implementing, and of eventual other apis your server
-│   └── login.yaml             # is in its turn calling
-│   └── profile.yaml           # See klue-client-server for the supported yaml formats.
+│   └── myservice.yaml         # server is implementing, and optionally of 3rd-party apis used
+│   └── sendgrid.yaml          # by your server.
+│   └── auth0.yaml             # See klue-client-server for the supported yaml formats.
 |
-├── myservice                  # Here is the code implementing your server api's endpoints
-│   └── api.py
+├── myservice
+│   └── api.py                 # Implementation of your api's endpoints
 │
 ├── LICENSE                    # You should always have a licence :-)
 ├── README.rst                 # and a readme!
 |
-├── klue-config.yaml           # Config for klue-microservice and klue-microservice-deploy
+├── klue-config.yaml           # Settings for klue-microservice and klue-microservice-deploy
 |
 ├── server.py                  # Code to start your server, see below
 |
 └── test                       # Standard unitests, executed with nosetests
 |   └── test_pep8.py
 |
-└── testaccept                 # Acceptance tests against api endpoints:
-    ├── test_v1_user_login.py  # Those are black-box tests against a running server
+└── testaccept                 # Acceptance tests for your api:
+    ├── test_v1_user_login.py  # Black-box tests executed against a running server
     └── test_version.py
 
 ```
 
-And your server simply looks like:
+You start your server by doing:
+
+```bash
+python server.py --port 8080
+```
+
+And your 'server.py' looks like:
 
 ```python
 import os
 import sys
 import logging
 from flask import Flask
+from flask_cors import CORS
 from klue_microservice import API, letsgo
 
 
 log = logging.getLogger(__name__)
+
 
 # WARNING: you must declare the Flask app as shown below, keeping the variable
 # name 'app' and the file name 'server.py', since gunicorn is configured to
 # lookup the variable 'app' inside the code generated from 'server.py'.
 
 app = Flask(__name__)
+CORS(app)
 # Here you could add custom routes, etc.
 
 
@@ -113,8 +138,8 @@ def start(port=80, debug=False):
 
     api.load_apis(path_apis)
 
-    # Optinally, publish the apis' specifications under the /doc/<api-name>
-    # endpoints:
+    # Optionally, publish the apis' specifications under the /doc/<api-name>
+    # endpoints, so you may open them in Swagger-UI:
     # api.publish_apis()
 
     # Start the Flask app and serve all endpoints defined in
@@ -123,18 +148,13 @@ def start(port=80, debug=False):
     api.start(serve="myservice")
 
 
-# Let klue-microservice handle argument parsing and all the scaffholding
+# Entrypoint
 letsgo(__name__, callback=start)
 ```
 
-You start your server in a terminal like this:
 
-```bash
-cd projectroot
-python server.py --port 8080
-```
-
-You run acceptance tests against the above server like this:
+You run acceptance tests against the above server (started in a separate
+terminal) like this:
 
 ```bash
 cd projectroot
