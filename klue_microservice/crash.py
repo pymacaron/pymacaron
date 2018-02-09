@@ -83,11 +83,13 @@ def report_error(title=None, data={}, caught=None, is_fatal=False):
     elif os.environ.get('NO_ERROR_REPORTING', '') == '1':
         log.info("NO_ERROR_REPORTING is set: not reporting error!")
         return
-    elif data.get('is_ec2_instance', False) and data['is_ec2_instance']:
-        # Running on amazon: allow reporting
-        pass
-    else:
-        log.info("This is a test setup: not reporting error!")
+    elif 'is_ec2_instance' in data:
+        if not data['is_ec2_instance']:
+            # Not running on amazon: no reporting
+            log.info("DATA[is_ec2_instance] is False: not reporting error!")
+            return
+    elif not is_ec2_instance():
+        log.info("Not running on an EC2 instance: not reporting error!")
         return
 
     # Fill error report with tons of usefull data
