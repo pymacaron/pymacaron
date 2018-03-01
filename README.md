@@ -1,3 +1,5 @@
+![klue-microservice logo](https://github.com/erwan-lemonnier/klue-microservice/blob/master/logo/klue-microservice-logo-small.png)
+
 # klue-microservice
 
 Create and deploy a Flask-based REST api running as a Docker container on
