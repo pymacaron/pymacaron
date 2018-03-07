@@ -208,7 +208,11 @@ Authorization header of api requests:
 
 ```Authorization: Bearer {session token}```
 
-Your service may generate JWT tokens using the 'generate_token()' method from
+Alternatively, you may pass the session token as a cookie named 'token' and
+containing the string 'Bearer {session token}'.
+
+Your service should generate JWT tokens using the 'generate_token()' method
+from
 [klue-microservice.auth](https://github.com/erwan-lemonnier/klue-microservice/blob/master/klue_microservice/auth.py).
 
 The JWT issuer, audience and secret should be set via 'klue-config.yaml'
@@ -219,6 +223,7 @@ ID. You may set this user ID when generating tokens as an argument to
 'klue_microservice.auth.generate_token()', or let klue-microservice use the
 default user ID defined in
 'klue_microservice.config.get_config().default_user_id'.
+
 
 
 ### Error handling and reporting
