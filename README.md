@@ -52,13 +52,6 @@ ready to deploy on docker containers in Amazon EC2.
 
 ## Your first server
 
-Klue uses [redis](https://redis.io/topics/quickstart#installing-redis) to schedule asynchronous tasks,
-if you are on OSX, simply install it via homebrew -- ```brew install redis```, or follow the simple instructions
-on their quickstart for a custom installation.
-
-We also recommend using [pipenv](http://docs.python-guide.org/en/latest/dev/virtualenvs/) to install
-and manage pyhton dependencies.
-
 Install klue-microservice:
 
 ```
@@ -95,13 +88,13 @@ looking like this:
 
 ```
 
-You start your server by doing:
+You start your server by going into the project's root directory and doing:
 
 ```bash
 python server.py --port 8080
 ```
 
-And your 'server.py' looks like:
+Where 'server.py' typically looks like:
 
 ```python
 import os
@@ -177,6 +170,35 @@ deploy_pipeline --push --deploy
 ```
 
 
+## Bootstraping example
+
+Bootstrap your project by cloning [klue-microservice-helloworld](https://github.com/erwan-lemonnier/klue-microservice-helloworld).
+
+## Pluggable features
+
+[klue-microservice](https://github.com/erwan-lemonnier/klue-microservice) in
+itself lets you just define an API server and run it locally. You may use
+additional features by installing the following extra modules:
+
+### Asynchronous task execution
+
+Install [klue-microservice-async](https://github.com/erwan-lemonnier/klue-microservice-async) by
+following [these instructions](https://github.com/erwan-lemonnier/klue-microservice-async#setup).
+
+### Deploying as a container in Amazon Beanstalk
+
+Install [klue-microservice-deploy](https://github.com/erwan-lemonnier/klue-microservice-deploy) by
+following [these instructions](https://github.com/erwan-lemonnier/klue-microservice-deploy#setup).
+
+### Use Klue's own testing framework
+
+Convenient library for black-box testing your API endpoints:
+
+```bash
+pipenv install klue-unit
+```
+
+
 ## Deep dive
 
 ### Installing
@@ -184,13 +206,6 @@ deploy_pipeline --push --deploy
 ```
 pipenv install klue-microservice
 ```
-
-Optionally, to deploy to Amazon:
-
-```
-pipenv install klue-microservice-deploy
-```
-
 
 ### Swagger specifications
 
@@ -492,7 +507,7 @@ $ curl -H "Authorization: Bearer eyJpc3M[...]y8kNg" http://127.0.0.1:8080/auth/v
 ### Asynchronous task execution
 
 klue-microservice comes with built-in support for asynchronous method execution
-by way of Celery and rabbitmq. All you need to do is to add the 'with_async'
+by way of Celery and Redis. All you need to do is to add the 'with_async'
 key in 'klue-config.yaml':
 
 ```yaml
