@@ -192,11 +192,7 @@ following [these instructions](https://github.com/erwan-lemonnier/klue-microserv
 
 ### Use Klue's own testing framework
 
-Convenient library for black-box testing your API endpoints:
-
-```bash
-pipenv install klue-unit
-```
+A [convenient library](https://github.com/erwan-lemonnier/klue-unit) for black-box testing your API endpoints:
 
 
 ## Deep dive
