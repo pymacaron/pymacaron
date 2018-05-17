@@ -52,11 +52,18 @@ ready to deploy on docker containers in Amazon EC2.
 
 ## Your first server
 
+Klue uses [redis](https://redis.io/topics/quickstart#installing-redis) to schedule asynchronous tasks,
+if you are on OSX, simply install it via homebrew -- ```brew install redis```, or follow the simple instructions
+on their quickstart for a custom installation.
+
+We also recommend using [pipenv](http://docs.python-guide.org/en/latest/dev/virtualenvs/) to install
+and manage pyhton dependencies.
+
 Install klue-microservice:
 
 ```
-pip install klue-microservice
-pip install klue-microservice-deploy
+pipenv install klue-microservice
+pipenv install klue-microservice-deploy
 ```
 
 A REST api microservice built with klue-microservice has a directory tree
@@ -175,13 +182,13 @@ deploy_pipeline --push --deploy
 ### Installing
 
 ```
-pip install klue-microservice
+pipenv install klue-microservice
 ```
 
 Optionally, to deploy to Amazon:
 
 ```
-pip install klue-microservice-deploy
+pipenv install klue-microservice-deploy
 ```
 
 
