@@ -29,7 +29,8 @@ class KlueConfig(object):
             os.path.join(os.path.dirname(sys.argv[0]), 'klue-config.yaml'),
             '/klue/klue-config.yaml',
             os.path.join(os.path.dirname(sys.argv[0]), 'test/klue-config.yaml'),
-            os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'klue-config.yaml')
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'klue-config.yaml'),
+            os.path.join(os.getcwd(), 'klue-config.yaml')
         ]
 
         if path:
