@@ -1,13 +1,10 @@
 import os
-import sys
 import logging
-import json
 import imp
 import pprint
 import subprocess
-from time import sleep
-from klue_microservice.config import get_config
-from klue_microservice.auth import generate_token
+from pymacaron.config import get_config
+from pymacaron.auth import generate_token
 
 
 utils = imp.load_source('utils', os.path.join(os.path.dirname(__file__), 'utils.py'))
@@ -16,7 +13,7 @@ utils = imp.load_source('utils', os.path.join(os.path.dirname(__file__), 'utils.
 log = logging.getLogger(__name__)
 
 
-class Tests(utils.KlueMicroServiceTests):
+class Tests(utils.PyMacaronTests):
 
     def setUp(self):
         super().setUp()
@@ -36,8 +33,8 @@ class Tests(utils.KlueMicroServiceTests):
         root_dir = subprocess.Popen(["git", "rev-parse", "--show-toplevel"], stdout=subprocess.PIPE).stdout.read()
         root_dir = root_dir.decode("utf-8").strip()
 
-        # Load klue-config.yaml
-        path = os.path.join(root_dir, 'test/klue-config.yaml')
+        # Load pym-config.yaml
+        path = os.path.join(root_dir, 'test/pym-config.yaml')
         get_config(path)
         log.debug("Config is:\n%s" % pprint.pformat(vars(get_config()), indent=4))
 

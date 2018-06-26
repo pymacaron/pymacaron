@@ -1,8 +1,8 @@
-# This is a swagger description of the Klue MicroService default API
+# This is a swagger description of the PyMacaron default API
 
 swagger: '2.0'
 info:
-  title: Tthe Klue MicroService default API
+  title: Tthe PyMacaron default API
   version: "0.0.1"
   description: |
     Implement the /ping and /version endpoints common to all services.
@@ -27,7 +27,7 @@ paths:
         - Ping
       produces:
         - application/json
-      x-bind-server: klue_microservice.api.do_ping
+      x-bind-server: pymacaron.api.do_ping
       responses:
         '200':
           description: Ok.
@@ -48,7 +48,7 @@ paths:
         - Version
       produces:
         - application/json
-      x-bind-server: klue_microservice.api.do_version
+      x-bind-server: pymacaron.api.do_version
       responses:
         '200':
           description: API version
@@ -69,8 +69,8 @@ paths:
         - Version
       produces:
         - application/json
-      x-bind-server: klue_microservice.api.do_version
-      x-decorate-server: klue_microservice.auth.requires_auth
+      x-bind-server: pymacaron.api.do_version
+      x-decorate-server: pymacaron.auth.requires_auth
       responses:
         '200':
           description: API version
@@ -102,7 +102,7 @@ definitions:
         description: Version of the docker contained running the api
     example:
       version: 1.0.34
-      name: klue
+      name: macaron
       container: master-20160215-1903-42-e469af
     required:
       - version

@@ -22,7 +22,7 @@ if [ "$GIT_DIFF_REMOTE" -ne 0 ]; then
 fi
 
 GIT_COUNT=$(git rev-list HEAD --count)
-VERSION="0.0.$GIT_COUNT"
+VERSION="1.0.$GIT_COUNT"
 echo "=> VERSION=$VERSION"
 
 echo "=> Running nosetests"
@@ -32,5 +32,4 @@ echo "=> Build+Upload dist"
 python setup.py sdist upload -r pypi --version $VERSION
 
 echo "=> Tell slack"
-tell_slack "Released version $VERSION of klue-client-server"
-
+tell_slack "Released version $VERSION of pymacaron"

@@ -1,21 +1,20 @@
 import logging
 import pprint
-from flask import make_response
 from time import sleep
-from klue.swagger.apipool import ApiPool
-from klue_microservice.utils import get_container_version
-from klue_microservice.crash import report_error
-from klue_microservice.exceptions import KlueMicroServiceException
+from pymacaron_core.swagger.apipool import ApiPool
+from pymacaron.utils import get_container_version
+from pymacaron.crash import report_error
+from pymacaron.exceptions import PyMacaronException
 
 
 log = logging.getLogger(__name__)
 
 
-class MyFatalCustomError(KlueMicroServiceException):
+class MyFatalCustomError(PyMacaronException):
     code = 'FATAL_CUSTOM_ERROR'
     status = 543
 
-class MyNonFatalCustomError(KlueMicroServiceException):
+class MyNonFatalCustomError(PyMacaronException):
     code = 'NON_FATAL_CUSTOM_ERROR'
     status = 401
 
@@ -38,7 +37,7 @@ def do_version():
 def do_crash_internal_exception():
     raise Exception("Raising an internal exception")
 
-def do_crash_klue_exception():
+def do_crash_pymacaron_exception():
     raise MyNonFatalCustomError("Raising a non-fatal custom error")
 
 def do_crash_report_error():

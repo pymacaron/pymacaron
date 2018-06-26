@@ -1,8 +1,8 @@
-# This is a swagger description of the Klue MicroService crash API
+# This is a swagger description of the PyMacaron crash API
 
 swagger: '2.0'
 info:
-  title: The Klue MicroService crash API
+  title: The PyMacaron crash API
   version: "0.0.1"
   description: |
 
@@ -31,7 +31,7 @@ paths:
         - Crash
       produces:
         - application/json
-      x-bind-server: klue_microservice.api.do_crash_internal_exception
+      x-bind-server: pymacaron.api.do_crash_internal_exception
       responses:
         '200':
           description: Ok.
@@ -43,19 +43,19 @@ paths:
             $ref: '#/definitions/Error'
 
 
-  /crash/klueexception:
+  /crash/pymacaronexception:
     get:
-      summary: Raise a KlueMicroService exception.
+      summary: Raise a PyMacaron exception.
       description: |
 
-        Raise a KlueMicroService exception, that the crash handler will pass
+        Raise a PyMacaron exception, that the crash handler will pass
         through as a response and report if status >= 500.
 
       tags:
         - Crash
       produces:
         - application/json
-      x-bind-server: klue_microservice.api.do_crash_klue_exception
+      x-bind-server: pymacaron.api.do_crash_pymacaron_exception
       responses:
         '200':
           description: Ok.
@@ -78,7 +78,7 @@ paths:
         - Crash
       produces:
         - application/json
-      x-bind-server: klue_microservice.api.do_crash_report_error
+      x-bind-server: pymacaron.api.do_crash_report_error
       responses:
         '200':
           description: Ok.
@@ -102,7 +102,7 @@ paths:
         - Crash
       produces:
         - application/json
-      x-bind-server: klue_microservice.api.do_crash_slow_call
+      x-bind-server: pymacaron.api.do_crash_slow_call
       responses:
         '200':
           description: Ok.
@@ -124,7 +124,7 @@ paths:
         - Crash
       produces:
         - application/json
-      x-bind-server: klue_microservice.api.do_crash_return_error_instance
+      x-bind-server: pymacaron.api.do_crash_return_error_instance
       responses:
         '200':
           description: Ok.
@@ -147,7 +147,7 @@ paths:
         - Crash
       produces:
         - application/json
-      x-bind-server: klue_microservice.api.do_crash_return_fatal_error_response
+      x-bind-server: pymacaron.api.do_crash_return_fatal_error_response
       responses:
         '200':
           description: Ok.
@@ -170,7 +170,7 @@ paths:
         - Crash
       produces:
         - application/json
-      x-bind-server: klue_microservice.api.do_crash_return_non_fatal_error_response
+      x-bind-server: pymacaron.api.do_crash_return_non_fatal_error_response
       responses:
         '200':
           description: Ok.
@@ -193,7 +193,7 @@ paths:
         - Crash
       produces:
         - application/json
-      x-bind-server: klue_microservice.api.do_crash_return_error_model
+      x-bind-server: pymacaron.api.do_crash_return_error_model
       responses:
         '200':
           description: Ok.

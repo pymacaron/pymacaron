@@ -5,14 +5,13 @@ import os
 import inspect
 import sys
 import traceback
-import inspect
 from functools import wraps
 from pprint import pformat
 from flask import request, Response
-from klue.swagger.apipool import ApiPool
-from klue_microservice.config import get_config
-from klue_microservice.utils import timenow, is_ec2_instance
-from klue_microservice.exceptions import UnhandledServerError
+from pymacaron_core.swagger.apipool import ApiPool
+from pymacaron.config import get_config
+from pymacaron.utils import timenow, is_ec2_instance
+from pymacaron.exceptions import UnhandledServerError
 
 
 log = logging.getLogger(__name__)
@@ -108,7 +107,7 @@ def report_error(title=None, data={}, caught=None, is_fatal=False):
     data['stack'] = []
     try:
         data['stack'] = [l for l in traceback.format_stack()]
-    except Exception as ee:
+    except Exception:
         data['stack'] = 'Skipped trace - contained non-ascii chars'
 
     # inspect may raise a UnicodeDecodeError...
@@ -150,7 +149,7 @@ def report_error(title=None, data={}, caught=None, is_fatal=False):
 def populate_error_report(data):
     """Add generic stats to the error report"""
 
-    # Did klue-client-server set a call_id and call_path?
+    # Did pymacaron_core set a call_id and call_path?
     call_id, call_path = '', ''
     if hasattr(stack.top, 'call_id'):
         call_id = stack.top.call_id
@@ -158,7 +157,7 @@ def populate_error_report(data):
         call_path = stack.top.call_path
 
     # Unique ID associated to all responses associated to a given
-    # call to klue-api, across all micro-services
+    # call to apis, across all micro-services
     data['call_id'] = call_id
     data['call_path'] = call_path
 
@@ -221,7 +220,7 @@ def populate_error_report(data):
 
 
 def generate_crash_handler_decorator(error_decorator=None):
-    """Return the crash_handler to pass to klue-client-server, with optional error decoration"""
+    """Return the crash_handler to pass to pymacaron_core, with optional error decoration"""
 
     def crash_handler(f):
         """Return a decorator that reports failed api calls via the error_reporter,
@@ -246,7 +245,7 @@ def generate_crash_handler_decorator(error_decorator=None):
                 trace = traceback.format_exception(exc_type, exc_value, exc_traceback, 30)
                 data['trace'] = trace
 
-                # If it is a KlueMicroServiceException, just call its http_reply()
+                # If it is a PyMacaronException, just call its http_reply()
                 if hasattr(e, 'http_reply'):
                     res = e.http_reply()
                 else:
@@ -276,15 +275,15 @@ def generate_crash_handler_decorator(error_decorator=None):
                 if str(status_code) == '200':
 
                     # It could be any valid json response, but it could also be an Error model
-                    # that klue-client-server handled as a status 200 because it does not know of
-                    # klue-microservice Errors
+                    # that pymacaron_core handled as a status 200 because it does not know of
+                    # pymacaron Errors
                     if res.content_type == 'application/json':
                         s = str(res.data)
                         if '"error":' in s and '"error_description":' in s and '"status":' in s:
                             # This looks like an error, let's decode it
                             res_data = res.get_data()
                 else:
-                    # Assuming it is a KlueMicroServiceException.http_reply()
+                    # Assuming it is a PyMacaronException.http_reply()
                     res_data = res.get_data()
 
                 if res_data:
@@ -299,7 +298,7 @@ def generate_crash_handler_decorator(error_decorator=None):
                         is_json = False
                         j = {'error': res_data, 'status': status_code}
 
-                    # Make sure that the response gets the same status as the Klue Error it contained
+                    # Make sure that the response gets the same status as the PyMacaron Error it contained
                     status_code = j['status']
                     res.status_code = int(status_code)
 
@@ -408,5 +407,5 @@ def generate_crash_handler_decorator(error_decorator=None):
 #
 
 def crash_handler(f):
-    """Decorate method with klue-microservice's generic crash handler"""
+    """Decorate method with pymacaron's generic crash handler"""
     return generate_crash_handler_decorator(None)(f)

@@ -1,9 +1,7 @@
 import os
-import sys
 import logging
 import json
 import imp
-from time import sleep
 
 
 utils = imp.load_source('utils', os.path.join(os.path.dirname(__file__), 'utils.py'))
@@ -12,7 +10,7 @@ utils = imp.load_source('utils', os.path.join(os.path.dirname(__file__), 'utils.
 log = logging.getLogger(__name__)
 
 
-tmpdir = '/tmp/test-klue-microservice'
+tmpdir = '/tmp/test-pym-microservice'
 reportpath = os.path.join(tmpdir, "error_report.json")
 try:
     os.stat(tmpdir)
@@ -20,7 +18,7 @@ except:
     os.mkdir(tmpdir)
 
 
-class Tests(utils.KlueMicroServiceTests):
+class Tests(utils.PyMacaronTests):
 
 
     def assertNoErrorReport(self):
@@ -41,7 +39,8 @@ class Tests(utils.KlueMicroServiceTests):
     def assertBaseReportOk(self, path=None, user_id=None):
         title, body = self.load_report()
         self.assertTrue(title)
-        self.assertTrue('/home/erwan/pnt/klue-microservice/test/testserver.py' in body['stack'][0])
+        # Urg. This is doomed to break for everyone else than me on my computer...
+        self.assertTrue('/home/erwan/pnt/pymacaron/test/testserver.py' in body['stack'][0])
         self.assertTrue('call_id' in body)
         self.assertEqual(body['call_path'], 'crash')
         self.assertEqual(body['is_ec2_instance'], False)
@@ -111,7 +110,7 @@ class Tests(utils.KlueMicroServiceTests):
         title, body = self.assertServerErrorReportOk(
             path='crash/internalexception',
         )
-        self.assertEqual(title, 'FATAL ERROR %s 500 UNHANDLED_SERVER_ERROR: klue_microservice.api.do_crash_internal_exception(): Raising an internal exception' % body['server']['api_name'])
+        self.assertEqual(title, 'FATAL ERROR %s 500 UNHANDLED_SERVER_ERROR: pymacaron.api.do_crash_internal_exception(): Raising an internal exception' % body['server']['api_name'])
 
         self.assertEqual(body['response']['user_message'], '')
         self.assertEqual(body['response']['type'], 'Response')
@@ -125,9 +124,9 @@ class Tests(utils.KlueMicroServiceTests):
         self.assertEqual(body['request']['params'], '[]')
 
 
-    def test_klue_exception(self):
-        j = self.assertGetReturnError(
-            'crash/klueexception',
+    def test_pymacaron_exception(self):
+        self.assertGetReturnError(
+            'crash/pymacaronexception',
             401,
             'NON_FATAL_CUSTOM_ERROR'
         )
@@ -135,7 +134,7 @@ class Tests(utils.KlueMicroServiceTests):
 
 
     def test_report_error(self):
-        j = self.assertGetReturnOk(
+        self.assertGetReturnOk(
             'crash/reporterror'
         )
         title, body = self.assertBaseReportOk(
@@ -153,7 +152,7 @@ class Tests(utils.KlueMicroServiceTests):
 
 
     def test_report_fatal_error_response(self):
-        j = self.assertGetReturnError(
+        self.assertGetReturnError(
             'crash/returnfatalerrorresponse',
             543,
             'FATAL_CUSTOM_ERROR'
@@ -162,11 +161,11 @@ class Tests(utils.KlueMicroServiceTests):
             path='crash/returnfatalerrorresponse',
             fatal=True,
         )
-        self.assertEqual(title, 'FATAL ERROR %s 543 FATAL_CUSTOM_ERROR: klue_microservice.api.do_crash_return_fatal_error_response(): endpoint returns an Error response' % body['server']['api_name'])
+        self.assertEqual(title, 'FATAL ERROR %s 543 FATAL_CUSTOM_ERROR: pymacaron.api.do_crash_return_fatal_error_response(): endpoint returns an Error response' % body['server']['api_name'])
 
 
     def test_report_non_fatal_error_response(self):
-        j = self.assertGetReturnError(
+        self.assertGetReturnError(
             'crash/returnnonfatalerrorresponse',
             401,
             'NON_FATAL_CUSTOM_ERROR'
@@ -187,11 +186,11 @@ class Tests(utils.KlueMicroServiceTests):
             path='crash/returnerrormodel',
             fatal=True,
         )
-        self.assertEqual(title, 'FATAL ERROR %s 543 ANOTHER_CUSTOM_ERROR: klue_microservice.api.do_crash_return_error_model(): Testing error model' % body['server']['api_name'])
+        self.assertEqual(title, 'FATAL ERROR %s 543 ANOTHER_CUSTOM_ERROR: pymacaron.api.do_crash_return_error_model(): Testing error model' % body['server']['api_name'])
 
 
     def test_report_error_instance(self):
-        j = self.assertGetReturnError(
+        self.assertGetReturnError(
             'crash/returnerrorinstance',
             543,
             'FATAL_CUSTOM_ERROR'
@@ -200,18 +199,18 @@ class Tests(utils.KlueMicroServiceTests):
             path='crash/returnerrorinstance',
             fatal=True,
         )
-        self.assertEqual(title, 'FATAL ERROR %s 543 FATAL_CUSTOM_ERROR: klue_microservice.api.do_crash_return_error_instance(): endpoint returns an Error instance' % body['server']['api_name'])
+        self.assertEqual(title, 'FATAL ERROR %s 543 FATAL_CUSTOM_ERROR: pymacaron.api.do_crash_return_error_instance(): endpoint returns an Error instance' % body['server']['api_name'])
 
 
     def test_report_slow_call(self):
-        j = self.assertGetReturnOk(
+        self.assertGetReturnOk(
             'crash/slowcall'
         )
         title, body = self.assertServerErrorReportOk(
             path='crash/slowcall',
             fatal=False,
         )
-        self.assertEqual(title, 'NON-FATAL ERROR %s 200 : klue_microservice.api.do_crash_slow_call() calltime exceeded 1000 millisec!' % body['server']['api_name'])
+        self.assertEqual(title, 'NON-FATAL ERROR %s 200 : pymacaron.api.do_crash_slow_call() calltime exceeded 1000 millisec!' % body['server']['api_name'])
 
         self.assertEqual(body['response']['user_message'], '')
         self.assertEqual(body['response']['type'], 'Response')
@@ -224,4 +223,4 @@ class Tests(utils.KlueMicroServiceTests):
 
         self.assertEqual(body['request']['params'], '[]')
 
-        self.assertEqual(body['title'], 'klue_microservice.api.do_crash_slow_call() calltime exceeded 1000 millisec!')
+        self.assertEqual(body['title'], 'pymacaron.api.do_crash_slow_call() calltime exceeded 1000 millisec!')

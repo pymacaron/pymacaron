@@ -1,17 +1,15 @@
 import os
-import sys
 import logging
-import json
 import subprocess
 import psutil
 from time import sleep
-from klue_microservice.test import KlueMicroServiceTestCase
+from pymacaron.test import PyMacaronTestCase
 
 
 log = logging.getLogger(__name__)
 
 
-tmpdir = '/tmp/test-klue-microservice'
+tmpdir = '/tmp/test-pym-microservice'
 reportpath = os.path.join(tmpdir, "error_report.json")
 try:
     os.stat(tmpdir)
@@ -19,7 +17,7 @@ except:
     os.mkdir(tmpdir)
 
 
-class KlueMicroServiceTests(KlueMicroServiceTestCase):
+class PyMacaronTests(PyMacaronTestCase):
 
     def setUp(self):
         super().setUp()
@@ -40,7 +38,7 @@ class KlueMicroServiceTests(KlueMicroServiceTestCase):
 
         try:
             p = psutil.Process(self.pid)
-        except psutil.NoSuchProcess as e:
+        except psutil.NoSuchProcess:
             assert 0, "Failed to start testserver"
 
 

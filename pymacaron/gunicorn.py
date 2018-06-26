@@ -1,4 +1,3 @@
-import os
 import sys
 import multiprocessing
 
@@ -9,7 +8,7 @@ sys.path.append('.')
 #
 # Run with:
 #
-# gunicorn --bind 127.0.0.1:8080 --config python:klue_microservice.gunicorn server:app
+# gunicorn --bind 127.0.0.1:8080 --config python:pymacaron.gunicorn server:app
 
 bind = '127.0.0.1:8080'
 backlog = 2048

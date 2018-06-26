@@ -6,15 +6,15 @@ import logging
 import click
 import subprocess
 import yaml
-from klue_microservice.auth import generate_token
-from klue_microservice.config import get_config
+from pymacaron.auth import generate_token
+from pymacaron.config import get_config
 
 # What is the repo's root directory?
 root_dir = subprocess.Popen(["git", "rev-parse", "--show-toplevel"], stdout=subprocess.PIPE).stdout.read()
 root_dir = root_dir.decode("utf-8").strip()
 
-# Load klue-config.yaml
-path = os.path.join(root_dir, 'klue-config.yaml')
+# Load pym-config.yaml
+path = os.path.join(root_dir, 'pym-config.yaml')
 
 conf = get_config(path)
 

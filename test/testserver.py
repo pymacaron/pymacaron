@@ -8,7 +8,7 @@ from flask import Flask
 
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 
-from klue_microservice import API, letsgo
+from pymacaron import API, letsgo
 
 
 log = logging.getLogger(__name__)
@@ -19,7 +19,7 @@ app = Flask(__name__)
 
 def test_crash_reporter(msg, body):
 
-    tmpdir = '/tmp/test-klue-microservice'
+    tmpdir = '/tmp/test-pym-microservice'
     try:
         os.stat(tmpdir)
     except:

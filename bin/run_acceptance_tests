@@ -27,7 +27,7 @@ OPTIONS:
   --image <image-id>  ID of a docker image to start and test against.
   --live              Run tests against the server pointed at by 'eb status'.
   --host <dns>        Run tests against a specific IP address or hostname.
-  --local             Run tests against server specified in KLUE_SERVER_(HOST|PORT)
+  --local             Run tests against server specified in PYM_SERVER_(HOST|PORT)
   --loop              Run the tests in a loop, until failure
   --no-ssl-check      Don't check SSL certificate
 
@@ -56,14 +56,14 @@ parse_args() {
 parse_args $ARGS
 
 # Force re-generation of recent auth token
-unset KLUE_JWT_TOKEN
+unset PYM_JWT_TOKEN
 
 set_runpath() {
     if [ -z "$RUNPATH" ]; then
         RUNPATH="testaccept/"
         HERE=$PWD
         # Let's append all symlinked dirs's testaccept/ to RUNPATH
-        for DIR in $(klue_config --include-links)
+        for DIR in $(pym_config --include-links)
         do
             cd $DIR
             ROOTDIR=$(git rev-parse --show-toplevel)
@@ -90,18 +90,18 @@ fi
 if [ ! -z "$LIVE" ]; then
     echo "=> Finding out CNAME of current Elastic Beanstalk environment"
 
-    KLUE_SERVER_HOST=$(klue_config --live-host)
-    HAS_CERT=$(klue_config --aws-cert-arn)
+    PYM_SERVER_HOST=$(pym_config --live-host)
+    HAS_CERT=$(pym_config --aws-cert-arn)
     if [ -z "$HAS_CERT" ]; then
-        KLUE_SERVER_PORT=80
+        PYM_SERVER_PORT=80
     else
-        KLUE_SERVER_PORT=443
+        PYM_SERVER_PORT=443
     fi
 
     set_runpath
 
 elif [ ! -z "$LOCAL" ]; then
-    echo "=> Running against $KLUE_SERVER_HOST:$KLUE_SERVER_PORT"
+    echo "=> Running against $PYM_SERVER_HOST:$PYM_SERVER_PORT"
 
     set_runpath
 
@@ -109,8 +109,8 @@ elif [ ! -z "$LOCAL" ]; then
 
 elif [ ! -z "$TARGET_HOST" ]; then
     echo "=> Running against $TARGET_HOST:$TARGET_PORT"
-    KLUE_SERVER_HOST=$TARGET_HOST
-    KLUE_SERVER_PORT=$TARGET_PORT
+    PYM_SERVER_HOST=$TARGET_HOST
+    PYM_SERVER_PORT=$TARGET_PORT
 
     set_runpath
 
@@ -121,7 +121,7 @@ elif [ ! -z "$IMAGE_ID" ]; then
     # Start the container, passing all secrets as environment variables,
     # just like in the amazon EBS setup
     CMD="docker run"
-    for VAR in $(klue_config --env-secrets)
+    for VAR in $(pym_config --env-secrets)
     do
         echo "=> Passing env variable $VAR"
         VALUE=$(env | grep "^$VAR=" | cut -d '=' -f 2)
@@ -148,35 +148,35 @@ elif [ ! -z "$IMAGE_ID" ]; then
     CONTAINER_ID=$(docker ps | grep $IMAGE_ID | awk '{ print $1 }')
 
     if [ "$OS" == 'Darwin' ]; then
-        KLUE_SERVER_HOST=$(docker-machine ip default)
+        PYM_SERVER_HOST=$(docker-machine ip default)
 
         # Make sure docker-machine's vm has a working dns resolver
         docker-machine ssh default "echo 'nameserver 8.8.8.8' > /etc/resolv.conf"
 
-        KLUE_SERVER_PORT=$(docker port $CONTAINER_ID | cut -d ':' -f 2)
+        PYM_SERVER_PORT=$(docker port $CONTAINER_ID | cut -d ':' -f 2)
     else
-        KLUE_SERVER_HOST=$(docker inspect --format '{{ .NetworkSettings.IPAddress }}' ${CONTAINER_ID})
-        KLUE_SERVER_PORT=80
+        PYM_SERVER_HOST=$(docker inspect --format '{{ .NetworkSettings.IPAddress }}' ${CONTAINER_ID})
+        PYM_SERVER_PORT=80
     fi
 
-    if [ -z "$KLUE_SERVER_PORT" ]; then
+    if [ -z "$PYM_SERVER_PORT" ]; then
         echo "ERROR: cannot find port exposed by container."
         echo "       did the container crash?"
         exit 1
     fi
 fi
 
-if [ -z "$KLUE_JWT_TOKEN" ]; then
+if [ -z "$PYM_JWT_TOKEN" ]; then
     echo "=> Getting an access token for the test user"
-    export KLUE_JWT_TOKEN=$(get_test_jwt_token | grep 'token:' | cut -d ':' -f 2)
-    echo "=> Using token: $KLUE_JWT_TOKEN"
+    export PYM_JWT_TOKEN=$(get_test_jwt_token | grep 'token:' | cut -d ':' -f 2)
+    echo "=> Using token: $PYM_JWT_TOKEN"
 
-    if [ -z "$KLUE_JWT_TOKEN" ]; then
+    if [ -z "$PYM_JWT_TOKEN" ]; then
         echo "ERROR: failed to get an auth token for test user"
     fi
 fi
 
-echo "=> Running acceptance tests against $KLUE_SERVER_HOST:$KLUE_SERVER_PORT"
+echo "=> Running acceptance tests against $PYM_SERVER_HOST:$PYM_SERVER_PORT"
 RC=0
 if [ -z "$LOOP" ]; then
     nosetests -xv $RUNPATH || RC=$?

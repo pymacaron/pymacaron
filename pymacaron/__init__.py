@@ -7,11 +7,11 @@ from uuid import uuid4
 from flask import Response, redirect
 from flask_compress import Compress
 from flask_cors import CORS
-from klue.swagger.apipool import ApiPool
-from klue_microservice.log import set_level
-from klue_microservice.crash import set_error_reporter, generate_crash_handler_decorator
-from klue_microservice.exceptions import format_error
-from klue_microservice.config import get_config
+from pymacaron_core.swagger.apipool import ApiPool
+from pymacaron.log import set_level
+from pymacaron.crash import set_error_reporter, generate_crash_handler_decorator
+from pymacaron.exceptions import format_error
+from pymacaron.config import get_config
 
 
 log = logging.getLogger(__name__)
@@ -90,8 +90,8 @@ class API(object):
         if type(ignore) is not list:
             raise Exception("'ignore' should be a list of api names")
 
-        # Always ignore klue-config.yaml
-        ignore.append('klue-config')
+        # Always ignore pym-config.yaml
+        ignore.append('pym-config')
 
         # Find all swagger apis under 'path'
         apis = {}
@@ -109,9 +109,9 @@ class API(object):
                     apis[api_name] = os.path.join(path, f)
                     log.debug("Found api %s in %s" % (api_name, f))
 
-        # And add klue-microservice's default ping and crash apis
+        # And add pymacaron's default ping and crash apis
         for name in ['ping', 'crash']:
-            yaml_path = pkg_resources.resource_filename(__name__, 'klue_microservice/%s.yaml' % name)
+            yaml_path = pkg_resources.resource_filename(__name__, 'pymacaron/%s.yaml' % name)
             if not os.path.isfile(yaml_path):
                 yaml_path = os.path.join(os.path.dirname(sys.modules[__name__].__file__), '%s.yaml' % name)
             apis[name] = yaml_path
@@ -136,7 +136,7 @@ class API(object):
         if not self.apis:
             raise Exception("You must call .load_apis() before .publish_apis()")
 
-        # Infer the live host url from klue-config.yaml
+        # Infer the live host url from pym-config.yaml
         proto = 'http'
         if hasattr(get_config(), 'aws_cert_arn'):
             proto = 'https'
@@ -289,7 +289,7 @@ def letsgo(name, callback=None):
 
         # Start celeryd and redis?
         if with_async:
-            from klue_async import start_celery
+            from pymacaron_async import start_celery
             start_celery(port, debug)
 
         # Proceed to start the API server

@@ -1,5 +1,7 @@
+pymacaron_core
+pymacaron_unit
 dist/
-klue_microservice.egg-info/
+pymacaron.egg-info/
 **/__pycache__
 *.tar
 **/*.pyc

@@ -1,20 +1,20 @@
 import os
-from klue_unit.testcase import KlueTestCase
+from pymacaron_unit import testcase
 
 
 def load_port_host_token():
     """Find out which host:port to run acceptance tests against,
-    using the environment variables KLUE_SERVER_HOST, KLUE_SERVER_PORT
+    using the environment variables PYM_SERVER_HOST, PYM_SERVER_PORT
     """
 
     server_host, server_port, token = (None, None, None)
 
-    if 'KLUE_SERVER_HOST' in os.environ:
-        server_host = os.environ['KLUE_SERVER_HOST']
-    if 'KLUE_SERVER_PORT' in os.environ:
-        server_port = os.environ['KLUE_SERVER_PORT']
+    if 'PYM_SERVER_HOST' in os.environ:
+        server_host = os.environ['PYM_SERVER_HOST']
+    if 'PYM_SERVER_PORT' in os.environ:
+        server_port = os.environ['PYM_SERVER_PORT']
 
-    token = os.environ.get('KLUE_JWT_TOKEN', None)
+    token = os.environ.get('PYM_JWT_TOKEN', None)
 
     if server_host:
         if server_host.startswith('http://'):
@@ -25,12 +25,12 @@ def load_port_host_token():
             server_host = server_host[:-1]
 
     if not server_host or not server_port:
-        raise Exception("Please set both of KLUE_SERVER_HOST and KLUE_SERVER_PORT envvironment variables")
+        raise Exception("Please set both of PYM_SERVER_HOST and PYM_SERVER_PORT envvironment variables")
 
     return (server_host, server_port, token)
 
 
-class KlueMicroServiceTestCase(KlueTestCase):
+class PyMacaronTestCase(testcase.PyMacaronTestCase):
 
     token = None
 

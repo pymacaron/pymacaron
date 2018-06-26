@@ -26,7 +26,7 @@ import yaml
 @click.option('--aws-hosts-max/--no-aws-hosts-max', help="Maximum size of autoscalling group (default: 4)", default=False)
 @click.option('--with-async/--no-with-async', help="Use asynchronous task support based on celery/rabbitmq", default=False)
 def main(name, env_jwt_secret, env_jwt_audience, live_host, env_secrets, git_root, docker_repo, docker_bucket, aws_user, aws_keypair, aws_instance_type, aws_cert_arn, include_links, aws_hosts_min, aws_hosts_max, with_async):
-    """Parse the klue config file (klue-config.yaml) in a shell script friendly
+    """Parse the pym config file (pym-config.yaml) in a shell script friendly
     way."""
 
     # What is the repo's root directory?
@@ -37,8 +37,8 @@ def main(name, env_jwt_secret, env_jwt_audience, live_host, env_secrets, git_roo
         print(root_dir)
         sys.exit(0)
 
-    # Load klue-config.yaml
-    path = os.path.join(root_dir, 'klue-config.yaml')
+    # Load pym-config.yaml
+    path = os.path.join(root_dir, 'pym-config.yaml')
 
     if not os.path.isfile(path):
         print("ERROR: cannot find config file %s" % path)

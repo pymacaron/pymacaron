@@ -1,15 +1,13 @@
-import pprint
 import jwt
-import base64
 import logging
 from urllib.parse import unquote_plus
 from contextlib import contextmanager
 from functools import wraps
 from flask import request
-from klue_microservice.exceptions import AuthInvalidTokenError, AuthTokenExpiredError
-from klue_microservice.exceptions import AuthMissingHeaderError, KlueMicroServiceException
-from klue_microservice.utils import timenow, to_epoch
-from klue_microservice.config import get_config
+from pymacaron.exceptions import AuthInvalidTokenError, AuthTokenExpiredError
+from pymacaron.exceptions import AuthMissingHeaderError, PyMacaronException
+from pymacaron.utils import timenow, to_epoch
+from pymacaron.config import get_config
 
 try:
     from flask import _app_ctx_stack as stack
@@ -35,7 +33,7 @@ def requires_auth(f):
 
         try:
             authenticate_http_request()
-        except KlueMicroServiceException as e:
+        except PyMacaronException as e:
             return e.http_reply()
 
         return f(*args, **kwargs)
@@ -64,9 +62,9 @@ def load_auth_token(token, load=True):
     """Validate an auth0 token. Returns the token's payload, or an exception
     of the type:"""
 
-    assert get_config().jwt_secret, "No JWT secret configured for klue-microservice"
-    assert get_config().jwt_issuer, "No JWT issuer configured for klue-microservice"
-    assert get_config().jwt_audience, "No JWT audience configured for klue-microservice"
+    assert get_config().jwt_secret, "No JWT secret configured for pymacaron"
+    assert get_config().jwt_issuer, "No JWT issuer configured for pymacaron"
+    assert get_config().jwt_audience, "No JWT audience configured for pymacaron"
 
     log.info("Validating token, using issuer:%s, audience:%s, secret:%s***" % (
         get_config().jwt_issuer,
@@ -74,7 +72,7 @@ def load_auth_token(token, load=True):
         get_config().jwt_secret[1:8],
     ))
 
-    # First extract the issuer (default to 'klue')
+    # First extract the issuer
     issuer = get_config().jwt_issuer
     try:
         headers = jwt.get_unverified_header(token)
@@ -160,12 +158,12 @@ def generate_token(user_id, expire_in=None, data={}, issuer=None, iat=None):
     is 1 year from creation time"""
     assert user_id, "No user_id passed to generate_token()"
     assert isinstance(data, dict), "generate_token(data=) should be a dictionary"
-    assert get_config().jwt_secret, "No JWT secret configured in klue-microservice"
+    assert get_config().jwt_secret, "No JWT secret configured in pymacaron"
 
     if not issuer:
         issuer = get_config().jwt_issuer
 
-    assert issuer, "No JWT issuer configured for klue-microservice"
+    assert issuer, "No JWT issuer configured for pymacaron"
 
     if expire_in is None:
         expire_in = get_config().jwt_token_timeout
@@ -210,7 +208,7 @@ def backend_token(issuer=None, user_id=None, data={}):
     if not user_id:
         user_id = get_config().default_user_id
 
-    assert issuer, "No JWT issuer configured for klue-microservice"
+    assert issuer, "No JWT issuer configured for pymacaron"
     assert user_id, "No user_id passed to generate_token()"
 
     cur_token = ''

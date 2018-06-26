@@ -1,17 +1,14 @@
 import logging
-import json
-import os
-import traceback
 from pprint import pformat
-from flask import jsonify, Response, request
-from klue.exceptions import ValidationError, KlueException
-from klue.swagger.apipool import ApiPool
+from flask import jsonify
+from pymacaron_core.exceptions import ValidationError, PyMacaronCoreException
+from pymacaron_core.swagger.apipool import ApiPool
 
 
 log = logging.getLogger(__name__)
 
 
-class KlueMicroServiceException(KlueException):
+class PyMacaronException(PyMacaronCoreException):
     code = 'UNKNOWN_EXCEPTION'
     status = 500
     error_id = None
@@ -76,7 +73,7 @@ def add_error(name=None, code=None, status=None):
     """Create a new Exception class"""
     if not name or not status or not code:
         raise Exception("Can't create Exception class %s: you must set both name, status and code" % name)
-    myexception = type(name, (KlueMicroServiceException, ), {"code": code, "status": status})
+    myexception = type(name, (PyMacaronException, ), {"code": code, "status": status})
     globals()[name] = myexception
     if code in code_to_class:
         raise Exception("ERROR! Exception %s is already defined." % code)
@@ -104,10 +101,10 @@ def responsify(error):
         if error.user_message:
             e.user_message = error.user_message
         return e.http_reply()
-    elif isinstance(error, KlueMicroServiceException):
+    elif isinstance(error, PyMacaronException):
         return error.http_reply()
     else:
-        return KlueMicroServiceException("Caught un-mapped error: %s" % error).http_reply()
+        return PyMacaronException("Caught un-mapped error: %s" % error).http_reply()
 
 
 def is_error(o):
@@ -119,16 +116,17 @@ def is_error(o):
 
 
 def format_error(e):
-    """Take an exception caught within klue-client-server and turn it into a
-    bravado-core Error instance"""
+    """Take an exception caught within pymacaron_core and turn it into a
+    bravado-core Error instance
+    """
 
-    if isinstance(e, KlueMicroServiceException):
+    if isinstance(e, PyMacaronException):
         return e.to_model()
 
-    if isinstance(e, KlueException) and e.__class__.__name__ == 'ValidationError':
+    if isinstance(e, PyMacaronCoreException) and e.__class__.__name__ == 'ValidationError':
         return ValidationError(str(e)).to_model()
 
-    # Turn this exception into a Klue Error model
+    # Turn this exception into a PyMacaron Error model
     return UnhandledServerError(str(e)).to_model()
 
 
