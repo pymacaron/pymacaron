@@ -1,6 +1,10 @@
-![klue-microservice logo](https://github.com/erwan-lemonnier/klue-microservice/blob/master/logo/klue-microservice-logo-small.png)
+![pymacaron logo](https://github.com/pymacaron/pymacaron/blob/master/logo/pymacaron-logo-small.png)
 
-# klue-microservice
+# PyMacaron
+
+Python microservice framework based on Flask, OpenAPI, docker and AWS/beanstalk.
+
+## In short
 
 Create and deploy a Flask-based REST api running as a Docker container on
 amazon AWS Elastic Beanstalk, in 3 steps:
@@ -11,9 +15,9 @@ amazon AWS Elastic Beanstalk, in 3 steps:
 
 BOOM! Your are live on Amazon AWS!
 
-Klue Microservice abstracts away all the scaffholding of structuring your
-Python app, defining routes, serializing/deserializing between json, Python
-objects and databases, containerizing your app and deploying it on Amazon.
+PyMacaron abstracts away all the scaffholding of structuring your Python app,
+defining routes, serializing/deserializing between json, Python objects and
+databases, containerizing your app and deploying it on Amazon.
 
 What's left in your codebase is the only thing that matters: your business
 logic.
@@ -21,18 +25,18 @@ logic.
 
 ## In more detail
 
-[klue-microservice](https://github.com/erwan-lemonnier/klue-microservice) uses
-[klue-client-server](https://github.com/erwan-lemonnier/klue-client-server) to
+[pymacaron](https://github.com/pymacaron/pymacaron) uses
+[pymacaron-core](https://github.com/pymacaron/pymacaron-core) to
 spawn REST apis into a Flask app. These apis are defined as swagger
 specifications, describing all API endpoints in a friendly yaml format, and
 binding endpoints to Python methods.
 
-[klue-microservice](https://github.com/erwan-lemonnier/klue-microservice) uses
-[klue-microservice-deploy](https://github.com/erwan-lemonnier/klue-microservice-deploy)
+[pymacaron](https://github.com/pymacaron/pymacaron) uses
+[pymacaron-aws](https://github.com/pymacaron/pymacaron-aws)
 to easily deploy the micro service as a Docker container running inside Amazon
 Elastic Beanstalk.
 
-[klue-microservice](https://github.com/erwan-lemonnier/klue-microservice) gives
+[pymacaron](https://github.com/pymacaron/pymacaron) gives
 you:
 
 * A best practice auto-scalling setup on Elastic Beanstalk
@@ -46,20 +50,20 @@ you:
 ## Example
 
 See
-[klue-microservice-helloworld](https://github.com/erwan-lemonnier/klue-microservice-helloworld)
-for an example of a minimal REST api implemented with klue-microservice, and
+[pymacaron-helloworld](https://github.com/pymacaron/pymacaron-helloworld)
+for an example of a minimal REST api implemented with pymacaron, and
 ready to deploy on docker containers in Amazon EC2.
 
 ## Your first server
 
-Install klue-microservice:
+Install pymacaron:
 
 ```
-pipenv install klue-microservice
-pipenv install klue-microservice-deploy
+pipenv install pymacaron
+pipenv install pymacaron-aws
 ```
 
-A REST api microservice built with klue-microservice has a directory tree
+A REST api microservice built with pymacaron has a directory tree
 looking like this:
 
 ```
@@ -67,7 +71,7 @@ looking like this:
 ├── apis                       # Here you put the swagger specifications both of the apis your
 │   └── myservice.yaml         # server is implementing, and optionally of 3rd-party apis used
 │   └── sendgrid.yaml          # by your server.
-│   └── auth0.yaml             # See klue-client-server for the supported yaml formats.
+│   └── auth0.yaml             # See pymacaron-core for the supported yaml formats.
 |
 ├── myservice
 │   └── api.py                 # Implementation of your api's endpoints
@@ -75,7 +79,7 @@ looking like this:
 ├── LICENSE                    # You should always have a licence :-)
 ├── README.rst                 # and a readme!
 |
-├── klue-config.yaml           # Settings for klue-microservice and klue-microservice-deploy
+├── pym-config.yaml           # Settings for pymacaron and pymacaron-aws
 |
 ├── server.py                  # Code to start your server, see below
 |
@@ -102,7 +106,7 @@ import sys
 import logging
 from flask import Flask
 from flask_cors import CORS
-from klue_microservice import API, letsgo
+from pymacaron import API, letsgo
 
 
 log = logging.getLogger(__name__)
@@ -125,10 +129,10 @@ def start(port=80, debug=False):
     here = os.path.dirname(os.path.realpath(__file__))
     path_apis = os.path.join(here, "apis")
 
-    # Tell klue-microservice to spawn apis inside this Flask app.  Set the
+    # Tell pymacaron to spawn apis inside this Flask app.  Set the
     # server's listening port, whether Flask debug mode is on or not. Other
     # configuration parameters, such as JWT issuer, audience and secret, are
-    # fetched from 'klue-config.yaml' or the environment variables it refers to.
+    # fetched from 'pym-config.yaml' or the environment variables it refers to.
 
     api = API(
         app,
@@ -136,7 +140,7 @@ def start(port=80, debug=False):
         debug=debug,
     )
 
-    # Find all swagger files and load them into klue-client-server
+    # Find all swagger files and load them into pymacaron-core
 
     api.load_apis(path_apis)
 
@@ -172,27 +176,27 @@ deploy_pipeline --push --deploy
 
 ## Bootstraping example
 
-Bootstrap your project by cloning [klue-microservice-helloworld](https://github.com/erwan-lemonnier/klue-microservice-helloworld).
+Bootstrap your project by cloning [pymacaron-helloworld](https://github.com/pymacaron/pymacaron-helloworld).
 
 ## Pluggable features
 
-[klue-microservice](https://github.com/erwan-lemonnier/klue-microservice) in
+[pymacaron](https://github.com/pymacaron/pymacaron) in
 itself lets you just define an API server and run it locally. You may use
 additional features by installing the following extra modules:
 
 ### Asynchronous task execution
 
-Install [klue-microservice-async](https://github.com/erwan-lemonnier/klue-microservice-async) by
-following [these instructions](https://github.com/erwan-lemonnier/klue-microservice-async#setup).
+Install [pymacaron-async](https://github.com/pymacaron/pymacaron-async) by
+following [these instructions](https://github.com/pymacaron/pymacaron-async#setup).
 
 ### Deploying as a container in Amazon Beanstalk
 
-Install [klue-microservice-deploy](https://github.com/erwan-lemonnier/klue-microservice-deploy) by
-following [these instructions](https://github.com/erwan-lemonnier/klue-microservice-deploy#setup).
+Install [pymacaron-aws](https://github.com/pymacaron/pymacaron-aws) by
+following [these instructions](https://github.com/pymacaron/pymacaron-aws#setup).
 
-### Use Klue's own testing framework
+### Use PyMacaron's own testing framework
 
-A [convenient library](https://github.com/erwan-lemonnier/klue-unit) for black-box testing your API endpoints:
+A [convenient library](https://github.com/pymacaron/pymacaron-unit) for black-box testing your API endpoints:
 
 
 ## Deep dive
@@ -200,16 +204,15 @@ A [convenient library](https://github.com/erwan-lemonnier/klue-unit) for black-b
 ### Installing
 
 ```
-pipenv install klue-microservice
+pipenv install pymacaron
 ```
 
 ### Swagger specifications
 
 All api endpoints that your service needs, both those it implements and those
 it calls as a client, are to be defined as swagger specifications in the format
-supported by
-[klue-client-server](https://github.com/erwan-lemonnier/klue-client-server).
-klue-client-server uses [Bravado](https://github.com/Yelp/bravado) to handle
+supported by [pymacaron-core](https://github.com/pymacaron/pymacaron-core).
+pymacaron-core uses [Bravado](https://github.com/Yelp/bravado) to handle
 marshalling/unmarshalling and validation of your api objects to and from json,
 and does all the magic of spawning client and server stubs for all api
 endpoints, catching errors, and providing optional database serialization for
@@ -218,7 +221,7 @@ your api objects.
 
 ### JWT authentication
 
-klue-microservice allows you to add JWT token authentication around api
+pymacaron allows you to add JWT token authentication around api
 endpoints.
 
 Authentication is achieved by passing a JWT session token in the HTTP
@@ -231,22 +234,21 @@ containing the string 'Bearer {session token}'.
 
 Your service should generate JWT tokens using the 'generate_token()' method
 from
-[klue-microservice.auth](https://github.com/erwan-lemonnier/klue-microservice/blob/master/klue_microservice/auth.py).
+[pymacaron.auth](https://github.com/pymacaron/pymacaron/blob/master/pymacaron/auth.py).
 
-The JWT issuer, audience and secret should be set via 'klue-config.yaml'
+The JWT issuer, audience and secret should be set via 'pym-config.yaml'
 (details further down). By default, tokens are valid for 24 hours.
 
-JWT tokens issued by klue-microservice always have a 'sub' field set to a user
-ID. You may set this user ID when generating tokens as an argument to
-'klue_microservice.auth.generate_token()', or let klue-microservice use the
-default user ID defined in
-'klue_microservice.config.get_config().default_user_id'.
+JWT tokens issued by pymacaron always have a 'sub' field set to a user ID. You
+may set this user ID when generating tokens as an argument to
+'pymacaron.auth.generate_token()', or let pymacaron use the default user ID
+defined in 'pymacaron.config.get_config().default_user_id'.
 
 
 
 ### Error handling and reporting
 
-If an endpoint raises an exception, it will be caught by klue-microservice and returned
+If an endpoint raises an exception, it will be caught by pymacaron and returned
 to the caller in the form of an Error json object looking like:
 
 ```json
@@ -259,13 +261,13 @@ to the caller in the form of an Error json object looking like:
 ```
 
 You can create your own errors by subclassing the class
-[KlueMicroServiceException](https://github.com/erwan-lemonnier/klue-microservice/blob/master/klue_microservice/exceptions.py)
+[PyMacaronException](https://github.com/pymacaron/pymacaron/blob/master/pymacaron/exceptions.py)
 and return them as json Error replies at any time as follows:
 
 ```python
-from klue_microservice.exceptions import KlueMicroServiceException
+from pymacaron.exceptions import PyMacaronException
 
-class InvalidUserError(KlueMicroServiceException):
+class InvalidUserError(PyMacaronException):
     code = 'INVALID_USER'        # Sets the value of the 'error' field in the error json object
     status = 401                 # The HTTP reply status, and 'status' field of the error json object
 
@@ -276,18 +278,18 @@ def do_login(userdata):
 
 When an exception occurs in your endpoint, you have the choice of:
 
-* If it is a fatal exception, raise a KlueMicroServiceException to the caller as shown above.
+* If it is a fatal exception, raise a PyMacaronException to the caller as shown above.
 
 * If it is a non-fatal error, you can just ignore it, or you can send back a
 crash report to the service's admins by calling the 'report_error()' method
 from
-[klue-microservice.crash](https://github.com/erwan-lemonnier/klue-microservice/blob/master/klue_microservice/crash.py).
+[pymacaron.crash](https://github.com/pymacaron/pymacaron/blob/master/pymacaron/crash.py).
 
-You tell klue-microservice what to do with crash reports by providing the
-'klue-microservice.API' constructor with an 'error_reporter' callback:
+You tell pymacaron what to do with crash reports by providing the
+'pymacaron.API' constructor with an 'error_reporter' callback:
 
 ```python
-from klue_microservice import API, letsgo
+from pymacaron import API, letsgo
 
 def my_crash_reporter(title, message):
 
@@ -315,15 +317,15 @@ letsgo(__name__, callback=start)
 
 ### Testing strategy
 
-klue microservices are developed around two sets of tests:
+PyMacaron microservices are developed around two sets of tests:
 
 * Standard Python unitests that should be located under 'test/' and will be
 executed via nosetests at the start of the deployment pipeline.
 
 * Blackbox acceptance tests that target the api endpoints, and are executed via
 the tool
-[run_acceptance_tests](https://github.com/erwan-lemonnier/klue-microservice/blob/master/bin/run_acceptance_tests)
-that comes packaged with klue-microservice. Those acceptance tests should be
+[run_acceptance_tests](https://github.com/pymacaron/pymacaron/blob/master/bin/run_acceptance_tests)
+that comes packaged with pymacaron. Those acceptance tests should be
 located under the 'testaccept' directory, and it is recommended to name them
 after the endpoint they target. So one test file per tested API
 endpoint. Acceptance tests are designed to be executed against a running
@@ -331,56 +333,55 @@ instance of the API server, be it a server you are running locally in a
 separate terminal, a docker container, or a live instance in Elastic Beanstalk.
 Those tests should therefore treat the API as a blackbox and focus solely on
 making API calls and testing the results. API calls should be made using test
-methods from [klue-unit](https://github.com/erwan-lemonnier/klue-unit). See
-[klue-microservice-helloworld](https://github.com/erwan-lemonnier/klue-microservice-helloworld/blob/master/testaccept/test_version.py)
+methods from [pymacaron-unit](https://github.com/pymacaron/pymacaron-unit). See
+[pymacaron-helloworld](https://github.com/pymacaron/pymacaron-helloworld/blob/master/testaccept/test_version.py)
 for an example of acceptance tests.
 
 
 ### Deployment pipeline
 
-Klue microservices come with a ready-to-use deployment pipeline that packages
+PyMacaron microservices come with a ready-to-use deployment pipeline that packages
 the service as a docker image and deploys it on Amazon Elastic Beanstalk with
 little configuration required.
 
 For details, see
-[klue-microservice-deploy](https://github.com/erwan-lemonnier/klue-microservice-deploy).
+[pymacaron-aws](https://github.com/pymacaron/pymacaron-aws).
 
 
 ### Elastic Beanstalk configuration
 
-The Klue microservice toolchain is built to deploy services as Docker images
-running inside Amazon EC2 instances in Elastic Beanstalk, behind an Elastic
-Load Balancer. All the details of setting up those Amazon services is handled
-by
-[klue-microservice-deploy](https://github.com/erwan-lemonnier/klue-microservice-deploy)
-and should be left untouched. A few parameters can be adjusted, though. They
-are described in the 'klue-config.yaml' section below.
+The PyMacaron microservice toolchain is built to deploy services as Docker
+images running inside Amazon EC2 instances in Elastic Beanstalk, behind an
+Elastic Load Balancer. All the details of setting up those Amazon services is
+handled by [pymacaron-aws](https://github.com/pymacaron/pymacaron-aws) and
+should be left untouched. A few parameters can be adjusted, though. They are
+described in the 'pym-config.yaml' section below.
 
 
-### klue-config.yaml - A global configuration object
+### pym-config.yaml - A global configuration object
 
-The file 'klue-config.yaml' is the one place to find all configurable variables
-used by Klue microservices.
+The file 'pym-config.yaml' is the one place to find all configurable variables
+used by PyMacaron microservices.
 
-The content of 'klue-config.yaml' is automatically loaded into a singleton
+The content of 'pym-config.yaml' is automatically loaded into a singleton
 object, accessible at any time by calling:
 
 ```python
-from klue-microservice.config import get_config
+from pymacaron.config import get_config
 
-# You can access all key-values defined in klue-config.yaml:
+# You can access all key-values defined in pym-config.yaml:
 
 print get_config().live_host
 
 # And you can defined additional values of your own, though it is recommended
-# to add all static values directly in klue-config.yaml to avoid race
+# to add all static values directly in pym-config.yaml to avoid race
 # conditions at import time
 
 get_config().my_api_key = 'aeouaeouaeouaeouaeou'
 get_config().my_api_secret = '2348172438172364'
 ```
 
-As described below, one attribute of 'klue-config.yaml' that klue-microservice
+As described below, one attribute of 'pym-config.yaml' that pymacaron
 supports is 'env_secrets': its value should be a list of environment variables
 that will be automatically imported into Elastic Beanstalk and loaded at
 runtime into the server's Docker container. This is the recommended way of
@@ -389,7 +390,7 @@ passing secrets into EC2 instances without commiting them inside your code.
 All config attributes whose value matches one of the names listed in
 'env_secrets' will automatically have the content of the corresponding
 environment variable substituted to their value. This is very convenient when
-putting secrets in 'klue-config.yaml', as shown below:
+putting secrets in 'pym-config.yaml', as shown below:
 
 ```yaml
 # So, assuming you have set the environment variable MY_AWS_SECRET,
@@ -406,10 +407,10 @@ env_secrets:
 # the value of the environment variable MY_AWS_SECRET
 ```
 
-### klue-config.yaml - Expected key-values
+### pym-config.yaml - Expected key-values
 
-klue-microservice expects the following attributes to be set in
-'klue-config.yaml':
+pymacaron expects the following attributes to be set in
+'pym-config.yaml':
 
 * 'name' (MANDATORY): a short name for this project, also used when naming
   elastic beanstalk environments.
@@ -433,7 +434,7 @@ klue-microservice expects the following attributes to be set in
 
 The following variables are needed if you want to deploy to Elastic Beanstalk
 using
-[klue-microservice-deploy](https://github.com/erwan-lemonnier/klue-microservice-deploy):
+[pymacaron-aws](https://github.com/pymacaron/pymacaron-aws):
 
 * 'aws_user' (MANDATORY): name of the IAM user to use when creating the
   Beanstalk environment.
@@ -456,14 +457,14 @@ using
   the service's Amazon configuration.
 
 [Here is an
-example](https://github.com/erwan-lemonnier/klue-microservice-helloworld/blob/master/klue-config.yaml)
-of 'klue-config.yaml'.
+example](https://github.com/pymacaron/pymacaron-helloworld/blob/master/pym-config.yaml)
+of 'pym-config.yaml'.
 
 
 ### Built-in endpoints
 
-The following endpoints are built-in into every klue-microservice instance, based
-on [this swagger spec](https://github.com/erwan-lemonnier/klue-microservice/blob/master/klue_microservice/ping.yaml):
+The following endpoints are built-in into every pymacaron instance, based
+on [this swagger spec](https://github.com/pymacaron/pymacaron/blob/master/pymacaron/ping.yaml):
 
 ```
 # Assuming you did in a separate terminal:
@@ -502,9 +503,9 @@ $ curl -H "Authorization: Bearer eyJpc3M[...]y8kNg" http://127.0.0.1:8080/auth/v
 
 ### Asynchronous task execution
 
-klue-microservice comes with built-in support for asynchronous method execution
+pymacaron comes with built-in support for asynchronous method execution
 by way of Celery and Redis. All you need to do is to add the 'with_async'
-key in 'klue-config.yaml':
+key in 'pym-config.yaml':
 
 ```yaml
 with_async: true
@@ -513,8 +514,8 @@ with_async: true
 And decorate asynchronous methods as follows:
 
 ```python
-from klue_async import asynctask
-from klue.swagger.apipool import ApiPool
+from pymacaron_async import asynctask
+from pymacaron_core.swagger.apipool import ApiPool
 
 # Make send_email into an asynchronously executable method, called via celery
 @asynctask
@@ -532,21 +533,21 @@ def do_signup_user():
     return ApiPool.myapi.model.Ok()
 ```
 
-That's all. Read more about it on [klue-microservice-async's github
-page](https://github.com/erwan-lemonnier/klue-microservice-async).
+That's all. Read more about it on [pymacaron-async's github
+page](https://github.com/pymacaron/pymacaron-async).
 
 
 ### Defining new Errors
 
-You can define your own Exceptions extending 'KlueMicroServiceException' by
+You can define your own Exceptions extending 'PyMacaronException' by
 calling the 'add_error' method as below:
 
 ```
-from klue_microservice.exceptions import add_error
+from pymacaron.exceptions import add_error
 
 # add_error() generates a class named MyOwnException that inherits from
-# KlueMicroServiceException and is properly handled by
-# klue-microservice. add_error() returns the MyOwnException class
+# PyMacaronException and is properly handled by
+# pymacaron. add_error() returns the MyOwnException class
 
 exceptionclass = add_error(
     name='MyOwnException',
@@ -569,7 +570,7 @@ You have multiple ways to let your API endpoint return an Error object. Pick one
 
 ```
 
-from myexceptions import MyChildOfKlueMicroServiceException
+from myexceptions import MyChildOfPyMacaronException
 
 def my_endpoint_implementation():
 
@@ -579,13 +580,13 @@ def my_endpoint_implementation():
     raise Exception('wtf!')
 
     # Or, much better, you can raise a custom exception that subclasses
-    # KlueMicroServiceException: it will automatically be converted into an
+    # PyMacaronException: it will automatically be converted into an
     # Error json, with the proper status, error code and error message set, and
     # returned to the caller
-    raise MyChildOfKlueMicroServiceException('wtf!')
+    raise MyChildOfPyMacaronException('wtf!')
 
-    # You could also just return an instance of KlueMicroServiceException
-    return MyChildOfKlueMicroServiceException('wtf!')
+    # You could also just return an instance of PyMacaronException
+    return MyChildOfPyMacaronException('wtf!')
 
     # Or you can return an Error model instance (not recommended)
     return ApiPool.myapi.model.Error(
@@ -611,7 +612,7 @@ report.
 
 ### Reporting errors with 'report_error()'
 
-You can configure klue-microservice to send error reports anywhere you want
+You can configure pymacaron to send error reports anywhere you want
 (email, slack, etc.) by setting an 'error_reporter' (see above). Once you have
 done it, any call to 'report_error()' will send a crash report via the
 'error_reporter'.
@@ -619,8 +620,8 @@ done it, any call to 'report_error()' will send a crash report via the
 If you want to report an error that occured while calling an other api:
 
 ```python
-from klue_microservice.exceptions import is_error
-from klue_microservice.crash import report_error
+from pymacaron.exceptions import is_error
+from pymacaron.crash import report_error
 
 profile = ApiPool.user.client.get_profile()
 
@@ -637,11 +638,11 @@ from an exception in the server, reported as 'FATAL BACKEND ERROR'.
 
 ### Decorating errors with 'error_decorator'
 
-You can optionally intercept and manipulate all errors returned by a klue
+You can optionally intercept and manipulate all errors returned by a PyMacaron
 microservice by specifying an 'error_decorator' hook as follows:
 
 ```python
-from klue_microservice import API, letsgo
+from pymacaron import API, letsgo
 
 def my_error_decorator(error):
     # Get errors in json format, and return the decorated error
@@ -672,7 +673,7 @@ the 'error_reporter' callback warning of a slow call.
 You can change this default limit globally with:
 
 ```python
-from klue_microservice.config import get_config()
+from pymacaron.config import get_config()
 
 # Set the maximum call time to 5 sec - Slower calls trigger an error report
 get_config().report_call_exceeding_ms = 5000
@@ -683,7 +684,7 @@ Or you can do it on a per endpoint basis, using a decorator around the endpoint
 methods:
 
 ```python
-from klue_microservice.crash import report_slow
+from pymacaron.crash import report_slow
 
 # Set the maximum call time for 'do_login_user' to 5 sec
 # Slower calls trigger an error report
@@ -697,14 +698,14 @@ def do_login_user(login_data):
 ### Loading api clients from a standalone script
 
 It may come very handy within a standalone script to be able to call REST apis
-through the klue-microservice framework, to get object marshalling and error
+through the pymacaron framework, to get object marshalling and error
 handling out of the box. It is done as follows:
 
 ```python
 import flask
-from klue.swagger.apipool import ApiPool
-from klue_microservice.exceptions import is_error
-from klue_microservice import load_clients
+from pymacaron_core.swagger.apipool import ApiPool
+from pymacaron.exceptions import is_error
+from pymacaron import load_clients
 
 # Declare a Flask app and mock its context
 app = flask.Flask(__name__)
