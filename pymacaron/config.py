@@ -26,7 +26,7 @@ class PyMacaronConfig(object):
         # Get the live host from pym-config.yaml
         paths = [
             os.path.join(os.path.dirname(sys.argv[0]), 'pym-config.yaml'),
-            '/macaron/pym-config.yaml',
+            '/pym/pym-config.yaml',
             os.path.join(os.path.dirname(sys.argv[0]), 'test/pym-config.yaml'),
             os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'pym-config.yaml'),
             os.path.join(os.getcwd(), 'pym-config.yaml')
