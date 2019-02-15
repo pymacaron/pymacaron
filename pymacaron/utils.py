@@ -2,9 +2,9 @@ import os
 import sys
 import logging
 import datetime
+from pymacaron.config import get_config
 from dateutil import parser
 import socket
-import logging
 import pytz
 
 
@@ -73,3 +73,12 @@ def get_container_version():
         with open(version_file) as f:
             return f.read()
     return ''
+
+
+def get_app_name():
+    """Return a generic name for this app, usefull when reporting to monitoring/logging frameworks"""
+    conf = get_config()
+    if is_ec2_instance():
+        return conf.app_name_live if hasattr(conf, 'app_name_live') else 'PYMACARON_LIVE'
+    else:
+        return conf.app_name_dev if hasattr(conf, 'app_name_dev') else 'PYMACARON_DEV'
