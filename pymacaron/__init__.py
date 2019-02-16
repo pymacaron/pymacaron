@@ -12,7 +12,7 @@ from pymacaron.log import set_level
 from pymacaron.crash import set_error_reporter, generate_crash_handler_decorator
 from pymacaron.exceptions import format_error
 from pymacaron.config import get_config
-from pymacaron.utils import get_app_name
+from pymacaron.monitor import monitor_init
 
 
 log = logging.getLogger(__name__)
@@ -273,14 +273,8 @@ class API(object):
         # Debug mode is the default when not running via gunicorn
         app.debug = self.debug
 
-        # Enable scoutapp monitoring
-        if hasattr(conf, 'scout_key'):
-            from scout_apm.flask import ScoutApm
-            ScoutApm(app)
-            app.config['SCOUT_MONITOR'] = True
-            app.config['SCOUT_KEY'] = conf.scout_key
-            app.config['SCOUT_NAME'] = get_app_name()
-        # END OF scoutapp support
+        # Initialize monitoring, if any
+        monitor_init(app, config=conf)
 
         app.run(host='0.0.0.0', port=self.port)
 

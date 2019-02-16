@@ -13,6 +13,7 @@ log = logging.getLogger(__name__)
 
 IS_EC2_INSTANCE = -1
 
+
 def is_ec2_instance():
     """Try fetching instance metadata at 'curl http://169.254.169.254/latest/meta-data/'
     to see if host is on an ec2 instance"""
