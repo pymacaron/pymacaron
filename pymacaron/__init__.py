@@ -274,7 +274,7 @@ class API(object):
         app.debug = self.debug
 
         # Initialize monitoring, if any
-        monitor_init(app, config=conf)
+        monitor_init(app=app, config=conf)
 
         app.run(host='0.0.0.0', port=self.port)
 
