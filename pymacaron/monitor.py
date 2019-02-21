@@ -22,7 +22,6 @@ def monitor_init(app=None, config=None, celery=False):
         use_scout = True
         appname = get_app_name()
         scout_key = config.scout_key
-        scout_core_dir = config.scout_core_agent_dir if hasattr(config, 'scout_core_agent_dir') else '/tmp/scout_apm_core'
 
         if celery:
             import scout_apm.celery
@@ -32,7 +31,6 @@ def monitor_init(app=None, config=None, celery=False):
                 key=scout_key,
                 name=appname,
                 monitor=True,
-                core_agent_dir=scout_core_dir,
             )
 
             scout_apm.celery.install()
@@ -42,18 +40,16 @@ def monitor_init(app=None, config=None, celery=False):
             # Enable Flask monitoring for scoutapp
             from scout_apm.flask import ScoutApm
             ScoutApm(app)
-            app.config['SCOUT_MONITOR'] = True
             app.config['SCOUT_KEY'] = scout_key
             app.config['SCOUT_NAME'] = appname
-            app.config['SCOUT_CORE_AGENT_DIR'] = scout_core_dir
+            app.config['SCOUT_MONITOR'] = True
 
             # Enable custom instrumentation for scoutapp
             import scout_apm.api
             scout_apm.api.install(config={
-                'name': 'FOOBAR',
                 'key': scout_key,
+                'name': appname,
                 'monitor': True,
-                'core_agent_dir': scout_core_dir,
             })
 
     # END OF scoutapp support
