@@ -27,7 +27,7 @@ def monitor_init(app=None, config=None, celery=False):
         scout_key = config.scout_key
 
         if celery:
-            log.info("Seting up scoutapp monitoring for Celery jobs")
+            log.info("Setting up scoutapp monitoring for Celery jobs")
             import scout_apm.celery
             from scout_apm.api import Config
 
@@ -42,7 +42,7 @@ def monitor_init(app=None, config=None, celery=False):
         elif app:
 
             # Enable Flask monitoring for scoutapp
-            log.info("Seting up scoutapp monitoring for Flask app")
+            log.info("Setting up scoutapp monitoring for Flask app")
             from scout_apm.flask import ScoutApm
             ScoutApm(app)
             app.config['SCOUT_KEY'] = scout_key

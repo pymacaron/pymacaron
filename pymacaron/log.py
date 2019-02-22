@@ -6,7 +6,7 @@ DEFAULT_LEVEL = logging.DEBUG
 root = logging.getLogger()
 ch = logging.StreamHandler(sys.stdout)
 
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter('%(asctime)s - %(process)d - %(name)s - %(levelname)s - %(message)s')
 ch.setFormatter(formatter)
 root.addHandler(ch)
 root.setLevel(DEFAULT_LEVEL)
