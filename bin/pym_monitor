@@ -6,6 +6,7 @@ from pymacaron.monitor import monitor_init
 from pymacaron.utils import get_app_name
 
 
+logging.basicConfig(level='DEBUG')
 log = logging.getLogger(__name__)
 
 
@@ -27,6 +28,7 @@ def main():
             'key': scout_key,
             'name': appname,
             'monitor': True,
+            'log_level': 'debug',
         })
 
 
