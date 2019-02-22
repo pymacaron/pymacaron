@@ -12,6 +12,8 @@ use_scout = False
 
 def monitor_init(app=None, config=None, celery=False):
 
+    log.debug("Init monitoring with app=%s config=%s celery=%s" % (app, config, celery))
+
     if not config:
         config = get_config()
 
