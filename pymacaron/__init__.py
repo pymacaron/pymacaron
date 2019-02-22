@@ -292,6 +292,21 @@ def letsgo(name, callback=None):
     @click.option('--debug/--no-debug', default=True)
     def main(port, debug):
 
+        log.info("")
+        log.info("")
+        log.info("")
+        log.info("       _ __  _   _ _ __ ___   __ _  ___ __ _ _ __ ___  _ __ ")
+        log.info("      | '_ \| | | | '_ ` _ \ / _` |/ __/ _` | '__/ _ \| '_ \ ")
+        log.info("      | |_) | |_| | | | | | | (_| | (_| (_| | | | (_) | | | |")
+        log.info("      | .__/ \__, |_| |_| |_|\__,_|\___\__,_|_|  \___/|_| |_|")
+        log.info("      | |     __/ |")
+        log.info("      |_|    |___/")
+        log.info("")
+        log.info("       microservices made easy    -     http://pymacaron.com")
+        log.info("")
+        log.info("")
+        log.info("")
+
         # Start celeryd and redis?
         if with_async:
             from pymacaron_async import start_celery
