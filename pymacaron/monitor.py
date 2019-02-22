@@ -17,6 +17,9 @@ def monitor_init(app=None, config=None, celery=False):
 
     global use_scout
 
+    # Note: at this point, pym_monitor should have been called earlier on to
+    # start any eventual agent daemon required by the monitoring app.
+
     # Enable scoutapp monitoring
     if hasattr(config, 'scout_key'):
         use_scout = True
@@ -43,14 +46,6 @@ def monitor_init(app=None, config=None, celery=False):
             app.config['SCOUT_KEY'] = scout_key
             app.config['SCOUT_NAME'] = appname
             app.config['SCOUT_MONITOR'] = True
-
-            # Enable custom instrumentation for scoutapp
-            import scout_apm.api
-            scout_apm.api.install(config={
-                'key': scout_key,
-                'name': appname,
-                'monitor': True,
-            })
 
     # END OF scoutapp support
 

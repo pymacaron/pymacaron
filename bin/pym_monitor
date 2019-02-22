@@ -1,0 +1,34 @@
+#!/usr/bin/env python
+import logging
+import click
+from pymacaron.config import get_config
+from pymacaron.monitor import monitor_init
+from pymacaron.utils import get_app_name
+
+
+log = logging.getLogger(__name__)
+
+
+@click.command()
+def main():
+    """Start one of the supported 3d party app monitoring services, if pym-config.yaml specifies one. See http://pymacaron.com/monitoring.html for a list of supported monitoring apps."""
+
+    config = get_config()
+
+    # Start scoutapp agent
+    if hasattr(config, 'scout_key'):
+        log.info("Starting scout core agent...")
+        use_scout = True
+        appname = get_app_name()
+        scout_key = config.scout_key
+
+        import scout_apm.api
+        scout_apm.api.install(config={
+            'key': scout_key,
+            'name': appname,
+            'monitor': True,
+        })
+
+
+if __name__ == "__main__":
+    main()
