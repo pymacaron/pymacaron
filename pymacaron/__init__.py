@@ -265,6 +265,9 @@ class API(object):
             log.info("Running in a Celery worker - Not starting the Flask app")
             return
 
+        # Initialize monitoring, if any is defined
+        monitor_init(app=app, config=conf)
+
         if os.path.basename(sys.argv[0]) == 'gunicorn':
             # Gunicorn takes care of spawning workers
             log.info("Running in Gunicorn - Not starting the Flask app")
@@ -272,9 +275,6 @@ class API(object):
 
         # Debug mode is the default when not running via gunicorn
         app.debug = self.debug
-
-        # Initialize monitoring, if any
-        monitor_init(app=app, config=conf)
 
         app.run(host='0.0.0.0', port=self.port)
 
