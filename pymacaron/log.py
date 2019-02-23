@@ -24,6 +24,7 @@ def setup_logger(celery=False):
     logging.getLogger('boto3').setLevel(logging.WARNING)
     logging.getLogger('botocore').setLevel(logging.WARNING)
     logging.getLogger('bravado_core.spec').setLevel(logging.INFO)
+    logging.getLogger('bravado_core.model').setLevel(logging.INFO)
     logging.getLogger('swagger_spec_validator.ref_validators').setLevel(logging.INFO)
     logging.getLogger('celery').setLevel(logging.INFO)
     logging.getLogger('scout_apm.core').setLevel(logging.INFO)
