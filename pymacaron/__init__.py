@@ -13,6 +13,8 @@ from pymacaron.crash import set_error_reporter, generate_crash_handler_decorator
 from pymacaron.exceptions import format_error
 from pymacaron.config import get_config
 from pymacaron.monitor import monitor_init
+from pymacaron.objects import SwaggerObjects
+import pymacaron.objects as pymacaron_objects
 
 
 log = logging.getLogger(__name__)
@@ -322,3 +324,10 @@ def letsgo(name, callback=None):
 
     if os.path.basename(sys.argv[0]) == 'gunicorn':
         callback()
+
+
+#
+# Sugar coating: allow inheriting from swagger objects
+#
+
+objects = SwaggerObjects()
