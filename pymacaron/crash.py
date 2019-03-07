@@ -9,7 +9,6 @@ from functools import wraps
 from pprint import pformat
 from flask import request, Response
 from pymacaron_core.swagger.apipool import ApiPool
-from pymacaron.config import get_config
 from pymacaron.utils import timenow, is_ec2_instance
 from pymacaron.exceptions import UnhandledServerError
 
@@ -23,32 +22,10 @@ except ImportError:
     from flask import _request_ctx_stack as stack
 
 
-#
-# Customize the slow-call report time-limit per function
-#
-
-slow_calls = {}
 
 def function_name(f):
     return "%s.%s" % (inspect.getmodule(f).__name__, f.__name__)
 
-class report_slow(object):
-
-    def __init__(self, max_ms=None):
-        self.max_ms = max_ms
-
-    def __call__(self, f):
-        global slow_calls
-        fname = function_name(f)
-        log.info("Setting custom slow_call report time limit on function %s to %s msec" % (fname, self.max_ms))
-        if self.max_ms:
-            slow_calls[fname] = self.max_ms
-
-        @wraps(f)
-        def wrapped(*args, **kwargs):
-            return f(*args, **kwargs)
-
-        return wrapped
 
 #
 # Default error reporting
@@ -379,22 +356,6 @@ def generate_crash_handler_decorator(error_decorator=None):
                     data=data,
                     is_fatal=True
                 )
-            elif 'celery' in sys.argv[0].lower():
-                # This is an async task running in celery - Slow calls don't matter
-                pass
-            else:
-                # Looking this function's time-limit, else use default
-                global slow_calls
-                max_ms = get_config().report_call_exceeding_ms
-                if fname in slow_calls:
-                    max_ms = slow_calls[fname]
-                log.info("Checking if call to %s exceeds %s msec" % (fname, max_ms))
-                if int(data['time']['microsecs']) > max_ms * 1000:
-                    log.warn("SLOW CALL to %s: exceeded %s millisec"% (fname, max_ms))
-                    report_error(
-                        title='%s() calltime exceeded %s millisec!' % (fname, max_ms),
-                        data=data
-                    )
 
             return res
 
