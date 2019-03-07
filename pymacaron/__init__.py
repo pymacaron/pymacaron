@@ -13,6 +13,8 @@ from pymacaron.crash import set_error_reporter, generate_crash_handler_decorator
 from pymacaron.exceptions import format_error
 from pymacaron.config import get_config
 from pymacaron.monitor import monitor_init
+from pymacaron.objects import get_model_instantiator
+import pymacaron.objects as pymacaron_objects
 
 
 log = logging.getLogger(__name__)
@@ -322,3 +324,21 @@ def letsgo(name, callback=None):
 
     if os.path.basename(sys.argv[0]) == 'gunicorn':
         callback()
+
+
+#
+# MAGIC!!!! Override the default __import__ to catch import calls to pymacaron.objects
+#
+
+def _import(name, globals=None, locals=None, fromlist=(), level=0):
+    if name == 'pymacaron.objects':
+        for name in fromlist:
+            if not hasattr(pymacaron_objects, name):
+                o = get_model_instantiator(name)
+                setattr(pymacaron_objects, name, o)
+        return pymacaron_objects
+    return original_import(name, globals, locals, fromlist, level)
+
+import builtins
+original_import = builtins.__import__
+builtins.__import__ = _import
