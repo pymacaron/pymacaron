@@ -17,8 +17,7 @@ RUNPATH=
 
 usage() {
     cat << EOF
-USAGE: $0 [--debug] [--loop]
-       [--local|--live|--image <image-id>|--host <name>] <tests_path>
+USAGE: $0 [--debug] [--loop] [--local|--live|--image <image-id>|--host X --port Y] <tests_path>
 
 Run acceptance tests against a local server, a local docker container or a
 remote live server.
@@ -26,10 +25,30 @@ remote live server.
 OPTIONS:
   --image <image-id>  ID of a docker image to start and test against.
   --live              Run tests against the server pointed at by 'eb status'.
-  --host <dns>        Run tests against a specific IP address or hostname.
+  --host <host>       Run tests against a specific IP address or hostname.
+  --port <port>       Run tests against a specific TCP port.
   --local             Run tests against server specified in PYM_SERVER_(HOST|PORT)
   --loop              Run the tests in a loop, until failure
   --no-ssl-check      Don't check SSL certificate
+
+USAGE:
+
+  # Run all test files matching testaccept/test_v1_*
+  # against api running at 127.0.0.1:8080
+  export PYM_SERVER_HOST=127.0.0.1
+  export PYM_SERVER_PORT=8080
+  pymtest --local testaccept/test_v1_*
+
+  # Run tests against the live api whose hostname
+  # is specified in pym-config.yaml
+  pymtest --live testaccept/test_v1_*
+
+  # Start the given pymacaron image in a local container and run
+  # tests against it
+  pymtest --image c7f755f84b68 testaccept/test_v1_*
+
+  # Run tests against a given host and port
+  pymtest --host api.foobar.com --port 443 testaccept/test_v1_*
 
 EOF
 }
