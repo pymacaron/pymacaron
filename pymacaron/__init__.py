@@ -13,6 +13,8 @@ from pymacaron.crash import set_error_reporter, generate_crash_handler_decorator
 from pymacaron.exceptions import format_error
 from pymacaron.config import get_config
 from pymacaron.monitor import monitor_init
+from pymacaron.objects import create_object_class
+import pymacaron.objects as pymacaron_objects
 
 
 log = logging.getLogger(__name__)
@@ -322,3 +324,64 @@ def letsgo(name, callback=None):
 
     if os.path.basename(sys.argv[0]) == 'gunicorn':
         callback()
+
+
+#
+# Override the default __import__ to catch calls to pymacaron.objects
+#
+
+def _import(name, globals=None, locals=None, fromlist=(), level=0):
+    if name == 'pymacaron.objects':
+        for name in fromlist:
+            o = create_object_class(name)
+            setattr(pymacaron_objects, name, o)
+            return pymacaron_objects
+
+        log.info("GOT: name=%s fromlist=(%s)" % (name, fromlist))
+        assert 0, "GOT YOU"
+        log.info("  !!!!!")
+        log.info("  !!!!!")
+        log.info("  !!!!!")
+        log.info("  !!!!!")
+        log.info("  !!!!!")
+        log.info("  !!!!!")
+        log.info("  !!!!!")
+        log.info("  !!!!!")
+        log.info("  !!!!!")
+        log.info("  !!!!!")
+        log.info("  !!!!!")
+        log.info("  !!!!!")
+        log.info("  !!!!!")
+        log.info("  !!!!!")
+        log.info("  !!!!!")
+        log.info("  !!!!!")
+        log.info("  !!!!!")
+        log.info("  !!!!!")
+        log.info("  !!!!!")
+        log.info("  !!!!!")
+        log.info("  !!!!!")
+        log.info("  !!!!!")
+        log.info("  !!!!!")
+        log.info("  !!!!!")
+        log.info("  !!!!!")
+        log.info("  !!!!!")
+        log.info("  !!!!!")
+        log.info("  !!!!!")
+        log.info("  !!!!!")
+        log.info("  !!!!!")
+        log.info("  !!!!!")
+        log.info("  !!!!!")
+        log.info("  !!!!!")
+        log.info("  !!!!!")
+        log.info("  !!!!!")
+        log.info("  !!!!!")
+        log.info("  !!!!!")
+        log.info("  !!!!!")
+        log.info("  !!!!!")
+        log.info("  !!!!!")
+        return ApiPool.ksting.model.JobUpdate
+    return original_import(name, globals, locals, fromlist, level)
+
+import builtins
+original_import = builtins.__import__
+builtins.__import__ = _import
