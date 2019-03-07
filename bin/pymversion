@@ -1,0 +1,10 @@
+#!/bin/bash
+
+set -e
+
+GIT_BRANCH=$(git branch 2>/dev/null| sed -n '/^\*/s/^\* //p')
+GIT_COUNT=$(git rev-list HEAD --count)
+DATE=$(date +"%y%m%d-%H%M")
+VERSION=$DATE-$GIT_COUNT
+
+echo $VERSION
