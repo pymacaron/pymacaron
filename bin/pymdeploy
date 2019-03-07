@@ -11,9 +11,7 @@ fi
 
 NAME=$(pymconfig --name)
 DOCKER_ROOT_REPO=$(pymconfig --docker-repo)
-AWS_PROFILE=$(pymconfig --aws-user)
 DOCKER_REPO=$DOCKER_ROOT_REPO/$NAME
-DOCKER_BUCKET=$(pymconfig --docker-bucket)
 DEPLOY_TYPE=$(pymconfig --deploy-type)
 
 # . env_setup
