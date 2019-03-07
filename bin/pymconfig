@@ -25,7 +25,8 @@ import yaml
 @click.option('--aws-hosts-min/--no-aws-hosts-min', help="Minimum size of autoscalling group (default: 1)", default=False)
 @click.option('--aws-hosts-max/--no-aws-hosts-max', help="Maximum size of autoscalling group (default: 4)", default=False)
 @click.option('--with-async/--no-with-async', help="Use asynchronous task support based on celery/rabbitmq", default=False)
-def main(name, env_jwt_secret, env_jwt_audience, live_host, env_secrets, git_root, docker_repo, docker_bucket, aws_user, aws_keypair, aws_instance_type, aws_cert_arn, include_links, aws_hosts_min, aws_hosts_max, with_async):
+@click.option('--deploy-type/--no-deploy-type', help="Return the name of the platform to deploy to (beanstalk or other)", default=False)
+def main(name, env_jwt_secret, env_jwt_audience, live_host, env_secrets, git_root, docker_repo, docker_bucket, aws_user, aws_keypair, aws_instance_type, aws_cert_arn, include_links, aws_hosts_min, aws_hosts_max, with_async, deploy_type):
     """Parse the pym config file (pym-config.yaml) in a shell script friendly
     way."""
 
@@ -89,6 +90,11 @@ def main(name, env_jwt_secret, env_jwt_audience, live_host, env_secrets, git_roo
             print(d['aws_hosts_max'])
         else:
             print('4')
+    elif deploy_type:
+        if 'aws_keypair':
+            print('aws')
+        else:
+            print('unknown')
 
 if __name__ == "__main__":
     main()

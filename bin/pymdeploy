@@ -1,0 +1,186 @@
+#!/bin/bash
+
+set -e
+
+ARGS=$@
+
+if [ ! -e 'pym-config.yaml' ]; then
+    echo "ERROR: no pym-config.yaml in current dir"
+    exit 1
+fi
+
+NAME=$(pymconfig --name)
+DOCKER_ROOT_REPO=$(pymconfig --docker-repo)
+AWS_PROFILE=$(pymconfig --aws-user)
+DOCKER_REPO=$DOCKER_ROOT_REPO/$NAME
+DOCKER_BUCKET=$(pymconfig --docker-bucket)
+DEPLOY_TYPE=$(pymconfig --deploy-type)
+
+# . env_setup
+
+usage() {
+    cat << EOF
+USAGE: pymdeploy [--debug] [--no-test] [--no-build] [--no-push] [--no-deploy]
+
+Run the pymacaron deployment pipeline:
+ 1. Run local tests with pymtest
+ 2. Build a docker image with pymdocker
+ 3. Run the tests again, against the docker image
+    started in a local container
+ 4. Push the docker image to a docker repository
+ 5. Deploy the docker image to a live environment
+    (Amazon Beanstalk or other)
+ 6. Run the tests again, against the live api
+
+OPTIONS:
+
+  --debug:          be very verbose.
+  --no-test:        skip all tests (steps 1, 3 and 6).
+  --no-build:       skip building the docker image and use
+                    the latest built image instead (step 2)
+  --no-push:        skip pushing the image to docker hub (step 4).
+  --no-deploy:      skip deploying to live (step 5).
+
+EXAMPLES:
+
+# test, build, push, deploy
+./build.sh
+
+# only build docker image and push it
+./build.sh --no-test --no-deploy
+
+# deploy quickly, without testing
+./build.sh --no-test
+
+EOF
+}
+
+DO_PUSH=1
+DO_DEPLOY=1
+DO_TEST=1
+DO_BUILD=1
+DEPLOY_ARGS=
+WITH_DEBUG=
+
+parse_args() {
+    while [ "$1" != "" ]; do
+        case $1 in
+            "--debug")         set -x; DEBUG='true'; WITH_DEBUG="--debug";;
+            "--no-build")      export DO_BUILD=;;
+            "--no-push")       export DO_PUSH=;;
+            "--no-deploy")     export DO_DEPLOY=;;
+            "--no-test")       export DO_TEST=; export DEPLOY_ARGS=--no-test;;
+            "-h" | "--help")   usage; exit 0;;
+            *)                 echo "Unknown argument '$1' (-h for help)"; exit 0;;
+        esac
+        shift
+    done
+}
+
+parse_args $ARGS
+
+do_check_git_repo() {
+    IS_DIRTY_CLONE=$(git status --short --porcelain | wc -l)
+    if [ "$IS_DIRTY_CLONE" -gt 0 ]; then
+        echo "ERROR: $PWD is not clean! Commit and re-run."
+        exit 1
+    fi
+
+    GIT_DIFF_REMOTE=$(git diff master origin/master | wc -l)
+    if [ "$GIT_DIFF_REMOTE" -ne 0 ]; then
+        echo "ERROR: $PWD differs from origin. Please push to origin before releasing!"
+        exit 1
+    fi
+}
+
+do_gen_version() {
+    VERSION=$(pymversion)
+    echo "=> Using version: ${VERSION}"
+}
+
+do_get_last_version() {
+    if [ -f ".pym/last_version" ]; then
+        VERSION=$(cat ".pym/last_version")
+    else
+        VERSION=$(docker images | grep $DOCKER_REPO | head -n 1 | awk '{ print $2 }')
+        if [ -z "$VERSION" ]; then
+            echo "ERROR: cannot find the latest docker image"
+            exit 1
+        fi
+    fi
+    echo "=> Using version: ${VERSION}"
+}
+
+do_unit_tests() {
+    if [ -d 'test' ]; then
+        echo "=> Running nosetests"
+        nosetests -xv test/
+    fi
+}
+
+do_push_to_registry() {
+    # NOTE: for this to work, the running user must have logged in into the
+    # docker hub using 'docker login'
+    set +e
+    IS_LOGGEDIN=$(docker info | grep Username)
+    set -e
+    if [ -z "$IS_LOGGEDIN" ]; then
+        echo "ERROR: please login to docker hub with 'docker login'"
+        exit 1
+    fi
+
+    echo "=> Pushing to registry ${DOCKER_REPO}:${VERSION}"
+    docker push ${DOCKER_REPO}:${VERSION}
+}
+
+do_check_git_repo
+
+if [ ! -z "$DO_TEST" ]; then
+    do_unit_tests $WITH_DEBUG
+else
+    echo "=> Skip nosetest"
+fi
+
+if [ ! -z "$DO_BUILD" ]; then
+    do_gen_version $WITH_DEBUG
+    pymdocker --version $VERSION $WITH_DEBUG
+
+    if [ ! -z "$DO_TEST" ]; then
+        IMAGE_ID=$(docker images --quiet ${DOCKER_REPO}:${VERSION})
+        pymtest --image $IMAGE_ID
+    else
+        echo "=> Skip running tests against docker image"
+    fi
+else
+    echo "=> Skip building docker image. Using last image built."
+    do_get_last_version
+fi
+
+if [ ! -z "$DO_PUSH" ]; then
+    pymdocker --version $VERSION --no-build --push $WITH_DEBUG
+else
+    echo "=> Skip pushing image to docker repository"
+fi
+
+if [ ! -z "$DO_DEPLOY" ]; then
+
+    if [ "$DEPLOY_TYPE" == "aws" ]; then
+        pymaws $VERSION $WITH_DEBUG $EB_DEPLOY_ARGS
+
+        echo "=> Waiting 1 min for cname swap to propagate"
+        sleep 60
+    else
+        echo "ERROR: don't know how to deploy to target $DEPLOY_TYPE"
+        exit 1
+    fi
+else
+    echo "=> Skip deploying to live environment"
+fi
+
+if [ ! -z "$DO_TEST" ]; then
+    pymtest --live $WITH_DEBUG
+else
+    echo "=> Skip running tests against live api"
+fi
+
+echo "=> Done."
