@@ -8,7 +8,7 @@ PROG=$(basename $0)
 IMAGE_ID=
 LOOP=
 LIVE=
-LOCAL=
+LOCAL=1
 TARGET_HOST=
 TARGET_PORT=8080
 NO_SSL_CHECK=
@@ -17,17 +17,18 @@ RUNPATH=
 
 usage() {
     cat << EOF
-USAGE: $0 [--debug] [--loop] [--local|--live|--image <image-id>|--host X --port Y] <tests_path>
+USAGE: $0 [--debug] [--loop] [--live|--image <image-id>|--host X --port Y] <tests_path>
 
 Run acceptance tests against a local server, a local docker container or a
-remote live server.
+remote live server. If not arguments are provided, execute all test files under
+the local directory 'testaccept/' against the host and port set in the
+environment variables PYM_SERVER_HOST and PYM_SERVER_PORT.
 
 OPTIONS:
   --image <image-id>  ID of a docker image to start and test against.
   --live              Run tests against the server pointed at by 'eb status'.
   --host <host>       Run tests against a specific IP address or hostname.
   --port <port>       Run tests against a specific TCP port.
-  --local             Run tests against server specified in PYM_SERVER_(HOST|PORT)
   --loop              Run the tests in a loop, until failure
   --no-ssl-check      Don't check SSL certificate
 
@@ -37,7 +38,7 @@ USAGE:
   # against api running at 127.0.0.1:8080
   export PYM_SERVER_HOST=127.0.0.1
   export PYM_SERVER_PORT=8080
-  pymtest --local testaccept/test_v1_*
+  pymtest testaccept/test_v1_*
 
   # Run tests against the live api whose hostname
   # is specified in pym-config.yaml
@@ -58,9 +59,8 @@ parse_args() {
     while [ "$1" != "" ]; do
         case $1 in
             "--debug")        set -x;;
-            "--live")         export LIVE=1;;
-            "--local")        export LOCAL=1;;
-            "--image")        shift; IMAGE_ID=$1;;
+            "--live")         export LIVE=1; export LOCAL=;;
+            "--image")        shift; IMAGE_ID=$1; export LOCAL=;;
             "--loop")         export LOOP=1;;
             "--host")         shift; TARGET_HOST=$1;;
             "--port")         shift; TARGET_PORT=$1;;
