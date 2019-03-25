@@ -163,7 +163,7 @@ fi
 if [ ! -z "$DO_DEPLOY" ]; then
 
     if [ "$DEPLOY_TYPE" == "aws" ]; then
-        pymaws $VERSION $WITH_DEBUG $EB_DEPLOY_ARGS
+        pymaws $VERSION $WITH_DEBUG $DEPLOY_ARGS
 
         echo "=> Waiting 1 min for cname swap to propagate"
         sleep 60
