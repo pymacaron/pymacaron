@@ -341,10 +341,6 @@ def generate_crash_handler_decorator(error_decorator=None):
 
             populate_error_report(data)
 
-            log.info("")
-            log.info(" <= Done!")
-            log.info("")
-
             # inspect may raise a UnicodeDecodeError...
             fname = function_name(f)
 
@@ -359,6 +355,10 @@ def generate_crash_handler_decorator(error_decorator=None):
                     data=data,
                     is_fatal=True
                 )
+
+            log.info("")
+            log.info(" <= Done!")
+            log.info("")
 
             return res
 
