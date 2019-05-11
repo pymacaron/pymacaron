@@ -62,11 +62,11 @@ parse_args() {
             "--live")         export LIVE=1; export LOCAL=;;
             "--image")        shift; IMAGE_ID=$1; export LOCAL=;;
             "--loop")         export LOOP=1;;
-            "--host")         shift; TARGET_HOST=$1;;
-            "--port")         shift; TARGET_PORT=$1;;
+            "--host")         shift; export TARGET_HOST=$1;;
+            "--port")         shift; export TARGET_PORT=$1;;
             "--no-ssl-check") export NO_SSL_CHECK=1;;
             "-h" | "--help")  usage; exit 0;;
-            *)                RUNPATH="$RUNPATH $1";;
+            *)                export RUNPATH="$RUNPATH $1";;
         esac
         shift
     done
@@ -119,21 +119,15 @@ if [ ! -z "$LIVE" ]; then
 
     set_runpath
 
-elif [ ! -z "$LOCAL" ]; then
-    echo "=> Running against $PYM_SERVER_HOST:$PYM_SERVER_PORT"
-
-    set_runpath
-
-    # TODO: check that server is indeed running locally. If not, start it
-
 elif [ ! -z "$TARGET_HOST" ]; then
     echo "=> Running against $TARGET_HOST:$TARGET_PORT"
-    PYM_SERVER_HOST=$TARGET_HOST
-    PYM_SERVER_PORT=$TARGET_PORT
+    export PYM_SERVER_HOST=$TARGET_HOST
+    export PYM_SERVER_PORT=$TARGET_PORT
 
     set_runpath
 
 elif [ ! -z "$IMAGE_ID" ]; then
+    echo "=> Running against docker image $IMAGE_ID"
 
     set_runpath
 
@@ -183,6 +177,13 @@ elif [ ! -z "$IMAGE_ID" ]; then
         echo "       did the container crash?"
         exit 1
     fi
+
+elif [ ! -z "$LOCAL" ]; then
+    echo "=> Running locally against $PYM_SERVER_HOST:$PYM_SERVER_PORT"
+
+    set_runpath
+
+    # TODO: check that server is indeed running locally. If not, start it
 fi
 
 if [ -z "$PYM_JWT_TOKEN" ]; then
