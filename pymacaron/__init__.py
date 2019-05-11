@@ -310,7 +310,7 @@ def letsgo(name, callback=None):
         # Start celeryd and redis?
         if with_async:
             from pymacaron_async import start_celery
-            start_celery(port, debug, concurrency=1)
+            start_celery(port, debug, concurrency=2)
 
         # Proceed to start the API server
         callback(port, debug)
