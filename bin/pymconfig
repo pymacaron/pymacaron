@@ -17,6 +17,7 @@ import yaml
 @click.option('--git-root/--no-git-root', help="Print the git repository's root dir", default=False)
 @click.option('--docker-repo/--no-docker-repo', help="Name of your docker repo on docker.io", default=False)
 @click.option('--docker-bucket/--no-docker-bucket', help="Name of the s3 bucket to upload the docker config to", default=False)
+@click.option('--docker-base/--no-docker-base', help="Name of an alternative docker base image to use", default=False)
 @click.option('--aws-user/--no-aws-user', help="Name of the aws iam user to deploy as", default=False)
 @click.option('--aws-keypair/--no-aws-keypair', help="Name of the aws ssh keypair to deploy on ec2 instances", default=False)
 @click.option('--aws-instance-type/--no-aws-instance-type', help="Name of the aws instance type to use", default=False)
@@ -26,7 +27,7 @@ import yaml
 @click.option('--aws-hosts-max/--no-aws-hosts-max', help="Maximum size of autoscalling group (default: 4)", default=False)
 @click.option('--with-async/--no-with-async', help="Use asynchronous task support based on celery/rabbitmq", default=False)
 @click.option('--deploy-type/--no-deploy-type', help="Return the name of the platform to deploy to (beanstalk or other)", default=False)
-def main(name, env_jwt_secret, env_jwt_audience, live_host, env_secrets, git_root, docker_repo, docker_bucket, aws_user, aws_keypair, aws_instance_type, aws_cert_arn, include_links, aws_hosts_min, aws_hosts_max, with_async, deploy_type):
+def main(name, env_jwt_secret, env_jwt_audience, live_host, env_secrets, git_root, docker_repo, docker_bucket, docker_base, aws_user, aws_keypair, aws_instance_type, aws_cert_arn, include_links, aws_hosts_min, aws_hosts_max, with_async, deploy_type):
     """Parse the pym config file (pym-config.yaml) in a shell script friendly
     way."""
 
@@ -71,6 +72,8 @@ def main(name, env_jwt_secret, env_jwt_audience, live_host, env_secrets, git_roo
         print(d['docker_repo'])
     elif docker_bucket:
         print(d['docker_bucket'])
+    elif docker_base:
+        print(d.get('docker_base', ''))
     elif aws_user:
         print(d['aws_user'])
     elif aws_keypair:
