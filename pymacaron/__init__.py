@@ -13,6 +13,7 @@ from pymacaron.crash import set_error_reporter, generate_crash_handler_decorator
 from pymacaron.exceptions import format_error
 from pymacaron.config import get_config
 from pymacaron.monitor import monitor_init
+from pymacaron.api import add_ping_hook
 
 
 log = logging.getLogger(__name__)
@@ -25,10 +26,19 @@ log = logging.getLogger(__name__)
 class API(object):
 
 
-    def __init__(self, app, host='localhost', port=80, debug=False, log_level=logging.DEBUG, formats=None, timeout=20, error_reporter=None, default_user_id=None, error_callback=format_error, error_decorator=None):
-        """Take the flask app, and optionally the http port to listen on, and
-        whether flask's debug mode is one or not, which callback to call when
-        catching exceptions, and the api's log level"""
+    def __init__(self, app, host='localhost', port=80, debug=False, log_level=logging.DEBUG, formats=None, timeout=20, error_reporter=None, default_user_id=None, error_callback=format_error, error_decorator=None, ping_hook=[]):
+        """
+
+        Configure the Pymacaron microservice prior to starting it. Arguments:
+
+        - app: the flask app
+        - port: (optional) the http port to listen on (defaults to 80)
+        - debug: (optional) whether to run with flask's debug mode (defaults to False)
+        - error_reporter: (optional) a callback to call when catching exceptions, for custom reporting to slack, email or whatever
+        - log_level: (optional) the microservice's log level (defaults to logging.DEBUG)
+        - ping_hook: (optional) a function to call each time Amazon calls the ping endpoint, which happens every few seconds
+
+        """
         assert app
         self.app = app
         self.port = port
@@ -38,6 +48,7 @@ class API(object):
         self.timeout = timeout
         self.error_callback = error_callback
         self.error_decorator = error_decorator
+        self.ping_hook = ping_hook
 
         if default_user_id:
             self.default_user_id = default_user_id
@@ -208,6 +219,9 @@ class API(object):
 
         # Always serve the ping api
         serve.append('ping')
+
+        # Add ping hooks if any
+        add_ping_hook(self.ping_hook)
 
         # Let's compress returned data when possible
         compress = Compress()

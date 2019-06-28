@@ -19,9 +19,19 @@ class MyNonFatalCustomError(PyMacaronException):
     status = 401
 
 
+ping_hooks = []
+
+def add_ping_hook(hook):
+    global ping_hooks
+    assert callable(hook), "Ping hook %s should be a function" % str(hook)
+    ping_hooks.append(hook)
+
 def do_ping():
     log.debug("Replying ping:ok")
     v = ApiPool.ping.model.Ok()
+    for h in ping_hooks:
+        log.info("Calling ping hook %s" % str(h))
+        h()
     return v
 
 def do_version():
