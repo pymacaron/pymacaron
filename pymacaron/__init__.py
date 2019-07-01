@@ -221,7 +221,8 @@ class API(object):
         serve.append('ping')
 
         # Add ping hooks if any
-        add_ping_hook(self.ping_hook)
+        if self.ping_hook:
+            add_ping_hook(self.ping_hook)
 
         # Let's compress returned data when possible
         compress = Compress()
