@@ -52,7 +52,7 @@ class PyMacaronConfig(object):
         all_keys = []
         config_dict = {}
         with open(config_path, 'r') as stream:
-            config_dict = yaml.load(stream)
+            config_dict = yaml.load(stream, Loader=yaml.FullLoader)
             for k, v in config_dict.items():
                 setattr(self, k, v)
                 all_keys.append(k)
