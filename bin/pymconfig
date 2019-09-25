@@ -49,7 +49,7 @@ def main(name, env_jwt_secret, env_jwt_audience, live_host, env_secrets, git_roo
 
     d = None
     with open(path, 'r') as stream:
-        d = yaml.load(stream)
+        d = yaml.load(stream, Loader=yaml.FullLoader)
 
     if name:
         print(d['name'])
