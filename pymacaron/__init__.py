@@ -8,6 +8,7 @@ from flask import Response, redirect
 from flask_compress import Compress
 from flask_cors import CORS
 from pymacaron_core.swagger.apipool import ApiPool
+import pymacaron_core.models
 from pymacaron.log import set_level
 from pymacaron.crash import set_error_reporter, generate_crash_handler_decorator
 from pymacaron.exceptions import format_error
@@ -337,3 +338,14 @@ def letsgo(name, callback=None):
 
     if os.path.basename(sys.argv[0]) == 'gunicorn':
         callback()
+
+#
+# Convenience method to retrieve model classes
+#
+
+def get_model(model_name):
+    """Given the name of an OpenAPI schema object, return a class that instantiates
+    that object. That class is refered to as a PyMacaron model.
+    """
+
+    return pymacaron_core.models.get_model(model_name)
