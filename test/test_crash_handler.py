@@ -102,7 +102,7 @@ class Tests(utils.PyMacaronTests):
     #
 
     def test_internal_exception(self):
-        j = self.assertGetReturnError(
+        self.assertGetReturnError(
             'crash/internalexception',
             500,
             'UNHANDLED_SERVER_ERROR'
