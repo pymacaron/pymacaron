@@ -3,12 +3,14 @@ import sys
 import logging
 import click
 import pkg_resources
+import inspect
 from uuid import uuid4
 from flask import Response, redirect
 from flask_compress import Compress
 from flask_cors import CORS
 from pymacaron_core.swagger.apipool import ApiPool
-import pymacaron_core.models
+from pymacaron_core.models import get_model
+import pymacaron.models
 from pymacaron.log import set_level
 from pymacaron.crash import set_error_reporter, generate_crash_handler_decorator
 from pymacaron.exceptions import format_error
@@ -18,6 +20,13 @@ from pymacaron.api import add_ping_hook
 
 
 log = logging.getLogger(__name__)
+
+
+def _get_model_factory(model_name):
+    # Using dynamic method creation to localize model_name
+    def factory(**kwargs):
+        return get_model(model_name)(**kwargs)
+    return factory
 
 
 #
@@ -62,6 +71,17 @@ class API(object):
         log.info("Initialized API (%s:%s) (Flask debug:%s)" % (host, port, debug))
 
 
+    def _load_model_aliases(self, api):
+        """Load all PyMacaronModels generated for a given api into the namespace
+        of pymacaron.models so a user may write 'from pymacaron.models import <SomeModel>'
+        """
+
+        for model_name in dir(api.model):
+            model_class = getattr(api.model, model_name)
+            if inspect.isclass(model_class) and 'to_json' in dir(model_class):
+                setattr(pymacaron.models, model_name, _get_model_factory(model_name))
+
+
     def load_clients(self, path=None, apis=[]):
         """Generate client libraries for the given apis, without starting an
         api server"""
@@ -80,7 +100,7 @@ class API(object):
             if not os.path.isfile(api_path):
                 raise Exception("Cannot find swagger specification at %s" % api_path)
             log.info("Loading api %s from %s" % (api_name, api_path))
-            ApiPool.add(
+            api = ApiPool.add(
                 api_name,
                 yaml_path=api_path,
                 timeout=self.timeout,
@@ -89,6 +109,7 @@ class API(object):
                 do_persist=False,
                 local=False,
             )
+            self._load_model_aliases(api)
 
         return self
 
@@ -252,7 +273,7 @@ class API(object):
             local = True if api_name in serve else False
 
             log.info("Loading api %s from %s (persist: %s)" % (api_name, api_path, do_persist))
-            ApiPool.add(
+            api = ApiPool.add(
                 api_name,
                 yaml_path=api_path,
                 timeout=self.timeout,
@@ -264,6 +285,9 @@ class API(object):
                 local=local,
             )
 
+            self._load_model_aliases(api)
+
+        # Make sure schema objects from different APIs don't conflict with each other
         ApiPool.merge()
 
         # Now spawn flask routes for all endpoints
@@ -338,14 +362,3 @@ def letsgo(name, callback=None):
 
     if os.path.basename(sys.argv[0]) == 'gunicorn':
         callback()
-
-#
-# Convenience method to retrieve model classes
-#
-
-def get_model(model_name):
-    """Given the name of an OpenAPI schema object, return a class that instantiates
-    that object. That class is refered to as a PyMacaron model.
-    """
-
-    return pymacaron_core.models.get_model(model_name)
