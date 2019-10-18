@@ -12,6 +12,7 @@ LOCAL=1
 TARGET_HOST=
 TARGET_PORT=8080
 NO_SSL_CHECK=
+GEN_TOKEN=
 
 RUNPATH=
 
@@ -29,8 +30,9 @@ OPTIONS:
   --live              Run tests against the server pointed at by 'eb status'.
   --host <host>       Run tests against a specific IP address or hostname.
   --port <port>       Run tests against a specific TCP port.
-  --loop              Run the tests in a loop, until failure
-  --no-ssl-check      Don't check SSL certificate
+  --loop              Run the tests in a loop, until failure.
+  --no-ssl-check      Don't check SSL certificate.
+  --gen-token         Generate a default JWT token to use in tests (won't by default).
 
 USAGE:
 
@@ -64,6 +66,7 @@ parse_args() {
             "--loop")         export LOOP=1;;
             "--host")         shift; export TARGET_HOST=$1;;
             "--port")         shift; export TARGET_PORT=$1;;
+            "--gen-token")    export GEN_TOKEN=1;;
             "--no-ssl-check") export NO_SSL_CHECK=1;;
             "-h" | "--help")  usage; exit 0;;
             *)                export RUNPATH="$RUNPATH $1";;
@@ -179,20 +182,21 @@ elif [ ! -z "$IMAGE_ID" ]; then
     fi
 
 elif [ ! -z "$LOCAL" ]; then
-    echo "=> Running locally against $PYM_SERVER_HOST:$PYM_SERVER_PORT"
 
     set_runpath
 
     # TODO: check that server is indeed running locally. If not, start it
 fi
 
-if [ -z "$PYM_JWT_TOKEN" ]; then
-    echo "=> Getting an access token for the test user"
-    export PYM_JWT_TOKEN=$(get_test_jwt_token | grep 'token:' | cut -d ':' -f 2)
-    echo "=> Using token: $PYM_JWT_TOKEN"
-
+if [ ! -z "$GEN_TOKEN" ]; then
     if [ -z "$PYM_JWT_TOKEN" ]; then
-        echo "ERROR: failed to get an auth token for test user"
+        echo "=> Getting an access token for the test user"
+        export PYM_JWT_TOKEN=$(get_test_jwt_token | grep 'token:' | cut -d ':' -f 2)
+        echo "=> Using token: $PYM_JWT_TOKEN"
+
+        if [ -z "$PYM_JWT_TOKEN" ]; then
+            echo "ERROR: failed to get an auth token for test user"
+        fi
     fi
 fi
 
