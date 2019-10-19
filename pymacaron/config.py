@@ -52,7 +52,15 @@ class PyMacaronConfig(object):
         all_keys = []
         config_dict = {}
         with open(config_path, 'r') as stream:
-            config_dict = yaml.load(stream, Loader=yaml.FullLoader)
+
+            # Support versions of PyYAML with and without Loader
+            import pkg_resources
+            v = pkg_resources.get_distribution("PyYAML").version
+            if v > '3.15':
+                config_dict = yaml.load(stream, Loader=yaml.FullLoader)
+            else:
+                config_dict = yaml.load(stream)
+
             for k, v in config_dict.items():
                 setattr(self, k, v)
                 all_keys.append(k)
