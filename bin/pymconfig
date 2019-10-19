@@ -49,8 +49,12 @@ def main(name, env_jwt_secret, env_jwt_audience, live_host, env_secrets, git_roo
 
     d = None
     with open(path, 'r') as stream:
-        d = yaml.load(stream, Loader=yaml.FullLoader)
-
+        import pkg_resources
+        v = pkg_resources.get_distribution("PyYAML").version
+        if v > '3.15':
+            d = yaml.load(stream, Loader=yaml.FullLoader)
+        else:
+            d = yaml.load(stream)
     if name:
         print(d['name'])
     elif env_jwt_secret:
