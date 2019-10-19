@@ -47,6 +47,7 @@ setup(
         'click',
         'pytz',
         'PyJWT',
+        'PyYAML>=5.1.2',
     ],
     tests_require=[
         'psutil',
@@ -61,6 +62,7 @@ setup(
         'click',
         'pytz',
         'PyJWT',
+        'PyYAML>=5.1.2',
     ],
     packages=['pymacaron'],
     package_data={'pymacaron': ['*.yaml']},
