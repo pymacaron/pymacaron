@@ -42,13 +42,13 @@ OPTIONS:
 EXAMPLES:
 
 # test, build, push, deploy
-./build.sh
+pymdeploy
 
 # only build docker image and push it
-./build.sh --no-test --no-deploy
+pymdeploy --no-test --no-deploy
 
 # deploy quickly, without testing
-./build.sh --no-test
+pymdeploy --no-test
 
 EOF
 }
