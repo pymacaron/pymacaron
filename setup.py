@@ -41,7 +41,7 @@ setup(
     install_requires=[
         'pymacaron-unit>=1.0.10',
         'pymacaron-core>=1.0.146',
-        'flask>=1.1.1',
+        'flask>=1.0.4',
         'flask-cors',
         'flask-compress',
         'click',
@@ -55,7 +55,7 @@ setup(
         'pep8',
         'pymacaron-unit>=1.0.10',
         'pymacaron-core>=1.0.146',
-        'flask>=1.1.1',
+        'flask>=1.0.4',
         'flask-cors',
         'flask-compress',
         'click',
