@@ -334,8 +334,6 @@ def letsgo(name, callback=None):
     @click.option('--debug/--no-debug', default=True)
     def main(port, debug):
 
-        set_level('INFO')
-
         log.info("")
         log.info("")
         log.info("")
@@ -378,4 +376,4 @@ def letsgo(name, callback=None):
         main()
 
     if os.path.basename(sys.argv[0]) == 'gunicorn':
-        callback()
+        main()
