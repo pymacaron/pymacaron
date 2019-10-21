@@ -36,7 +36,7 @@ def _get_model_factory(model_name):
 class API(object):
 
 
-    def __init__(self, app, host='localhost', port=80, debug=False, log_level=logging.DEBUG, formats=None, timeout=20, error_reporter=None, default_user_id=None, error_callback=format_error, error_decorator=None, ping_hook=[]):
+    def __init__(self, app, host='localhost', port=None, debug=False, log_level=logging.DEBUG, formats=None, timeout=20, error_reporter=None, default_user_id=None, error_callback=format_error, error_decorator=None, ping_hook=[]):
         """
 
         Configure the Pymacaron microservice prior to starting it. Arguments:
@@ -50,6 +50,8 @@ class API(object):
 
         """
         assert app
+        assert port
+
         self.app = app
         self.port = port
         self.host = host
@@ -328,7 +330,7 @@ def letsgo(name, callback=None):
     with_async = False
 
     @click.command()
-    @click.option('--port', help="Set server listening port (default: 80)", default=80)
+    @click.option('--port', help="Set server listening port (default: 80)", default=None)
     @click.option('--debug/--no-debug', default=True)
     def main(port, debug):
 
@@ -346,6 +348,20 @@ def letsgo(name, callback=None):
         log.info("")
         log.info("")
         log.info("")
+
+        log.debug("lsadfjhlaskdflaskdfjlaskdfjaslkdfjaslkdfj %s" % port)
+        log.debug("lsadfjhlaskdflaskdfjlaskdfjaslkdfjaslkdfj")
+        log.debug("lsadfjhlaskdflaskdfjlaskdfjaslkdfjaslkdfj")
+        if not port:
+            if 'PORT' in os.environ:
+                port = os.environ['PORT']
+                log.info("Environment variable PORT is set: will listen on port %s" % port)
+            elif 'PYM_SERVER_PORT' in os.environ:
+                port = os.environ['PYM_SERVER_PORT']
+                log.info("Environment variable PYM_SERVER_PORT is set: will listen on port %s" % port)
+            else:
+                port = 80
+                log.info("No HTTP port specified. Will listen on port 80")
 
         # Start celeryd and redis?
         if with_async:
