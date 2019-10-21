@@ -349,9 +349,6 @@ def letsgo(name, callback=None):
         log.info("")
         log.info("")
 
-        log.debug("lsadfjhlaskdflaskdfjlaskdfjaslkdfjaslkdfj %s" % port)
-        log.debug("lsadfjhlaskdflaskdfjlaskdfjaslkdfjaslkdfj")
-        log.debug("lsadfjhlaskdflaskdfjlaskdfjaslkdfjaslkdfj")
         if not port:
             if 'PORT' in os.environ:
                 port = os.environ['PORT']
