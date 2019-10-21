@@ -29,6 +29,21 @@ def _get_model_factory(model_name):
     return factory
 
 
+def get_port():
+    """Find which TCP port to listen to, based on environment variables"""
+    if 'PORT' in os.environ:
+        port = os.environ['PORT']
+        log.info("Environment variable PORT is set: will listen on port %s" % port)
+    elif 'PYM_SERVER_PORT' in os.environ:
+        port = os.environ['PYM_SERVER_PORT']
+        log.info("Environment variable PYM_SERVER_PORT is set: will listen on port %s" % port)
+    else:
+        port = 80
+        log.info("No HTTP port specified. Will listen on port 80")
+
+    return port
+
+
 #
 # API: class to define then run a micro service api
 #
@@ -61,6 +76,9 @@ class API(object):
         self.error_callback = error_callback
         self.error_decorator = error_decorator
         self.ping_hook = ping_hook
+
+        if not port:
+            self.port = get_port()
 
         if default_user_id:
             self.default_user_id = default_user_id
@@ -324,6 +342,24 @@ class API(object):
 # Generic code to start server, from command line or via gunicorn
 #
 
+
+def show_splash():
+    log.info("")
+    log.info("")
+    log.info("")
+    log.info("       _ __  _   _ _ __ ___   __ _  ___ __ _ _ __ ___  _ __ ")
+    log.info("      | '_ \| | | | '_ ` _ \ / _` |/ __/ _` | '__/ _ \| '_ \ ")
+    log.info("      | |_) | |_| | | | | | | (_| | (_| (_| | | | (_) | | | |")
+    log.info("      | .__/ \__, |_| |_| |_|\__,_|\___\__,_|_|  \___/|_| |_|")
+    log.info("      | |     __/ |")
+    log.info("      |_|    |___/")
+    log.info("")
+    log.info("       microservices made easy    -     http://pymacaron.com")
+    log.info("")
+    log.info("")
+    log.info("")
+
+
 def letsgo(name, callback=None):
     assert callback
 
@@ -334,33 +370,9 @@ def letsgo(name, callback=None):
     @click.option('--debug/--no-debug', default=True)
     def main(port, debug):
 
-        log.info("")
-        log.info("")
-        log.info("")
-        log.info("       _ __  _   _ _ __ ___   __ _  ___ __ _ _ __ ___  _ __ ")
-        log.info("      | '_ \| | | | '_ ` _ \ / _` |/ __/ _` | '__/ _ \| '_ \ ")
-        log.info("      | |_) | |_| | | | | | | (_| | (_| (_| | | | (_) | | | |")
-        log.info("      | .__/ \__, |_| |_| |_|\__,_|\___\__,_|_|  \___/|_| |_|")
-        log.info("      | |     __/ |")
-        log.info("      |_|    |___/")
-        log.info("")
-        log.info("       microservices made easy    -     http://pymacaron.com")
-        log.info("")
-        log.info("")
-        log.info("")
-
+        show_splash()
         if not port:
-            if 'PORT' in os.environ:
-                port = os.environ['PORT']
-                log.info("Environment variable PORT is set: will listen on port %s" % port)
-            elif 'PYM_SERVER_PORT' in os.environ:
-                port = os.environ['PYM_SERVER_PORT']
-                log.info("Environment variable PYM_SERVER_PORT is set: will listen on port %s" % port)
-            else:
-                port = 80
-                log.info("No HTTP port specified. Will listen on port 80")
-        else:
-            log.info("HTTP port set to %s" % port)
+            port = get_port()
 
         # Start celeryd and redis?
         if with_async:
@@ -376,4 +388,6 @@ def letsgo(name, callback=None):
         main()
 
     if os.path.basename(sys.argv[0]) == 'gunicorn':
-        main()
+        show_splash()
+        port = get_port()
+        callback(port)
