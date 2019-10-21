@@ -147,7 +147,8 @@ elif [ ! -z "$IMAGE_ID" ]; then
         fi
         CMD="$CMD -e $VAR='$VALUE'"
     done
-    CMD="$CMD --rm -P $IMAGE_ID"
+    # Start the container on port 80 by default
+    CMD="$CMD -e PORT=80 --rm -P $IMAGE_ID"
 
     echo "=> Starting container for image $IMAGE_ID"
     echo "EXEC [$CMD]"

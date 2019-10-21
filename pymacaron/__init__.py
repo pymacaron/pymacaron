@@ -359,6 +359,8 @@ def letsgo(name, callback=None):
             else:
                 port = 80
                 log.info("No HTTP port specified. Will listen on port 80")
+        else:
+            log.info("HTTP port set to %s" % port)
 
         # Start celeryd and redis?
         if with_async:
