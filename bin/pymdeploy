@@ -12,7 +12,7 @@ fi
 NAME=$(pymconfig --name)
 DOCKER_ROOT_REPO=$(pymconfig --docker-repo)
 DOCKER_REPO=$DOCKER_ROOT_REPO/$NAME
-DEPLOY_TYPE=$(pymconfig --deploy-type)
+DEPLOY_TARGET=$(pymconfig --deploy-target)
 
 # . env_setup
 
@@ -116,21 +116,6 @@ do_unit_tests() {
     fi
 }
 
-do_push_to_registry() {
-    # NOTE: for this to work, the running user must have logged in into the
-    # docker hub using 'docker login'
-    set +e
-    IS_LOGGEDIN=$(docker info | grep Username)
-    set -e
-    if [ -z "$IS_LOGGEDIN" ]; then
-        echo "ERROR: please login to docker hub with 'docker login'"
-        exit 1
-    fi
-
-    echo "=> Pushing to registry ${DOCKER_REPO}:${VERSION}"
-    docker push ${DOCKER_REPO}:${VERSION}
-}
-
 do_check_git_repo
 
 if [ ! -z "$DO_TEST" ]; then
@@ -155,20 +140,30 @@ else
 fi
 
 if [ ! -z "$DO_PUSH" ]; then
-    pymdocker --version $VERSION --no-build --push $WITH_DEBUG
+    REGISTRY=docker.io
+    if [ "$DEPLOY_TARGET" == "gcp-cloud-run" ]; then
+        REGISTRY=gcr.io
+    fi
+    pymdocker --version $VERSION --no-build --push $WITH_DEBUG --registry $REGISTRY
+
 else
     echo "=> Skip pushing image to docker repository"
 fi
 
 if [ ! -z "$DO_DEPLOY" ]; then
 
-    if [ "$DEPLOY_TYPE" == "aws" ]; then
+    if [ "$DEPLOY_TARGET" == "aws-beanstalk" ]; then
         pymaws $VERSION $WITH_DEBUG $DEPLOY_ARGS
 
         echo "=> Waiting 1 min for cname swap to propagate"
         sleep 60
+
+    elif [ "$DEPLOY_TARGET" == "gcp-cloud-run" ]; then
+
+        pymgcprun $VERSION $WITH_DEBUG $DEPLOY_ARGS
+
     else
-        echo "ERROR: don't know how to deploy to target $DEPLOY_TYPE"
+        echo "ERROR: don't know how to deploy to target $DEPLOY_TARGET"
         exit 1
     fi
 else

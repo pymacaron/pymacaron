@@ -15,6 +15,7 @@ import yaml
 @click.option('--live-host/--no-live-host', help="Return the url of the live server", default=False)
 @click.option('--env-secrets/--no-env-secrets', help="Return a list of environment variables to pass to docker/elasticbean", default=False)
 @click.option('--git-root/--no-git-root', help="Print the git repository's root dir", default=False)
+@click.option('--deploy-target/--no-deploy-target', help="Where to deploy containers (aws-beanstalk or gcp-cloud-run)", default=False)
 @click.option('--docker-repo/--no-docker-repo', help="Name of your docker repo on docker.io", default=False)
 @click.option('--docker-bucket/--no-docker-bucket', help="Name of the s3 bucket to upload the docker config to", default=False)
 @click.option('--docker-base/--no-docker-base', help="Name of an alternative docker base image to use", default=False)
@@ -27,8 +28,10 @@ import yaml
 @click.option('--aws-hosts-min/--no-aws-hosts-min', help="Minimum size of autoscalling group (default: 1)", default=False)
 @click.option('--aws-hosts-max/--no-aws-hosts-max', help="Maximum size of autoscalling group (default: 4)", default=False)
 @click.option('--with-async/--no-with-async', help="Use asynchronous task support based on celery/rabbitmq", default=False)
-@click.option('--deploy-type/--no-deploy-type', help="Return the name of the platform to deploy to (beanstalk or other)", default=False)
-def main(name, env_jwt_secret, env_jwt_audience, live_host, env_secrets, git_root, docker_repo, docker_bucket, docker_base, aws_user, aws_region, aws_keypair, aws_instance_type, aws_cert_arn, include_links, aws_hosts_min, aws_hosts_max, with_async, deploy_type):
+@click.option('--gcp-region/--no-gcp-region', help="Which gcp region to deploy to", default=False)
+@click.option('--gcp-memory/--no-gcp-memory', help="How much memory to assign to each gcp container", default=False)
+@click.option('--gcp-request-concurrency/--no-gcp-request-concurrency', help="How many concurrent requests to accept per container", default=False)
+def main(name, env_jwt_secret, env_jwt_audience, live_host, env_secrets, git_root, deploy_target, docker_repo, docker_bucket, docker_base, aws_user, aws_region, aws_keypair, aws_instance_type, aws_cert_arn, include_links, aws_hosts_min, aws_hosts_max, with_async, gcp_region, gcp_memory, gcp_request_concurrency):
     """Parse the pym config file (pym-config.yaml) in a shell script friendly
     way."""
 
@@ -73,6 +76,11 @@ def main(name, env_jwt_secret, env_jwt_audience, live_host, env_secrets, git_roo
                 print(s)
     elif with_async:
         print(d.get('with_async', ''))
+    elif deploy_target:
+        target = d.get('deploy_target', 'aws-beanstalk')
+        ok_targets = ('aws-beanstalk', 'gcp-cloud-run')
+        assert target in ok_targets, "deploy_target must be one of: %s" % ' '.join(ok_targets)
+        print(target)
     elif docker_repo:
         print(d['docker_repo'])
     elif docker_bucket:
@@ -100,11 +108,12 @@ def main(name, env_jwt_secret, env_jwt_audience, live_host, env_secrets, git_roo
             print(d['aws_hosts_max'])
         else:
             print('4')
-    elif deploy_type:
-        if 'aws_keypair':
-            print('aws')
-        else:
-            print('unknown')
+    elif gcp_region:
+        print(d.get('gcp_region', 'europe-west1'))
+    elif gcp_memory:
+        print(d.get('gcp_memory', '512Mi'))
+    elif gcp_request_concurrency:
+        print(d.get('gcp_request_concurrency', 10))
 
 if __name__ == "__main__":
     main()

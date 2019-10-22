@@ -110,7 +110,7 @@ if [ -z $AWS_SECRET_ACCESS_KEY ]; then
 fi
 
 if [ ! -z "$LIVE" ]; then
-    echo "=> Finding out CNAME of current Elastic Beanstalk environment"
+    echo "=> Getting url of live host from pym-config"
 
     PYM_SERVER_HOST=$(pymconfig --live-host)
     HAS_CERT=$(pymconfig --aws-cert-arn)
