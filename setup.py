@@ -53,7 +53,7 @@ setup(
         'psutil',
         'nose',
         'mock',
-        'pep8',
+        'pycodestyle'
         'pymacaron-unit>=1.0.10',
         'pymacaron-core>=1.0.146',
         'flask>=1.0.4',

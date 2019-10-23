@@ -13,7 +13,7 @@ tmpdir = '/tmp/test-pym-microservice'
 reportpath = os.path.join(tmpdir, "error_report.json")
 try:
     os.stat(tmpdir)
-except:
+except Exception:
     os.mkdir(tmpdir)
 
 

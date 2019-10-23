@@ -80,6 +80,7 @@ def add_error(name=None, code=None, status=None):
     code_to_class[code] = myexception
     return myexception
 
+
 add_error('UnhandledServerError', 'UNHANDLED_SERVER_ERROR', 500)
 add_error('InternalServerError', 'SERVER_ERROR', 500)
 add_error('AuthMissingHeaderError', 'AUTHORIZATION_HEADER_MISSING', 401)

@@ -22,7 +22,7 @@ def test_crash_reporter(msg, body):
     tmpdir = '/tmp/test-pym-microservice'
     try:
         os.stat(tmpdir)
-    except:
+    except Exception:
         os.mkdir(tmpdir)
 
     data = {

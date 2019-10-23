@@ -29,6 +29,7 @@ def setup_logger(celery=False):
     logging.getLogger('celery').setLevel(logging.INFO)
     logging.getLogger('scout_apm.core').setLevel(logging.INFO)
 
+
 setup_logger()
 
 def get_logger():
