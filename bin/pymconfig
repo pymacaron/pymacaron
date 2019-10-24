@@ -78,7 +78,7 @@ def main(name, env_jwt_secret, env_jwt_audience, live_host, env_secrets, git_roo
         print(d.get('with_async', ''))
     elif deploy_target:
         target = d.get('deploy_target', 'aws-beanstalk')
-        ok_targets = ('aws-beanstalk', 'gcp-cloud-run')
+        ok_targets = ('aws-beanstalk', 'gcp-cloud-run', 'gke')
         assert target in ok_targets, "deploy_target must be one of: %s" % ' '.join(ok_targets)
         print(target)
     elif docker_repo:

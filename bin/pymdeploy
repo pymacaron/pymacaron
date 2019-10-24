@@ -140,9 +140,9 @@ else
 fi
 
 if [ ! -z "$DO_PUSH" ]; then
-    REGISTRY=docker.io
-    if [ "$DEPLOY_TARGET" == "gcp-cloud-run" ]; then
-        REGISTRY=gcr.io
+    REGISTRY=gcr.io
+    if [ "$DEPLOY_TARGET" == "aws-beanstalk" ]; then
+        REGISTRY=docker.io
     fi
     pymdocker --version $VERSION --no-build --push $WITH_DEBUG --registry $REGISTRY
 
@@ -161,6 +161,10 @@ if [ ! -z "$DO_DEPLOY" ]; then
     elif [ "$DEPLOY_TARGET" == "gcp-cloud-run" ]; then
 
         pymgcprun $VERSION $WITH_DEBUG $DEPLOY_ARGS
+
+    elif [ "$DEPLOY_TARGET" == "gke" ]; then
+
+        pymgcpke $VERSION $WITH_DEBUG $DEPLOY_ARGS
 
     else
         echo "ERROR: don't know how to deploy to target $DEPLOY_TARGET"
