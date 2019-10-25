@@ -160,11 +160,11 @@ if [ ! -z "$DO_DEPLOY" ]; then
 
     elif [ "$DEPLOY_TARGET" == "gcp-cloud-run" ]; then
 
-        pymgcprun $VERSION $WITH_DEBUG $DEPLOY_ARGS
+        pymgcr $VERSION $WITH_DEBUG $DEPLOY_ARGS
 
     elif [ "$DEPLOY_TARGET" == "gke" ]; then
 
-        pymgcpke $VERSION $WITH_DEBUG $DEPLOY_ARGS
+        pymgke $VERSION $WITH_DEBUG $DEPLOY_ARGS
 
     else
         echo "ERROR: don't know how to deploy to target $DEPLOY_TARGET"
