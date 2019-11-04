@@ -3,6 +3,7 @@ import sys
 import yaml
 import pprint
 import logging
+from urllib.parse import urlparse
 
 
 log = logging.getLogger(__name__)
@@ -66,8 +67,15 @@ class PyMacaronConfig(object):
                 all_keys.append(k)
 
         # Validate config
+        if hasattr(self, 'live_url'):
+            o = urlparse(self.live_url)
+            host = o.netloc
+            if ':' in host:
+                host = host.split(':')[0]
+            self.live_host = host
+
         if not hasattr(self, 'live_host'):
-            raise Exception("'pym-config.yaml' lacks the 'live_host' key")
+            raise Exception("'pym-config.yaml' lacks the 'live_host' or 'live_url' key")
 
         # Magic here :-)
         # For all keys whose value is in the list of enironment secrets, replace

@@ -6,13 +6,31 @@ import logging
 import click
 import subprocess
 import yaml
+from urllib.parse import urlparse
+
+
+def url_to_port_hostname(url):
+    """Take a url and return its port and hostname"""
+    # Urgh. This code is an awful hack, but it works on simple cases
+    o = urlparse(url)
+    port = 80
+    if o.port:
+        port = o.port
+    elif o.scheme:
+        if o.scheme == 'https':
+            port = 443
+    host = o.netloc
+    if ':' in host:
+        host = host.split(':')[0]
+    return port, host
 
 
 @click.command()
 @click.option('--name/--no-name', help="Name of your project", default=False)
 @click.option('--env-jwt-secret/--no-env-jwt-secret', help="Return the name of the environment variable containing the project's JWT secret", default=False)
 @click.option('--env-jwt-audience/--no-env-jwt-audience', help="Return the name of the environment variable containing the project's JWT audience", default=False)
-@click.option('--live-host/--no-live-host', help="Return the url of the live server", default=False)
+@click.option('--live-host/--no-live-host', help="Return the hostname of the live server", default=False)
+@click.option('--live-port/--no-live-port', help="Return the TCP port of the live server", default=False)
 @click.option('--env-secrets/--no-env-secrets', help="Return a list of environment variables to pass to docker/elasticbean", default=False)
 @click.option('--git-root/--no-git-root', help="Print the git repository's root dir", default=False)
 @click.option('--deploy-target/--no-deploy-target', help="Where to deploy containers (aws-beanstalk or gcp-cloud-run)", default=False)
@@ -31,7 +49,7 @@ import yaml
 @click.option('--gcp-region/--no-gcp-region', help="Which gcp region to deploy to", default=False)
 @click.option('--gcp-memory/--no-gcp-memory', help="How much memory to assign to each gcp container", default=False)
 @click.option('--gcp-request-concurrency/--no-gcp-request-concurrency', help="How many concurrent requests to accept per container", default=False)
-def main(name, env_jwt_secret, env_jwt_audience, live_host, env_secrets, git_root, deploy_target, docker_repo, docker_bucket, docker_base, aws_user, aws_region, aws_keypair, aws_instance_type, aws_cert_arn, include_links, aws_hosts_min, aws_hosts_max, with_async, gcp_region, gcp_memory, gcp_request_concurrency):
+def main(name, env_jwt_secret, env_jwt_audience, live_host, live_port, env_secrets, git_root, deploy_target, docker_repo, docker_bucket, docker_base, aws_user, aws_region, aws_keypair, aws_instance_type, aws_cert_arn, include_links, aws_hosts_min, aws_hosts_max, with_async, gcp_region, gcp_memory, gcp_request_concurrency):
     """Parse the pym config file (pym-config.yaml) in a shell script friendly
     way."""
 
@@ -65,7 +83,17 @@ def main(name, env_jwt_secret, env_jwt_audience, live_host, env_secrets, git_roo
     elif env_jwt_audience:
         print(d['env_jwt_audience'])
     elif live_host:
-        print(d['live_host'])
+        if 'live_url' in d:
+            print(url_to_port_hostname(d['live_url'])[1])
+        else:
+            print(d['live_host'])
+    elif live_port:
+        if 'live_url' in d:
+            print(url_to_port_hostname(d['live_url'])[0])
+        elif 'aws_cert_arn' in d:
+            print(443)
+        else:
+            print(80)
     elif env_secrets:
         if 'env_secrets' in d:
             for s in d['env_secrets']:
