@@ -143,7 +143,7 @@ elif [ ! -z "$IMAGE_ID" ]; then
         CMD="$CMD -e $VAR='$VALUE'"
     done
     # Start the container on port 80 by default
-    CMD="$CMD -e PORT=80 --rm -P $IMAGE_ID"
+    CMD="$CMD -e PORT=80 -e PYM_ENV=dev --rm -P $IMAGE_ID"
 
     echo "=> Starting container for image $IMAGE_ID"
     echo "EXEC [$CMD]"
