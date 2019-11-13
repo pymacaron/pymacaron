@@ -43,13 +43,15 @@ class PyMacaronTestCase(testcase.PyMacaronTestCase):
         self.assertTrue(type(j['version']) is str)
         self.assertTrue(type(j['name']) is str)
         self.assertTrue(type(j['container']) is str)
+        self.assertTrue(type(j['pym_env']) is str)
 
     def assertHasPing(self):
-        self.assertGetReturnOk('ping')
+        return self.assertGetReturnOk('ping')
 
     def assertHasVersion(self, verify_ssl=True):
         j = self.assertGetReturnJson('version', 200, verify_ssl=verify_ssl)
         self.assertIsVersion(j)
+        return j
 
     def assertHasAuthVersion(self, verify_ssl=True):
         self.assertGetReturnError('auth/version', 401, 'AUTHORIZATION_HEADER_MISSING', verify_ssl=verify_ssl)
@@ -68,3 +70,4 @@ class PyMacaronTestCase(testcase.PyMacaronTestCase):
 
         j = self.assertGetReturnJson('auth/version', 200, "Bearer %s" % self.token, verify_ssl=verify_ssl)
         self.assertIsVersion(j)
+        return j
