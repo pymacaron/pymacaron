@@ -8,6 +8,7 @@ PROG=$(basename $0)
 IMAGE_ID=
 LOOP=
 LIVE=
+STAGING=
 LOCAL=1
 TARGET_HOST=
 TARGET_PORT=8080
@@ -27,7 +28,8 @@ environment variables PYM_SERVER_HOST and PYM_SERVER_PORT.
 
 OPTIONS:
   --image <image-id>  ID of a docker image to start and test against.
-  --live              Run tests against the server pointed at by 'eb status'.
+  --live              Run tests against the live server (ie live_url in pym-config).
+  --staging           Run tests against the staging server (ie staging_url in pym-config).
   --host <host>       Run tests against a specific IP address or hostname.
   --port <port>       Run tests against a specific TCP port.
   --loop              Run the tests in a loop, until failure.
@@ -62,6 +64,7 @@ parse_args() {
         case $1 in
             "--debug")        set -x;;
             "--live")         export LIVE=1; export LOCAL=;;
+            "--staging")      export STAGING=1; export LOCAL=;;
             "--image")        shift; IMAGE_ID=$1; export LOCAL=;;
             "--loop")         export LOOP=1;;
             "--host")         shift; export TARGET_HOST=$1;;
@@ -114,6 +117,14 @@ if [ ! -z "$LIVE" ]; then
 
     PYM_SERVER_HOST=$(pymconfig --live-host)
     PYM_SERVER_PORT=$(pymconfig --live-port)
+
+    set_runpath
+
+elif [ ! -z "$STAGING" ]; then
+    echo "=> Getting url of staging host from pym-config"
+
+    PYM_SERVER_HOST=$(pymconfig --staging-host)
+    PYM_SERVER_PORT=$(pymconfig --staging-port)
 
     set_runpath
 
