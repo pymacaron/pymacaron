@@ -1,5 +1,6 @@
 import logging
 import pprint
+import os
 from time import sleep
 from pymacaron_core.swagger.apipool import ApiPool
 from pymacaron.utils import get_container_version
@@ -40,6 +41,7 @@ def do_version():
         name=ApiPool().current_server_name,
         version=ApiPool().current_server_api.get_version(),
         container=get_container_version(),
+        pym_env=os.environ.get('PYM_ENV', ''),
     )
     log.info("/version: " + pprint.pformat(v))
     return v
