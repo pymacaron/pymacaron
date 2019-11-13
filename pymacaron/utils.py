@@ -68,12 +68,11 @@ def to_datetime(e):
 def get_container_version():
     """Return the version of the docker container running the present server,
     or '' if not in a container"""
-    root_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
-    version_file = os.path.join(root_dir, 'VERSION')
+    version_file = '/pym/VERSION'
     if os.path.exists(version_file):
         with open(version_file) as f:
             return f.read()
-    return ''
+    return 'local'
 
 
 def get_app_name():
