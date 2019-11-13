@@ -2,7 +2,7 @@ import logging
 from pprint import pformat
 from flask import jsonify
 from pymacaron_core.exceptions import ValidationError, PyMacaronCoreException
-from pymacaron_core.swagger.apipool import ApiPool
+from pymacaron_core.models import get_model
 
 
 log = logging.getLogger(__name__)
@@ -50,7 +50,7 @@ class PyMacaronException(PyMacaronCoreException):
 
     def to_model(self):
         """Return a bravado-core Error instance"""
-        e = ApiPool().current_server_api.model.Error(
+        e = get_model('Error')(
             status=self.status,
             error=self.code.upper(),
             error_description=str(self),
