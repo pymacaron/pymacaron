@@ -71,7 +71,7 @@ def get_container_version():
     version_file = '/pym/VERSION'
     if os.path.exists(version_file):
         with open(version_file) as f:
-            return f.read()
+            return f.read().strip()
     return 'local'
 
 
