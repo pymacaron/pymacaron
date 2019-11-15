@@ -38,6 +38,8 @@ class PyMacaronTestCase(testcase.PyMacaronTestCase):
         super().setUp()
         self.maxDiff = None
         self.host, self.port, self.token = load_port_host_token()
+        proto = 'https' if self.port == 443 else 'http'
+        self.base_url = '%s://%s:%s' % (proto, self.host, self.port)
 
     def assertIsVersion(self, j):
         self.assertTrue(type(j['version']) is str)
