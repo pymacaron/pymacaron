@@ -1,7 +1,7 @@
 import logging
 from pprint import pformat
 from flask import jsonify
-from pymacaron_core.exceptions import ValidationError, PyMacaronCoreException
+from pymacaron_core.exceptions import ValidationError, PyMacaronCoreException, UnhandledServerError
 from pymacaron_core.models import get_model
 
 
