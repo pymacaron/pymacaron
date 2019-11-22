@@ -1,6 +1,8 @@
 import logging
+import os
 from pymacaron.config import get_config
 from pymacaron.utils import get_app_name
+from pymacaron.utils import get_container_version
 
 
 log = logging.getLogger(__name__)
@@ -33,8 +35,9 @@ def monitor_init(app=None, config=None, celery=False):
 
             Config.set(
                 key=scout_key,
-                name=appname,
+                name=os.environ.get('PYM_ENV', 'dev'),
                 monitor=True,
+                revision_sha=get_container_version(),
             )
 
             scout_apm.celery.install()
