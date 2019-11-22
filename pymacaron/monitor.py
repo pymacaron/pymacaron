@@ -25,8 +25,9 @@ def monitor_init(app=None, config=None, celery=False):
     # Enable scoutapp monitoring
     if hasattr(config, 'scout_key'):
         use_scout = True
-        appname = get_app_name()
+        appname = os.environ.get('PYM_ENV', 'dev')
         scout_key = config.scout_key
+        version = get_container_version()
 
         if celery:
             log.info("Setting up scoutapp monitoring for Celery jobs")
@@ -35,9 +36,9 @@ def monitor_init(app=None, config=None, celery=False):
 
             Config.set(
                 key=scout_key,
-                name=os.environ.get('PYM_ENV', 'dev'),
+                name=appname,
                 monitor=True,
-                revision_sha=get_container_version(),
+                revision_sha=version,
             )
 
             scout_apm.celery.install()
@@ -51,6 +52,7 @@ def monitor_init(app=None, config=None, celery=False):
             app.config['SCOUT_KEY'] = scout_key
             app.config['SCOUT_NAME'] = appname
             app.config['SCOUT_MONITOR'] = True
+            app.config['SCOUT_REVISION_SHA'] = version
 
     # END OF scoutapp support
 
