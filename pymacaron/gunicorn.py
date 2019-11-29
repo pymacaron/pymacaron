@@ -25,9 +25,9 @@ max_requests_jitter = 800
 
 preload = True
 
-errorlog = '-'
-loglevel = 'info'
-accesslog = '-'
+loglevel = 'debug'
+errorlog = '/var/log/gunicorn-error.log'
+accesslog = '/var/log/gunicorn-access.log'
 access_log_format = '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s"'
 
 proc_name = None
