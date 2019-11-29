@@ -29,6 +29,7 @@ def setup_logger(celery=False):
     logging.getLogger('swagger_spec_validator.ref_validators').setLevel(logging.INFO)
     logging.getLogger('celery').setLevel(logging.INFO)
     logging.getLogger('scout_apm.core').setLevel(logging.INFO)
+    logging.getLogger('elasticsearch').setLevel(logging.INFO)
 
 
 setup_logger()
