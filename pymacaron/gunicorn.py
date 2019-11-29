@@ -19,9 +19,8 @@ worker_connections = 1000
 timeout = 120
 keepalive = 2
 
-# With an average of 200 requests/hour, 2000 requests = 10 hours, 2800 = 14 hours
-max_requests = 2400
-max_requests_jitter = 800
+max_requests = 100000
+max_requests_jitter = 10000
 
 preload = True
 
