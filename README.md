@@ -77,7 +77,7 @@ with app.test_request_context(''):
     )
 
     if is_error(result):
-        log.error("Oops. Failed to login used")
+        log.error("Oops. Failed to login user")
 ```
 
 ## Author
