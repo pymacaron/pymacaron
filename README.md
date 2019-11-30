@@ -2,14 +2,14 @@
 
 # PyMacaron
 
-Python microservice framework based on Flask, OpenAPI, docker and AWS/beanstalk.
+Python microservice framework based on Flask, OpenAPI, gunicorn and celery, deployable on GKE and Beanstalk
 
 PyMacaron's documentation is available at
 [http://pymacaron.com/](http://pymacaron.com/).
 
 This page dives deeper into internal implementation details.
 
-# Deep dive
+## Deep dive
 
 ### Built-in endpoints
 
@@ -79,3 +79,10 @@ with app.test_request_context(''):
     if is_error(result):
         log.error("Oops. Failed to login used")
 ```
+
+## Author
+
+Erwan Lemonnier<br/>
+[github.com/pymacaron](https://github.com/pymacaron)</br>
+[github.com/erwan-lemonnier](https://github.com/erwan-lemonnier)<br/>
+[www.linkedin.com/in/erwan-lemonnier/](https://www.linkedin.com/in/erwan-lemonnier/)
