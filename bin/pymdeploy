@@ -38,6 +38,7 @@ OPTIONS:
                     the latest built image instead (step 2)
   --no-push:        skip pushing the image to docker hub (step 4).
   --no-deploy:      skip deploying to live (step 5).
+  --staging-only    deploy only to staging, not live (if possible).
 
 EXAMPLES:
 
@@ -67,7 +68,8 @@ parse_args() {
             "--no-build")      export DO_BUILD=;;
             "--no-push")       export DO_PUSH=;;
             "--no-deploy")     export DO_DEPLOY=;;
-            "--no-test")       export DO_TEST=; export DEPLOY_ARGS=--no-test;;
+            "--no-test")       export DO_TEST=; export DEPLOY_ARGS="$DEPLOY_ARGS --no-test";;
+            "--staging-only")  export DEPLOY_ARGS="$DEPLOY_ARGS --staging-only";;
             "-h" | "--help")   usage; exit 0;;
             *)                 echo "Unknown argument '$1' (-h for help)"; exit 0;;
         esac
