@@ -1,5 +1,5 @@
 import sys
-import multiprocessing
+from pymacaron.resources import get_gunicorn_worker_count
 
 sys.path.append('.')
 
@@ -13,7 +13,7 @@ sys.path.append('.')
 bind = '127.0.0.1:8080'
 backlog = 2048
 
-workers = multiprocessing.cpu_count() * 2 + 1
+workers = get_gunicorn_worker_count()
 worker_class = 'gthread'
 worker_connections = 1000
 timeout = 120

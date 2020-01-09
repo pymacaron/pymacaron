@@ -8,6 +8,13 @@ import subprocess
 import yaml
 from urllib.parse import urlparse
 
+PATH_LIBS = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..')
+sys.path.insert(0, PATH_LIBS)
+
+from pymacaron.resources import get_gunicorn_worker_count
+from pymacaron.resources import get_celery_worker_count
+from pymacaron.resources import get_memory_limit
+
 
 def url_to_port_hostname(url):
     """Take a url and return its port and hostname"""
@@ -51,7 +58,11 @@ def url_to_port_hostname(url):
 @click.option('--gcp-region/--no-gcp-region', help="Which gcp region to deploy to", default=False)
 @click.option('--gcp-memory/--no-gcp-memory', help="How much memory to assign to each gcp container", default=False)
 @click.option('--gcp-request-concurrency/--no-gcp-request-concurrency', help="How many concurrent requests to accept per container", default=False)
-def main(name, env_jwt_secret, env_jwt_audience, live_host, live_port, staging_host, staging_port, env_secrets, git_root, deploy_target, docker_repo, docker_bucket, docker_base, aws_user, aws_region, aws_keypair, aws_instance_type, aws_cert_arn, include_links, aws_hosts_min, aws_hosts_max, with_async, gcp_region, gcp_memory, gcp_request_concurrency):
+@click.option('--memory-limit/--no-memory-limit', help="Return the memory in Gigabytes required to run this pymacaron in a container", default=False)
+@click.option('--gunicorn-worker-count/--no-gunicorn-worker-count', help="Return the number of gunicorn workers to run", default=False)
+@click.option('--celery-worker-count/--no-celery-worker-count', help="Return the number of celery workers to run", default=False)
+@click.option('--cpu-count/--no-cpu-count', help="The number of CPUs available on a staging or live node (GKE only)", default=False)
+def main(name, env_jwt_secret, env_jwt_audience, live_host, live_port, staging_host, staging_port, env_secrets, git_root, deploy_target, docker_repo, docker_bucket, docker_base, aws_user, aws_region, aws_keypair, aws_instance_type, aws_cert_arn, include_links, aws_hosts_min, aws_hosts_max, with_async, gcp_region, gcp_memory, gcp_request_concurrency, memory_limit, gunicorn_worker_count, celery_worker_count, cpu_count):
     """Parse the pym config file (pym-config.yaml) in a shell script friendly
     way."""
 
@@ -156,6 +167,24 @@ def main(name, env_jwt_secret, env_jwt_audience, live_host, live_port, staging_h
         print(d.get('gcp_memory', '512Mi'))
     elif gcp_request_concurrency:
         print(d.get('gcp_request_concurrency', 10))
+
+    elif gunicorn_worker_count:
+        print(get_gunicorn_worker_count())
+    elif celery_worker_count:
+        if 'worker_count' in d:
+            print(d['worker_count'])
+        else:
+            print(get_celery_worker_count())
+    elif memory_limit:
+        celery_count = d.get('worker_count', None)
+        cpu_count = d.get('cpu_count', 1)
+        print(get_memory_limit(
+            default_celery_worker_count=celery_count,
+            cpu_count=cpu_count,
+        ))
+    elif cpu_count:
+        # Defaults to 1
+        print(d.get('cpu_count', 1))
 
 if __name__ == "__main__":
     main()
