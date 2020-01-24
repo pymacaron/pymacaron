@@ -1,6 +1,7 @@
 import logging
 import multiprocessing
 from math import ceil
+from pymacaron.config import get_config
 
 
 log = logging.getLogger(__name__)
@@ -18,9 +19,17 @@ def get_gunicorn_worker_count(cpu_count=None):
 
 def get_celery_worker_count(cpu_count=None):
     """Return the number of celery workers to run on this container hardware"""
+    conf = get_config()
+    if hasattr(conf, 'worker_count'):
+        # Start worker_count parrallel celery workers
+        return conf.worker_count
     if cpu_count:
         return cpu_count * 2
-    return multiprocessing.cpu_count() * 2
+    c = multiprocessing.cpu_count() * 2
+    # Minimum worker count == 2
+    if c < 2:
+        c == 2
+    return c
 
 
 def get_memory_limit(default_celery_worker_count=None, cpu_count=None):
@@ -32,3 +41,7 @@ def get_memory_limit(default_celery_worker_count=None, cpu_count=None):
     if not celery_count:
         celery_count = get_celery_worker_count(cpu_count=cpu_count)
     return ceil(get_gunicorn_worker_count(cpu_count=cpu_count) * 900 + celery_count * 300)
+
+
+def get_celery_worker_memory_limit():
+    return 200 * 1024
