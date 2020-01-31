@@ -5,6 +5,7 @@ set -e
 GIT_BRANCH=$(git branch 2>/dev/null| sed -n '/^\*/s/^\* //p')
 GIT_COUNT=$(git rev-list HEAD --count)
 DATE=$(date +"%y%m%d-%H%M")
-VERSION=$DATE-$GIT_COUNT
+GIT_SHA=$(git rev-parse HEAD | cut -c -6)
+VERSION=$DATE-$GIT_COUNT-$GIT_SHA
 
 echo $VERSION
