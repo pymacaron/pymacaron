@@ -13,6 +13,7 @@ LOCAL=1
 TARGET_HOST=
 TARGET_PORT=8080
 NO_SSL_CHECK=
+NO_CAPTURE=
 GEN_TOKEN=
 
 RUNPATH=
@@ -35,6 +36,7 @@ OPTIONS:
   --loop              Run the tests in a loop, until failure.
   --no-ssl-check      Don't check SSL certificate.
   --gen-token         Generate a default JWT token to use in tests (won't by default).
+  --no-capture        Show stdout from the test code.
 
 USAGE:
 
@@ -71,6 +73,7 @@ parse_args() {
             "--port")         shift; export TARGET_PORT=$1;;
             "--gen-token")    export GEN_TOKEN=1;;
             "--no-ssl-check") export NO_SSL_CHECK=1;;
+            "--no-capture")   export NO_CAPTURE=--nocapture;;
             "-h" | "--help")  usage; exit 0;;
             *)                export RUNPATH="$RUNPATH $1";;
         esac
@@ -210,10 +213,10 @@ fi
 echo "=> Running acceptance tests against $PYM_SERVER_HOST:$PYM_SERVER_PORT"
 RC=0
 if [ -z "$LOOP" ]; then
-    nosetests -xv $RUNPATH || RC=$?
+    nosetests -xv $NO_CAPTURE $RUNPATH || RC=$?
 else
     while true; do
-        nosetests -xv $RUNPATH || RC=$?
+        nosetests -xv $NO_CAPTURE $RUNPATH || RC=$?
     done
 fi
 
