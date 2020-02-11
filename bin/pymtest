@@ -120,6 +120,7 @@ if [ ! -z "$LIVE" ]; then
 
     PYM_SERVER_HOST=$(pymconfig --live-host)
     PYM_SERVER_PORT=$(pymconfig --live-port)
+    PYM_ENV=$(pymconfig --name)-live
 
     set_runpath
 
@@ -128,6 +129,7 @@ elif [ ! -z "$STAGING" ]; then
 
     PYM_SERVER_HOST=$(pymconfig --staging-host)
     PYM_SERVER_PORT=$(pymconfig --staging-port)
+    PYM_ENV=$(pymconfig --name)-staging
 
     set_runpath
 
