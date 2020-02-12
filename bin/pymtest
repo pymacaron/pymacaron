@@ -36,7 +36,7 @@ OPTIONS:
   --loop              Run the tests in a loop, until failure.
   --no-ssl-check      Don't check SSL certificate.
   --gen-token         Generate a default JWT token to use in tests (won't by default).
-  --no-capture        Show stdout from the test code.
+  --nocapture         Show stdout from the test code.
 
 USAGE:
 
@@ -73,7 +73,7 @@ parse_args() {
             "--port")         shift; export TARGET_PORT=$1;;
             "--gen-token")    export GEN_TOKEN=1;;
             "--no-ssl-check") export NO_SSL_CHECK=1;;
-            "--no-capture")   export NO_CAPTURE=--nocapture;;
+            "--nocapture")    export NO_CAPTURE=--nocapture;;
             "-h" | "--help")  usage; exit 0;;
             *)                export RUNPATH="$RUNPATH $1";;
         esac
