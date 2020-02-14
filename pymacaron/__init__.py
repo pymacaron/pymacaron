@@ -367,8 +367,13 @@ def letsgo(name, callback=None):
 
     @click.command()
     @click.option('--port', help="Set server listening port (default: 80)", default=None)
+    @click.option('--env', help="Set the environment, hence forcing to run against live, staging or dev by setting the PYM_ENV variable", default=None)
     @click.option('--debug/--no-debug', default=True)
-    def main(port, debug):
+    def main(port, env, debug):
+
+        if env:
+            log.info("Overriding PYM_ENV to '%s'" % env)
+            os.environ['PYM_ENV'] = env
 
         show_splash()
         if not port:
