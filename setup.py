@@ -52,6 +52,7 @@ setup(
         'flask>=1.0.4',
         'flask-cors',
         'flask-compress',
+	'Werkzeug==0.16.0',
         'click',
         'pytz',
         'PyJWT',
