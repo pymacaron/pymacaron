@@ -7,9 +7,8 @@ PROG=$(basename $0)
 
 IMAGE_ID=
 LOOP=
-LIVE=
-STAGING=
 LOCAL=1
+TARGET_ENV=
 TARGET_HOST=
 TARGET_PORT=8080
 NO_SSL_CHECK=
@@ -20,7 +19,7 @@ RUNPATH=
 
 usage() {
     cat << EOF
-USAGE: $0 [--debug] [--loop] [--live|--image <image-id>|--host X --port Y] <tests_path>
+USAGE: $0 [--debug] [--loop] [--env PYM_ENV|--image <image-id>|--host X --port Y] <tests_path>
 
 Run acceptance tests against a local server, a local docker container or a
 remote live server. If not arguments are provided, execute all test files under
@@ -29,8 +28,8 @@ environment variables PYM_SERVER_HOST and PYM_SERVER_PORT.
 
 OPTIONS:
   --image <image-id>  ID of a docker image to start and test against.
-  --live              Run tests against the live server (ie live_url in pym-config).
-  --staging           Run tests against the staging server (ie staging_url in pym-config).
+  --env <env>         Run tests against the live server defined in the pym config
+                      file 'pym-config.<env>.yaml' (defaults to 'pym-config.yaml').
   --host <host>       Run tests against a specific IP address or hostname.
   --port <port>       Run tests against a specific TCP port.
   --loop              Run the tests in a loop, until failure.
@@ -48,7 +47,7 @@ USAGE:
 
   # Run tests against the live api whose hostname
   # is specified in pym-config.yaml
-  pymtest --live testaccept/test_v1_*
+  pymtest --env live testaccept/test_v1_*
 
   # Start the given pymacaron image in a local container and run
   # tests against it
@@ -65,8 +64,9 @@ parse_args() {
     while [ "$1" != "" ]; do
         case $1 in
             "--debug")        set -x;;
-            "--live")         export LIVE=1; export LOCAL=;;
-            "--staging")      export STAGING=1; export LOCAL=;;
+            "--env")          shift; export TARGET_ENV=$1;;
+            "--live")         export TARGET_ENV='live';;
+            "--staging")      export TARGET_ENV='staging';;
             "--image")        shift; IMAGE_ID=$1; export LOCAL=;;
             "--loop")         export LOOP=1;;
             "--host")         shift; export TARGET_HOST=$1;;
@@ -86,12 +86,17 @@ parse_args $ARGS
 # Force re-generation of recent auth token
 unset PYM_JWT_TOKEN
 
+PYMCONFIG_ARGS=""
+if [ ! -z "$TARGET_ENV" ]; then
+    PYMCONFIG_ARGS="--env $TARGET_ENV"
+fi
+
 set_runpath() {
     if [ -z "$RUNPATH" ]; then
         RUNPATH="testaccept/"
         HERE=$PWD
         # Let's append all symlinked dirs's testaccept/ to RUNPATH
-        for DIR in $(pymconfig --include-links)
+        for DIR in $(pymconfig $PYMCONFIG_ARGS --include-links)
         do
             cd $DIR
             ROOTDIR=$(git rev-parse --show-toplevel)
@@ -115,28 +120,20 @@ if [ -z $AWS_SECRET_ACCESS_KEY ]; then
     fi
 fi
 
-if [ ! -z "$LIVE" ]; then
-    echo "=> Getting url of live host from pym-config"
-
-    PYM_SERVER_HOST=$(pymconfig --live-host)
-    PYM_SERVER_PORT=$(pymconfig --live-port)
-    PYM_ENV=$(pymconfig --name)-live
-
-    set_runpath
-
-elif [ ! -z "$STAGING" ]; then
-    echo "=> Getting url of staging host from pym-config"
-
-    PYM_SERVER_HOST=$(pymconfig --staging-host)
-    PYM_SERVER_PORT=$(pymconfig --staging-port)
-    PYM_ENV=$(pymconfig --name)-staging
-
-    set_runpath
-
-elif [ ! -z "$TARGET_HOST" ]; then
+if [ ! -z "$TARGET_HOST" ]; then
     echo "=> Running against $TARGET_HOST:$TARGET_PORT"
     export PYM_SERVER_HOST=$TARGET_HOST
     export PYM_SERVER_PORT=$TARGET_PORT
+    export PYM_ENV=$TARGET_ENV
+
+    set_runpath
+
+elif [ ! -z "$TARGET_ENV" ]; then
+    echo "=> Getting url of live host for $TARGET_ENV from pym-config"
+
+    export PYM_SERVER_HOST=$(pymconfig $PYMCONFIG_ARGS --host)
+    export PYM_SERVER_PORT=$(pymconfig $PYMCONFIG_ARGS --port)
+    export PYM_ENV=$TARGET_ENV
 
     set_runpath
 
@@ -148,7 +145,7 @@ elif [ ! -z "$IMAGE_ID" ]; then
     # Start the container, passing all secrets as environment variables,
     # just like in the amazon EBS setup
     CMD="docker run"
-    for VAR in $(pymconfig --env-secrets)
+    for VAR in $(pymconfig $PYMCONFIG_ARGS --env-secrets)
     do
         echo "=> Passing env variable $VAR"
         VALUE=$(env | grep "^$VAR=" | cut -d '=' -f 2)
@@ -195,10 +192,22 @@ elif [ ! -z "$IMAGE_ID" ]; then
 
 elif [ ! -z "$LOCAL" ]; then
 
-    set_runpath
+    # TODO: check that server is indeed running locally. If not, start it?
+    export PYM_SERVER_HOST=127.0.0.1
+    export PYM_SERVER_PORT=8080
 
-    # TODO: check that server is indeed running locally. If not, start it
+    # Let's try to guess if we should set PYM_ENV
+    RUN_ENV=$(ps auxwwf | grep 'python server.py' | grep '\--env' | sed -e 's/.*--env //' | awk '{ print $1 }')
+    if [ -z "$RUN_ENV" ]; then
+        echo "ERROR: server is not started!"
+        exit -1
+    fi
+    export PYM_ENV=$RUN_ENV
+
+    set_runpath
 fi
+
+echo "=> Using PYM_ENV=$PYM_ENV"
 
 if [ ! -z "$GEN_TOKEN" ]; then
     if [ -z "$PYM_JWT_TOKEN" ]; then

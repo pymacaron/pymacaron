@@ -24,8 +24,21 @@ class PyMacaronConfig(object):
         # Default time-limit for the slow-call report
         self.report_call_exceeding_ms = 1000
 
-        # Get the live host from pym-config.yaml
+        # Find a pym-config file
+        pym_env = os.environ.get('PYM_ENV', None)
+        import json
+        log.debug("os.environ: [%s]" % json.dumps(dict(os.environ), indent=4, sort_keys=True))
+        log.debug("Target environment is: [%s]" % pym_env)
+
         paths = [
+            # If 'pym-config.<PYM_ENV>.yaml exists, use it in priority
+            os.path.join(os.path.dirname(sys.argv[0]), 'pym-config.%s.yaml' % pym_env),
+            '/pym/pym-config.%s.yaml' % pym_env,
+            os.path.join(os.path.dirname(sys.argv[0]), 'test/pym-config.%s.yaml' % pym_env),
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'pym-config.%s.yaml' % pym_env),
+            os.path.join(os.getcwd(), 'pym-config.%s.yaml' % pym_env),
+
+            # Default to 'pym-config.yaml'
             os.path.join(os.path.dirname(sys.argv[0]), 'pym-config.yaml'),
             '/pym/pym-config.yaml',
             os.path.join(os.path.dirname(sys.argv[0]), 'test/pym-config.yaml'),

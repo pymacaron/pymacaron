@@ -33,38 +33,38 @@ def url_to_port_hostname(url):
 
 
 @click.command()
-@click.option('--name/--no-name', help="Name of your project", default=False)
-@click.option('--env-jwt-secret/--no-env-jwt-secret', help="Return the name of the environment variable containing the project's JWT secret", default=False)
-@click.option('--env-jwt-audience/--no-env-jwt-audience', help="Return the name of the environment variable containing the project's JWT audience", default=False)
-@click.option('--live-host/--no-live-host', help="Return the hostname of the live server", default=False)
-@click.option('--live-port/--no-live-port', help="Return the TCP port of the live server", default=False)
-@click.option('--staging-host/--no-staging-host', help="Return the hostname of the staging server", default=False)
-@click.option('--staging-port/--no-staging-port', help="Return the TCP port of the staging server", default=False)
-@click.option('--env-secrets/--no-env-secrets', help="Return a list of environment variables to pass to docker/elasticbean", default=False)
-@click.option('--git-root/--no-git-root', help="Print the git repository's root dir", default=False)
-@click.option('--deploy-target/--no-deploy-target', help="Where to deploy containers (aws-beanstalk or gcp-cloud-run)", default=False)
-@click.option('--docker-repo/--no-docker-repo', help="Name of your docker repo on docker.io", default=False)
-@click.option('--docker-bucket/--no-docker-bucket', help="Name of the s3 bucket to upload the docker config to", default=False)
-@click.option('--docker-base/--no-docker-base', help="Name of an alternative docker base image to use", default=False)
-@click.option('--aws-user/--no-aws-user', help="Name of the aws iam user to deploy as", default=False)
-@click.option('--aws-region/--no-aws-region', help="AWS region", default=False)
-@click.option('--aws-keypair/--no-aws-keypair', help="Name of the aws ssh keypair to deploy on ec2 instances", default=False)
-@click.option('--aws-instance-type/--no-aws-instance-type', help="Name of the aws instance type to use", default=False)
-@click.option('--aws-cert-arn/--no-aws-cert-arn', help="ARN of ssl certificate to use for server, if https enabled", default=False)
-@click.option('--include-links/--no-include-links', help="Which symlinks to include in the docker image", default=False)
-@click.option('--aws-hosts-min/--no-aws-hosts-min', help="Minimum size of autoscalling group (default: 1)", default=False)
-@click.option('--aws-hosts-max/--no-aws-hosts-max', help="Maximum size of autoscalling group (default: 4)", default=False)
-@click.option('--with-async/--no-with-async', help="Use asynchronous task support based on celery/rabbitmq", default=False)
-@click.option('--gcp-region/--no-gcp-region', help="Which gcp region to deploy to", default=False)
-@click.option('--gcp-memory/--no-gcp-memory', help="How much memory to assign to each gcp container", default=False)
-@click.option('--gcp-request-concurrency/--no-gcp-request-concurrency', help="How many concurrent requests to accept per container", default=False)
-@click.option('--memory-limit/--no-memory-limit', help="Return the memory in Gigabytes required to run this pymacaron in a container", default=False)
-@click.option('--gunicorn-worker-count/--no-gunicorn-worker-count', help="Return the number of gunicorn workers to run", default=False)
-@click.option('--celery-worker-count/--no-celery-worker-count', help="Return the number of celery workers to run", default=False)
-@click.option('--cpu-count/--no-cpu-count', help="The number of CPUs available on a staging or live node (GKE only)", default=False)
-def main(name, env_jwt_secret, env_jwt_audience, live_host, live_port, staging_host, staging_port, env_secrets, git_root, deploy_target, docker_repo, docker_bucket, docker_base, aws_user, aws_region, aws_keypair, aws_instance_type, aws_cert_arn, include_links, aws_hosts_min, aws_hosts_max, with_async, gcp_region, gcp_memory, gcp_request_concurrency, memory_limit, gunicorn_worker_count, celery_worker_count, cpu_count):
-    """Parse the pym config file (pym-config.yaml) in a shell script friendly
-    way."""
+@click.option('--env', nargs=1, required=False, help="Use the pym config file for this environment, named pym-config.<env>.yaml")
+@click.option('--name', is_flag=True, help="Name of your project")
+@click.option('--env-jwt-secret', is_flag=True, help="Return the name of the environment variable containing the project's JWT secret")
+@click.option('--env-jwt-audience', is_flag=True, help="Return the name of the environment variable containing the project's JWT audience")
+@click.option('--host', is_flag=True, help="Return the hostname of the server we are deploying to")
+@click.option('--port', is_flag=True, help="Return the TCP port of the server we are deploying to")
+@click.option('--env-secrets', is_flag=True, help="Return a list of environment variables to pass to docker/elasticbean")
+@click.option('--git-root', is_flag=True, help="Print the git repository's root dir")
+@click.option('--deploy-target', is_flag=True, help="Where to deploy containers (aws-beanstalk or gcp-cloud-run)")
+@click.option('--docker-repo', is_flag=True, help="Name of your docker repo on docker.io")
+@click.option('--docker-bucket', is_flag=True, help="Name of the s3 bucket to upload the docker config to")
+@click.option('--docker-base', is_flag=True, help="Name of an alternative docker base image to use")
+@click.option('--aws-user', is_flag=True, help="Name of the aws iam user to deploy as")
+@click.option('--aws-region', is_flag=True, help="AWS region")
+@click.option('--aws-keypair', is_flag=True, help="Name of the aws ssh keypair to deploy on ec2 instances")
+@click.option('--aws-instance-type', is_flag=True, help="Name of the aws instance type to use")
+@click.option('--aws-cert-arn', is_flag=True, help="ARN of ssl certificate to use for server, if https enabled")
+@click.option('--include-links', is_flag=True, help="Which symlinks to include in the docker image")
+@click.option('--aws-hosts-min', is_flag=True, help="Minimum size of autoscalling group (default: 1)")
+@click.option('--aws-hosts-max', is_flag=True, help="Maximum size of autoscalling group (default: 4)")
+@click.option('--with-async', is_flag=True, help="Use asynchronous task support based on celery/rabbitmq")
+@click.option('--gcp-region', is_flag=True, help="Which gcp region to deploy to")
+@click.option('--gcp-memory', is_flag=True, help="How much memory to assign to each gcp container")
+@click.option('--gcp-request-concurrency', is_flag=True, help="How many concurrent requests to accept per container")
+@click.option('--memory-limit', is_flag=True, help="Return the memory in Gigabytes required to run this pymacaron in a container")
+@click.option('--gunicorn-worker-count', is_flag=True, help="Return the number of gunicorn workers to run")
+@click.option('--celery-worker-count', is_flag=True, help="Return the number of celery workers to run")
+@click.option('--cpu-count', is_flag=True, help="The number of CPUs available on a staging or live node (GKE only)")
+def main(env, name, env_jwt_secret, env_jwt_audience, host, port, env_secrets, git_root, deploy_target, docker_repo, docker_bucket, docker_base, aws_user, aws_region, aws_keypair, aws_instance_type, aws_cert_arn, include_links, aws_hosts_min, aws_hosts_max, with_async, gcp_region, gcp_memory, gcp_request_concurrency, memory_limit, gunicorn_worker_count, celery_worker_count, cpu_count):
+    """Parse the pym config file 'pym-config.<env>.yaml' (or 'pym-config.yaml' if
+    no env is specified) in a shell script friendly way.
+    """
 
     # What is the repo's root directory?
     root_dir = subprocess.Popen(["git", "rev-parse", "--show-toplevel"], stdout=subprocess.PIPE).stdout.read()
@@ -75,7 +75,8 @@ def main(name, env_jwt_secret, env_jwt_audience, live_host, live_port, staging_h
         sys.exit(0)
 
     # Load pym-config.yaml
-    path = os.path.join(root_dir, 'pym-config.yaml')
+    filename = 'pym-config.%s.yaml' % env if env else 'pym-config.yaml'
+    path = os.path.join(root_dir, filename)
 
     if not os.path.isfile(path):
         print("ERROR: cannot find config file %s" % path)
@@ -95,26 +96,14 @@ def main(name, env_jwt_secret, env_jwt_audience, live_host, live_port, staging_h
         print(d['env_jwt_secret'])
     elif env_jwt_audience:
         print(d['env_jwt_audience'])
-    elif live_host:
+    elif host:
         if 'live_url' in d:
             print(url_to_port_hostname(d['live_url'])[1])
         else:
             print(d['live_host'])
-    elif live_port:
+    elif port:
         if 'live_url' in d:
             print(url_to_port_hostname(d['live_url'])[0])
-        elif 'aws_cert_arn' in d:
-            print(443)
-        else:
-            print(80)
-    elif staging_host:
-        if 'staging_url' in d:
-            print(url_to_port_hostname(d['staging_url'])[1])
-        else:
-            print(d['staging_host'])
-    elif staging_port:
-        if 'staging_url' in d:
-            print(url_to_port_hostname(d['staging_url'])[0])
         elif 'aws_cert_arn' in d:
             print(443)
         else:

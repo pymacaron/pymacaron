@@ -363,8 +363,6 @@ def show_splash():
 def letsgo(name, callback=None):
     assert callback
 
-    with_async = False
-
     @click.command()
     @click.option('--port', help="Set server listening port (default: 80)", default=None)
     @click.option('--env', help="Set the environment, hence forcing to run against live, staging or dev by setting the PYM_ENV variable", default=None)
@@ -375,12 +373,14 @@ def letsgo(name, callback=None):
             log.info("Overriding PYM_ENV to '%s'" % env)
             os.environ['PYM_ENV'] = env
 
+        conf = get_config()
+
         show_splash()
         if not port:
             port = get_port()
 
         # Start celeryd and redis?
-        if with_async:
+        if hasattr(conf, 'with_async') and conf.with_async:
             from pymacaron_async import start_celery
             start_celery(port, debug)
 
@@ -388,8 +388,6 @@ def letsgo(name, callback=None):
         callback(port, debug)
 
     if name == "__main__":
-        if hasattr(get_config(), 'with_async') and get_config().with_async:
-            with_async = True
         main()
 
     if os.path.basename(sys.argv[0]) == 'gunicorn':
