@@ -22,14 +22,15 @@ Run the pymacaron deployment pipeline:
 
 OPTIONS:
 
-  --env ENV:        deploy the service described in 'pym-config.ENV.yaml'
+  --env ENV         deploy the service described in 'pym-config.ENV.yaml'
                     (defaults to using 'pym-config.yaml')
-  --debug:          be very verbose.
-  --no-test:        skip all tests (steps 1, 3 and 6).
-  --no-build:       skip building the docker image and use
-                    the latest built image instead (step 2)
-  --no-push:        skip pushing the image to docker hub (step 4).
-  --no-deploy:      skip deploying to live (step 5).
+  --debug           be very verbose.
+  --no-test         skip all tests (steps 1, 3 and 6).
+  --no-unittest     skip only unittests (step 1).
+  --no-build        skip building the docker image and use
+                    the latest built image instead (step 2).
+  --no-push         skip pushing the image to docker hub (step 4).
+  --no-deploy       skip deploying to live (step 5).
   --staging-only    deploy only to staging, not live (if possible).
 
 EXAMPLES:
@@ -52,6 +53,7 @@ EOF
 DO_PUSH=1
 DO_DEPLOY=1
 DO_TEST=1
+DO_UNITTEST=1
 DO_BUILD=1
 DEPLOY_ARGS=
 WITH_DEBUG=
@@ -65,7 +67,8 @@ parse_args() {
             "--no-build")      export DO_BUILD=;;
             "--no-push")       export DO_PUSH=;;
             "--no-deploy")     export DO_DEPLOY=;;
-            "--no-test")       export DO_TEST=; export DEPLOY_ARGS="$DEPLOY_ARGS --no-test";;
+            "--no-test")       export DO_TEST=; export DO_UNITTEST=; export DEPLOY_ARGS="$DEPLOY_ARGS --no-test";;
+            "--no-unittest")   export DO_UNITTEST=;;
             "--staging-only")  export DEPLOY_ARGS="$DEPLOY_ARGS --staging-only";;
             "-h" | "--help")   usage; exit 0;;
             *)                 echo "Unknown argument '$1' (-h for help)"; exit 0;;
@@ -139,7 +142,7 @@ do_unit_tests() {
 
 do_check_git_repo
 
-if [ ! -z "$DO_TEST" ]; then
+if [ ! -z "$DO_UNITTEST" ]; then
     do_unit_tests $WITH_DEBUG
 else
     echo "=> Skip nosetest"
