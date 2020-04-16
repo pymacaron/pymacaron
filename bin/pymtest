@@ -128,17 +128,13 @@ if [ ! -z "$TARGET_HOST" ]; then
 
     set_runpath
 
-elif [ ! -z "$TARGET_ENV" ]; then
-    echo "=> Getting url of live host for $TARGET_ENV from pym-config"
-
-    export PYM_SERVER_HOST=$(pymconfig $PYMCONFIG_ARGS --host)
-    export PYM_SERVER_PORT=$(pymconfig $PYMCONFIG_ARGS --port)
-    export PYM_ENV=$TARGET_ENV
-
-    set_runpath
-
 elif [ ! -z "$IMAGE_ID" ]; then
     echo "=> Running against docker image $IMAGE_ID"
+
+    export PYM_ENV=$TARGET_ENV
+    if [ -z "$PYM_ENV" ]; then
+        export PYM_ENV='dev'
+    fi
 
     set_runpath
 
@@ -156,7 +152,7 @@ elif [ ! -z "$IMAGE_ID" ]; then
         CMD="$CMD -e $VAR='$VALUE'"
     done
     # Start the container on port 80 by default
-    CMD="$CMD -e PORT=80 -e PYM_ENV=dev --rm -P $IMAGE_ID"
+    CMD="$CMD -e PORT=80 -e PYM_ENV=$PYM_ENV --rm -P $IMAGE_ID"
 
     echo "=> Starting container for image $IMAGE_ID"
     echo "EXEC [$CMD]"
@@ -189,6 +185,15 @@ elif [ ! -z "$IMAGE_ID" ]; then
         echo "       did the container crash?"
         exit 1
     fi
+
+elif [ ! -z "$TARGET_ENV" ]; then
+    echo "=> Getting url of live host for $TARGET_ENV from pym-config"
+
+    export PYM_SERVER_HOST=$(pymconfig $PYMCONFIG_ARGS --host)
+    export PYM_SERVER_PORT=$(pymconfig $PYMCONFIG_ARGS --port)
+    export PYM_ENV=$TARGET_ENV
+
+    set_runpath
 
 elif [ ! -z "$LOCAL" ]; then
 
