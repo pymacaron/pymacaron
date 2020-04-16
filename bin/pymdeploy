@@ -4,16 +4,6 @@ set -e
 
 ARGS=$@
 
-if [ ! -e 'pym-config.yaml' ]; then
-    echo "ERROR: no pym-config.yaml in current dir"
-    exit 1
-fi
-
-NAME=$(pymconfig --name)
-DOCKER_ROOT_REPO=$(pymconfig --docker-repo)
-DOCKER_REPO=$DOCKER_ROOT_REPO/$NAME
-DEPLOY_TARGET=$(pymconfig --deploy-target)
-
 # . env_setup
 
 usage() {
@@ -27,11 +17,13 @@ Run the pymacaron deployment pipeline:
     started in a local container
  4. Push the docker image to a docker repository
  5. Deploy the docker image to a live environment
-    (Amazon Beanstalk or other)
+    (Amazon Beanstalk, GKE or GCR)
  6. Run the tests again, against the live api
 
 OPTIONS:
 
+  --env ENV:        deploy the service described in 'pym-config.ENV.yaml'
+                    (defaults to using 'pym-config.yaml')
   --debug:          be very verbose.
   --no-test:        skip all tests (steps 1, 3 and 6).
   --no-build:       skip building the docker image and use
@@ -44,6 +36,9 @@ EXAMPLES:
 
 # test, build, push, deploy
 pymdeploy
+
+# same against a staging environment described in pym-config.staging.yaml
+pymdeploy --env staging
 
 # only build docker image and push it
 pymdeploy --no-test --no-deploy
@@ -60,10 +55,12 @@ DO_TEST=1
 DO_BUILD=1
 DEPLOY_ARGS=
 WITH_DEBUG=
+TARGET_ENV=
 
 parse_args() {
     while [ "$1" != "" ]; do
         case $1 in
+            "--env")           shift; export TARGET_ENV=$1;;
             "--debug")         set -x; DEBUG='true'; WITH_DEBUG="--debug";;
             "--no-build")      export DO_BUILD=;;
             "--no-push")       export DO_PUSH=;;
@@ -78,6 +75,22 @@ parse_args() {
 }
 
 parse_args $ARGS
+
+WITH_ENV=""
+if [ ! -z "$TARGET_ENV" ]; then
+    WITH_ENV="--env $TARGET_ENV"
+    export PYM_ENV=$TARGET_ENV
+    echo "=> Using PYM_ENV=$PYM_ENV"
+fi
+
+# Check that pymconfig exists
+pymconfig $WITH_ENV
+
+NAME=$(pymconfig $WITH_ENV --name)
+DOCKER_ROOT_REPO=$(pymconfig $WITH_ENV --docker-repo)
+DOCKER_REPO=$DOCKER_ROOT_REPO/$NAME
+DEPLOY_TARGET=$(pymconfig $WITH_ENV --deploy-target)
+
 
 do_check_git_repo() {
     CURRENT_BRANCH=$(git branch | grep \* | cut -d ' ' -f2)
@@ -134,11 +147,11 @@ fi
 
 if [ ! -z "$DO_BUILD" ]; then
     do_gen_version $WITH_DEBUG
-    pymdocker --version $VERSION $WITH_DEBUG
+    pymdocker $WITH_ENV --version $VERSION $WITH_DEBUG
 
     if [ ! -z "$DO_TEST" ]; then
         IMAGE_ID=$(docker images --quiet ${DOCKER_REPO}:${VERSION})
-        pymtest --image $IMAGE_ID
+        pymtest $WITH_ENV --image $IMAGE_ID
     else
         echo "=> Skip running tests against docker image"
     fi
@@ -152,7 +165,7 @@ if [ ! -z "$DO_PUSH" ]; then
     if [ "$DEPLOY_TARGET" == "aws-beanstalk" ]; then
         REGISTRY=docker.io
     fi
-    pymdocker --version $VERSION --no-build --push $WITH_DEBUG --registry $REGISTRY
+    pymdocker $WITH_ENV --version $VERSION --no-build --push $WITH_DEBUG --registry $REGISTRY
 
 else
     echo "=> Skip pushing image to docker repository"
@@ -172,7 +185,7 @@ if [ ! -z "$DO_DEPLOY" ]; then
 
     elif [ "$DEPLOY_TARGET" == "gke" ]; then
 
-        pymgke $VERSION $WITH_DEBUG $DEPLOY_ARGS
+        pymgke $WITH_ENV $VERSION $WITH_DEBUG $DEPLOY_ARGS
 
     else
         echo "ERROR: don't know how to deploy to target $DEPLOY_TARGET"
@@ -183,7 +196,7 @@ else
 fi
 
 if [ ! -z "$DO_TEST" ]; then
-    pymtest --live $WITH_DEBUG
+    pymtest $WITH_ENV $WITH_DEBUG
 else
     echo "=> Skip running tests against live api"
 fi
