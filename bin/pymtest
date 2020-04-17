@@ -144,7 +144,7 @@ elif [ ! -z "$IMAGE_ID" ]; then
     for VAR in $(pymconfig $PYMCONFIG_ARGS --env-secrets)
     do
         echo "=> Passing env variable $VAR"
-        VALUE=$(env | grep "^$VAR=" | cut -d '=' -f 2)
+        VALUE=$(env | grep "^$VAR=" | cut -d '=' -f 2-)
         if [ -z "$VALUE" ]; then
             echo "ERROR: variable $VAR has no value in env"
             exit 1

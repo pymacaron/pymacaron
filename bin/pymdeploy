@@ -11,27 +11,25 @@ usage() {
 USAGE: pymdeploy [--debug] [--no-test] [--no-build] [--no-push] [--no-deploy]
 
 Run the pymacaron deployment pipeline:
- 1. Run local tests with pymtest
- 2. Build a docker image with pymdocker
- 3. Run the tests again, against the docker image
-    started in a local container
- 4. Push the docker image to a docker repository
- 5. Deploy the docker image to a live environment
-    (Amazon Beanstalk, GKE or GCR)
- 6. Run the tests again, against the live api
+ 1. Checkout the given project's branch and commit in a temporary directory.
+ 2. Run unittests locally.
+ 3. Build a docker image with pymdocker.
+ 4. Run acceptance tests against the docker image started in a local container.
+ 5. Push the docker image to a docker repository.
+ 6. Deploy the docker image to a live environment (Amazon Beanstalk, GKE or GCR).
+ 7. Run the tests again, against the live api.
 
 OPTIONS:
-
-  --env ENV         deploy the service described in 'pym-config.ENV.yaml'
+  --branch BRANCH   Deploy this branch (default: master)
+  --commit COMMIT   Deploy this commit in the given branch (default: HEAD)
+  --env ENV         Deploy the service described in 'pym-config.ENV.yaml'
                     (defaults to using 'pym-config.yaml')
-  --debug           be very verbose.
-  --no-test         skip all tests (steps 1, 3 and 6).
-  --no-unittest     skip only unittests (step 1).
-  --no-build        skip building the docker image and use
-                    the latest built image instead (step 2).
-  --no-push         skip pushing the image to docker hub (step 4).
-  --no-deploy       skip deploying to live (step 5).
-  --staging-only    deploy only to staging, not live (if possible).
+  --debug           Be very verbose.
+  --no-test         Skip all tests (steps 2, 4 and 7).
+  --no-unittest     Skip only unittests (step 2).
+  --force-build     Force rebuilding the docker image, even if it already exists.
+  --no-push         Skip pushing the image to docker or gcp registry (step 4).
+  --no-deploy       Skip deploying to live (step 5).
 
 EXAMPLES:
 
@@ -41,35 +39,36 @@ pymdeploy
 # same against a staging environment described in pym-config.staging.yaml
 pymdeploy --env staging
 
-# only build docker image and push it
-pymdeploy --no-test --no-deploy
-
-# deploy quickly, without testing
-pymdeploy --no-test
+# deploy a specific branch and commit, without tests
+pymdeploy --env staging --no-test --branch master --commit ab563f
 
 EOF
 }
 
+FORCE_BUILD=
 DO_PUSH=1
 DO_DEPLOY=1
 DO_TEST=1
 DO_UNITTEST=1
-DO_BUILD=1
+CHECKOUT_BRANCH=master
+CHECKOUT_COMMIT=HEAD
 DEPLOY_ARGS=
 WITH_DEBUG=
 TARGET_ENV=
+IMAGE_ID=
 
 parse_args() {
     while [ "$1" != "" ]; do
         case $1 in
+            "--branch")        shift; export CHECKOUT_BRANCH=$1;;
+            "--commit")        shift; export CHECKOUT_COMMIT=$1;;
             "--env")           shift; export TARGET_ENV=$1;;
             "--debug")         set -x; DEBUG='true'; WITH_DEBUG="--debug";;
-            "--no-build")      export DO_BUILD=;;
+            "--force-build")   export FORCE_BUILD=1;;
             "--no-push")       export DO_PUSH=;;
             "--no-deploy")     export DO_DEPLOY=;;
             "--no-test")       export DO_TEST=; export DO_UNITTEST=; export DEPLOY_ARGS="$DEPLOY_ARGS --no-test";;
             "--no-unittest")   export DO_UNITTEST=;;
-            "--staging-only")  export DEPLOY_ARGS="$DEPLOY_ARGS --staging-only";;
             "-h" | "--help")   usage; exit 0;;
             *)                 echo "Unknown argument '$1' (-h for help)"; exit 0;;
         esac
@@ -93,87 +92,100 @@ NAME=$(pymconfig $WITH_ENV --name)
 DOCKER_ROOT_REPO=$(pymconfig $WITH_ENV --docker-repo)
 DOCKER_REPO=$DOCKER_ROOT_REPO/$NAME
 DEPLOY_TARGET=$(pymconfig $WITH_ENV --deploy-target)
+ORIGIN_DIR=$(pwd)
 
+echo ""
+echo "******************************************"
+echo "*"
+echo "*   DEPLOYING ${NAME}"
+echo "*"
+echo "******************************************"
+echo ""
 
-do_check_git_repo() {
-    CURRENT_BRANCH=$(git branch | grep \* | cut -d ' ' -f2)
-    if [ "$CURRENT_BRANCH" != "master" ]; then
-        echo "ERROR: The current branch is not master - Cannot deploy!"
-        exit 1
+do_checkout_git_repo() {
+    REMOTE_URL=$(git config --get remote.origin.url)
+    PROJECT_NAME=$(basename $(git rev-parse --show-toplevel))
+    TMPDIR=/tmp/pym-${NAME}-${CHECKOUT_BRANCH}-${CHECKOUT_COMMIT}
+
+    echo "=> Cloning $NAME into $TMPDIR"
+    mkdir -p $TMPDIR
+    cd $TMPDIR
+    rm -rf $PROJECT_NAME
+    git clone $REMOTE_URL
+    cd $PROJECT_NAME
+
+    CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+    if [ "$CURRENT_BRANCH" != "$CHECKOUT_BRANCH" ]; then
+        echo "=> Checkout branch ${CHECKOUT_BRANCH}"
+        git checkout -b $CHECKOUT_BRANCH origin/$CHECKOUT_BRANCH
+    fi
+    if [ "$CHECKOUT_COMMIT" != "HEAD" ]; then
+        echo "=> Checkout commit ${CHECKOUT_COMMIT}"
+        git reset --hard $CHECKOUT_COMMIT
     fi
 
-    IS_DIRTY_CLONE=$(git status --short --porcelain | wc -l)
-    if [ "$IS_DIRTY_CLONE" -gt 0 ]; then
-        echo "ERROR: $PWD is not clean! Commit and re-run."
-        exit 1
-    fi
-
-    GIT_DIFF_REMOTE=$(git diff master origin/master | wc -l)
-    if [ "$GIT_DIFF_REMOTE" -ne 0 ]; then
-        echo "ERROR: $PWD differs from origin. Please push to origin before releasing!"
-        exit 1
-    fi
+    CHECKOUT_COMMIT=$(git rev-parse HEAD | cut -c 1-6)
+    echo "=> Checkout commit ${CHECKOUT_COMMIT}"
 }
 
 do_gen_version() {
     VERSION=$(pymversion)
-    echo "=> Using version: ${VERSION}"
+    echo "=> Generating version ${VERSION}"
 }
 
-do_get_last_version() {
-    if [ -f ".pym/last_version" ]; then
-        VERSION=$(cat ".pym/last_version")
-    else
-        VERSION=$(docker images | grep $DOCKER_REPO | head -n 1 | awk '{ print $2 }')
-        if [ -z "$VERSION" ]; then
-            echo "ERROR: cannot find the latest docker image"
-            exit 1
-        fi
-    fi
-    echo "=> Using version: ${VERSION}"
+do_get_image_id() {
+    IMAGE_ID=$(docker images | grep $DOCKER_REPO | grep $CHECKOUT_COMMIT | head -n 1 | awk '{ print $3 }')
+    VERSION=$(docker images | grep $DOCKER_REPO | grep $CHECKOUT_COMMIT | head -n 1 | awk '{ print $2 }')
 }
 
-do_unit_tests() {
+# Checkout a clean clone of the repo
+do_checkout_git_repo
+
+# Small hack to use symlinks to local clones of pymacaron deps
+export PYTHONPATH=$ORIGIN_DIR
+
+# Run unittests
+if [ ! -z "$DO_UNITTEST" ]; then
     if [ -d 'test' ]; then
         echo "=> Running nosetests"
         nosetests -xv test/
     fi
-}
-
-do_check_git_repo
-
-if [ ! -z "$DO_UNITTEST" ]; then
-    do_unit_tests $WITH_DEBUG
 else
     echo "=> Skip nosetest"
 fi
 
-if [ ! -z "$DO_BUILD" ]; then
+# Do we already have an image compiled for this branch/commit, or should we build one?
+do_get_image_id
+
+if [ ! -z "$IMAGE_ID" -a -z "$FORCE_BUILD" ]; then
+    echo "=> Re-using docker image ${IMAGE_ID} and version ${VERSION}"
+else
     do_gen_version $WITH_DEBUG
+
     pymdocker $WITH_ENV --version $VERSION $WITH_DEBUG
 
-    if [ ! -z "$DO_TEST" ]; then
-        IMAGE_ID=$(docker images --quiet ${DOCKER_REPO}:${VERSION})
-        pymtest $WITH_ENV --image $IMAGE_ID
-    else
-        echo "=> Skip running tests against docker image"
-    fi
-else
-    echo "=> Skip building docker image. Using last image built."
-    do_get_last_version
+    IMAGE_ID=$(docker images --quiet ${DOCKER_REPO}:${VERSION})
 fi
 
+# Run acceptance tests against the image, started in a container
+if [ ! -z "$DO_TEST" ]; then
+    pymtest $WITH_ENV --image $IMAGE_ID
+else
+    echo "=> Skip running tests against docker image"
+fi
+
+# Push the image to a docker repo
 if [ ! -z "$DO_PUSH" ]; then
     REGISTRY=gcr.io
     if [ "$DEPLOY_TARGET" == "aws-beanstalk" ]; then
         REGISTRY=docker.io
     fi
     pymdocker $WITH_ENV --version $VERSION --no-build --push $WITH_DEBUG --registry $REGISTRY
-
 else
     echo "=> Skip pushing image to docker repository"
 fi
 
+# Deploy to target environment
 if [ ! -z "$DO_DEPLOY" ]; then
 
     if [ "$DEPLOY_TARGET" == "aws-beanstalk" ]; then
@@ -198,6 +210,7 @@ else
     echo "=> Skip deploying to live environment"
 fi
 
+# And run acceptance tests against live
 if [ ! -z "$DO_TEST" ]; then
     pymtest $WITH_ENV $WITH_DEBUG
 else
