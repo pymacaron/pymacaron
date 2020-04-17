@@ -11,7 +11,7 @@ log = logging.getLogger(__name__)
 
 class PyMacaronConfig(object):
 
-    def __init__(self, path=None):
+    def __init__(self, path=None, env=None):
 
         # Some defaults, required by pymacaron.auth
         self.jwt_issuer = None
@@ -26,39 +26,17 @@ class PyMacaronConfig(object):
 
         # Find a pym-config file
         pym_env = os.environ.get('PYM_ENV', None)
-        import json
-        log.debug("os.environ: [%s]" % json.dumps(dict(os.environ), indent=4, sort_keys=True))
+        if env:
+            pym_env = env
         log.debug("Target environment is: [%s]" % pym_env)
 
-        paths = [
-            # If 'pym-config.<PYM_ENV>.yaml exists, use it in priority
-            os.path.join(os.path.dirname(sys.argv[0]), 'pym-config.%s.yaml' % pym_env),
-            '/pym/pym-config.%s.yaml' % pym_env,
-            os.path.join(os.path.dirname(sys.argv[0]), 'test/pym-config.%s.yaml' % pym_env),
-            os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'pym-config.%s.yaml' % pym_env),
-            os.path.join(os.getcwd(), 'pym-config.%s.yaml' % pym_env),
-
-            # Default to 'pym-config.yaml'
-            os.path.join(os.path.dirname(sys.argv[0]), 'pym-config.yaml'),
-            '/pym/pym-config.yaml',
-            os.path.join(os.path.dirname(sys.argv[0]), 'test/pym-config.yaml'),
-            os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'pym-config.yaml'),
-            os.path.join(os.getcwd(), 'pym-config.yaml')
-        ]
-
-        if path:
-            paths.append(path)
-
-        config_path = None
-        for p in paths:
-            p = os.path.abspath(p)
-            log.info("Looking for pymacaron config at %s" % p)
-            if os.path.isfile(p):
-                config_path = p
-                continue
+        config_path = get_config_path('pym-config.%s.yaml' % pym_env, path=path)
+        if not config_path:
+            log.debug("Did not find pym-config.%s.yaml - Defaulting to searching for pym-config.yaml" % (pym_env))
+            config_path = get_config_path('pym-config.yaml', path=path)
 
         if not config_path:
-            raise Exception("Failed to find pym-config.yaml!")
+            raise Exception("Failed to find pym-config!")
 
         self.config_path = config_path
 
@@ -104,10 +82,43 @@ class PyMacaronConfig(object):
         log.debug("Loaded configuration:\n%s" % pprint.pformat(config_dict, indent=4))
 
 
+def get_config_path(name='pym-config.yaml', path=None):
+    """Search for a file named 'name' in all the places where 'pym-config.*.yaml'
+    is normally looked for.  Return a path if found, or None if not found
+    """
+
+    paths = [
+        os.path.join(os.path.dirname(sys.argv[0]), name),
+        '/pym/%s' % name,
+        os.path.join(os.path.dirname(sys.argv[0]), 'test/%s' % name),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', name),
+        os.path.join(os.getcwd(), name),
+    ]
+
+    if path:
+        if not path.endswith(name):
+            path = os.join(path, name)
+        paths.append(path)
+
+    for p in paths:
+        p = os.path.abspath(p)
+        log.info("Looking for file %s at %s" % (name, p))
+        if os.path.isfile(p):
+            return p
+
+    return None
+
+
 config = None
 
-def get_config(path=None):
+
+def get_config(path=None, env=None):
+    """Find the pym-config yaml file for the current environment, as identified by
+    the PYM_ENV variable. Look at all standard locations. Optionally take an
+    extra location/path to look at, and/or an environment that overrides
+    PYM_ENV
+    """
     global config
     if not config:
-        config = PyMacaronConfig(path=path)
+        config = PyMacaronConfig(path=path, env=env)
     return config

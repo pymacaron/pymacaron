@@ -208,6 +208,7 @@ elif [ ! -z "$LOCAL" ]; then
         exit -1
     fi
     export PYM_ENV=$RUN_ENV
+    export PYMCONFIG_ARGS="--env $RUN_ENV"
 
     set_runpath
 fi
