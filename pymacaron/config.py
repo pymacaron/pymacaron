@@ -97,7 +97,7 @@ def get_config_path(name='pym-config.yaml', path=None):
 
     if path:
         if not path.endswith(name):
-            path = os.join(path, name)
+            path = os.path.join(path, name)
         paths.append(path)
 
     for p in paths:
@@ -118,6 +118,7 @@ def get_config(path=None, env=None):
     extra location/path to look at, and/or an environment that overrides
     PYM_ENV
     """
+
     global config
     if not config:
         config = PyMacaronConfig(path=path, env=env)
