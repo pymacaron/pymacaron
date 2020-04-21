@@ -42,6 +42,9 @@ pymdeploy --env staging
 # deploy a specific branch and commit, without tests
 pymdeploy --env staging --no-test --branch master --commit ab563f
 
+# chain deploying to multiple environments:
+pymdeploy --env staging && pymdeploy --no-test --env live
+
 EOF
 }
 
