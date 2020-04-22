@@ -129,6 +129,12 @@ do_checkout_git_repo() {
 
     CHECKOUT_COMMIT=$(git rev-parse HEAD | cut -c 1-6)
     echo "=> Checkout commit ${CHECKOUT_COMMIT}"
+
+    # beanstalk project require the .elasticbeanstalk dir
+    if [ -d "$ORIGIN_DIR/.elasticbeanstalk" ]; then
+        echo "=> Copying .elasticbeanstalk to $TMPDIR/$PROJECT_NAME"
+        cp -Rv $ORIGIN_DIR/.elasticbeanstalk $TMPDIR/$PROJECT_NAME
+    fi
 }
 
 do_gen_version() {
