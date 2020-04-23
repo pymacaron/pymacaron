@@ -1,7 +1,6 @@
 import logging
 import os
 from pymacaron.config import get_config
-from pymacaron.utils import get_app_name
 from pymacaron.utils import get_container_version
 
 
@@ -26,6 +25,8 @@ def monitor_init(app=None, config=None, celery=False):
     if hasattr(config, 'scout_key'):
         use_scout = True
         appname = os.environ.get('PYM_ENV', 'dev')
+        if hasattr(config, 'scout_app_name'):
+            appname = config.scout_app_name
         scout_key = config.scout_key
         version = get_container_version()
 
