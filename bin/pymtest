@@ -204,11 +204,17 @@ elif [ ! -z "$LOCAL" ]; then
     # Let's try to guess if we should set PYM_ENV
     RUN_ENV=$(ps auxwwf | grep 'python server.py' | grep '\--env' | sed -e 's/.*--env //' | awk '{ print $1 }')
     if [ -z "$RUN_ENV" ]; then
-        echo "ERROR: server is not started!"
-        exit -1
+        IS_RUNNING=$(ps auxwwf | grep 'python server.py' | grep '\--port')
+        if [ -z "$IS_RUNNING" ]; then
+            echo "ERROR: server is not started!"
+            exit -1
+        fi
+        # The server is started without --env
+        export PYM_ENV=dev
+    else
+        export PYM_ENV=$RUN_ENV
+        export PYMCONFIG_ARGS="--env $RUN_ENV"
     fi
-    export PYM_ENV=$RUN_ENV
-    export PYMCONFIG_ARGS="--env $RUN_ENV"
 
     set_runpath
 fi
