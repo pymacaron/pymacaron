@@ -73,3 +73,7 @@ def get_container_version():
         with open(version_file) as f:
             return f.read().strip()
     return 'local'
+
+
+def get_app_name():
+    return get_config().name
