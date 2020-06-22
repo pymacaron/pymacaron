@@ -19,6 +19,12 @@ def setup_logger(celery=False):
     root.addHandler(ch)
     root.setLevel(DEFAULT_LEVEL)
 
+    # If setting up celery logger, also log to a file (for debugging purpose)
+    if celery:
+        fh = logging.FileHandler('/var/log/celery-workers.log')
+        fh.setFormatter(formatter)
+        root.addHandler(fh)
+
     # Make an exception for boto and bravado: its debug level is just too verbose...
     logging.getLogger('boto').setLevel(logging.INFO)
     logging.getLogger('boto3').setLevel(logging.WARNING)
