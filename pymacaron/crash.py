@@ -9,6 +9,7 @@ from functools import wraps
 from pprint import pformat
 from flask import request, Response
 from pymacaron_core.swagger.apipool import ApiPool
+from pymacaron.config import get_config
 from pymacaron.utils import timenow, is_ec2_instance
 from pymacaron.exceptions import UnhandledServerError
 
@@ -96,12 +97,13 @@ def report_error(title=None, data={}, caught=None, is_fatal=False):
 
     # Format the error's title
     status, code = 'unknown_status', 'unknown_error_code'
+    app_name = get_config().name
     if 'response' in data:
         status = data['response'].get('status', status)
         code = data['response'].get('error_code', code)
-        title_details = "%s %s %s" % (ApiPool().current_server_name, status, code)
+        title_details = "%s %s %s" % (app_name, status, code)
     else:
-        title_details = "%s %s()" % (ApiPool().current_server_name, fname)
+        title_details = "%s %s()" % (app_name, fname)
 
     if is_fatal:
         title_details = 'FATAL ERROR %s' % title_details
