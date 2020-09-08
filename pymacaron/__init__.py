@@ -321,7 +321,7 @@ class API(object):
 
         log.debug("Argv is [%s]" % '  '.join(sys.argv))
         if 'celery' in sys.argv[0].lower():
-            # This code is loading in a celery server - Don't start the actual flask app.
+            # This code is loading in a celery worker - Don't start the actual flask app.
             log.info("Running in a Celery worker - Not starting the Flask app")
             return
 

@@ -107,7 +107,7 @@ echo ""
 
 do_checkout_git_repo() {
     REMOTE_URL=$(git config --get remote.origin.url)
-    PROJECT_NAME=$(basename $(git rev-parse --show-toplevel))
+    PROJECT_NAME=$(basename -s .git `git config --get remote.origin.url`)
     TMPDIR=/tmp/pym-${NAME}-${CHECKOUT_BRANCH}-${CHECKOUT_COMMIT}
 
     echo "=> Cloning $NAME into $TMPDIR"
