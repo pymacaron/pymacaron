@@ -2,7 +2,7 @@
 
 import os
 import sys
-import logging
+from pymacaron.log import pymlogger
 import json
 from flask import Flask
 
@@ -11,7 +11,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 from pymacaron import API, letsgo
 
 
-log = logging.getLogger(__name__)
+log = pymlogger(__name__)
 
 
 app = Flask(__name__)

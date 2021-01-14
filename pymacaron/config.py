@@ -2,11 +2,11 @@ import os
 import sys
 import yaml
 import pprint
-import logging
+from pymacaron.log import pymlogger
 from urllib.parse import urlparse
 
 
-log = logging.getLogger(__name__)
+log = pymlogger(__name__)
 
 
 class PyMacaronConfig(object):

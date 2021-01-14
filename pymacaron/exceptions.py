@@ -1,11 +1,11 @@
-import logging
+from pymacaron.log import pymlogger
 from pprint import pformat
 from flask import jsonify
 from pymacaron_core.exceptions import ValidationError, PyMacaronCoreException
 from pymacaron_core.models import get_model
 
 
-log = logging.getLogger(__name__)
+log = pymlogger(__name__)
 
 
 class PyMacaronException(PyMacaronCoreException):

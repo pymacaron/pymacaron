@@ -1,4 +1,4 @@
-import logging
+from pymacaron.log import pymlogger
 import pprint
 import os
 from time import sleep
@@ -8,7 +8,7 @@ from pymacaron.crash import report_error
 from pymacaron.exceptions import PyMacaronException
 
 
-log = logging.getLogger(__name__)
+log = pymlogger(__name__)
 
 
 class MyFatalCustomError(PyMacaronException):

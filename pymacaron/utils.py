@@ -1,6 +1,6 @@
 import os
 import sys
-import logging
+from pymacaron.log import pymlogger
 import datetime
 from pymacaron.config import get_config
 from dateutil import parser
@@ -8,7 +8,7 @@ import socket
 import pytz
 
 
-log = logging.getLogger(__name__)
+log = pymlogger(__name__)
 
 
 IS_EC2_INSTANCE = -1

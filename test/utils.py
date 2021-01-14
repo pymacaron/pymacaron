@@ -1,12 +1,12 @@
 import os
-import logging
+from pymacaron.log import pymlogger
 import subprocess
 import psutil
 from time import sleep
 from pymacaron.test import PyMacaronTestCase
 
 
-log = logging.getLogger(__name__)
+log = pymlogger(__name__)
 
 
 tmpdir = '/tmp/test-pym-microservice'

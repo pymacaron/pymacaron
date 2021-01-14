@@ -1,10 +1,10 @@
-import logging
+from pymacaron.log import pymlogger
 import multiprocessing
 from math import ceil
 from pymacaron.config import get_config
 
 
-log = logging.getLogger(__name__)
+log = pymlogger(__name__)
 
 
 # Calculate resources available on this container hardware.

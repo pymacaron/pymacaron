@@ -1,7 +1,7 @@
-import logging
+from pymacaron.log import pymlogger
 
 
-log = logging.getLogger(__name__)
+log = pymlogger(__name__)
 
 
 #

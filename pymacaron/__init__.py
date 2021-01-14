@@ -11,7 +11,7 @@ from flask_cors import CORS
 from pymacaron_core.swagger.apipool import ApiPool
 from pymacaron_core.models import get_model
 import pymacaron.models
-from pymacaron.log import set_level
+from pymacaron.log import set_level, pymlogger
 from pymacaron.crash import set_error_reporter, generate_crash_handler_decorator
 from pymacaron.exceptions import format_error
 from pymacaron.config import get_config
@@ -19,7 +19,7 @@ from pymacaron.monitor import monitor_init
 from pymacaron.api import add_ping_hook
 
 
-log = logging.getLogger(__name__)
+log = pymlogger(__name__)
 
 
 def _get_model_factory(model_name):

@@ -1,5 +1,5 @@
 import os
-import logging
+from pymacaron.log import pymlogger
 import imp
 import pprint
 import subprocess
@@ -10,7 +10,7 @@ from pymacaron.auth import generate_token
 utils = imp.load_source('utils', os.path.join(os.path.dirname(__file__), 'utils.py'))
 
 
-log = logging.getLogger(__name__)
+log = pymlogger(__name__)
 
 
 class Tests(utils.PyMacaronTests):

@@ -1,5 +1,5 @@
 import os
-import logging
+from pymacaron.log import pymlogger
 import json
 import imp
 
@@ -7,7 +7,7 @@ import imp
 utils = imp.load_source('utils', os.path.join(os.path.dirname(__file__), 'utils.py'))
 
 
-log = logging.getLogger(__name__)
+log = pymlogger(__name__)
 
 
 tmpdir = '/tmp/test-pym-microservice'

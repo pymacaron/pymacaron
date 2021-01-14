@@ -1,4 +1,4 @@
-import logging
+from pymacaron.log import pymlogger
 import json
 import uuid
 import os
@@ -14,7 +14,7 @@ from pymacaron.utils import timenow, is_ec2_instance
 from pymacaron.exceptions import UnhandledServerError
 
 
-log = logging.getLogger(__name__)
+log = pymlogger(__name__)
 
 
 try:

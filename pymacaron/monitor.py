@@ -1,10 +1,10 @@
-import logging
+from pymacaron.log import pymlogger
 import os
 from pymacaron.config import get_config
 from pymacaron.utils import get_container_version
 
 
-log = logging.getLogger(__name__)
+log = pymlogger(__name__)
 
 
 # Which monitoring methods to use

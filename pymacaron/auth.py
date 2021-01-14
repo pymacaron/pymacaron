@@ -1,5 +1,5 @@
 import jwt
-import logging
+from pymacaron.log import pymlogger
 from urllib.parse import unquote_plus
 from contextlib import contextmanager
 from functools import wraps
@@ -15,7 +15,7 @@ except ImportError:
     from flask import _request_ctx_stack as stack
 
 
-log = logging.getLogger(__name__)
+log = pymlogger(__name__)
 
 
 #
