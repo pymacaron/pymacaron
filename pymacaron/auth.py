@@ -237,8 +237,11 @@ def backend_token(issuer=None, user_id=None, data={}):
 
 def get_userid():
     """Return the authenticated user's id, i.e. its auth0 id"""
-    current_user = stack.top.current_user
-    return current_user.get('sub', '')
+    try:
+        current_user = stack.top.current_user
+        return current_user.get('sub', '')
+    except Exception:
+        return ''
 
 
 def get_user_token_data():

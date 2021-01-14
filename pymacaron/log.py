@@ -5,6 +5,13 @@ DEFAULT_LEVEL = logging.DEBUG
 
 root = logging.getLogger()
 
+class ContextFilter(logging.Filter):
+    """Add the viewer's user_id (if defined in JWT token) to the log string"""
+    def filter(self, record):
+        if not hasattr(record, 'USER_ID'):
+            record.USER_ID = ''
+        return True
+
 def setup_logger(celery=False):
     global root
 
@@ -14,8 +21,12 @@ def setup_logger(celery=False):
     ch = logging.StreamHandler(sys.stdout)
 
     name = 'WORKER' if celery else 'FLASK'
-    formatter = logging.Formatter('%(asctime)s - ' + name + ' %(process)d - %(name)s - %(levelname)s - %(message)s')
+
+    FORMAT = '%(asctime)s - ' + name + ' %(process)d%(USER_ID)s %(name)s - %(levelname)s - %(message)s'
+    formatter = logging.Formatter(FORMAT)
+
     ch.setFormatter(formatter)
+    ch.addFilter(ContextFilter())
     root.addHandler(ch)
     root.setLevel(DEFAULT_LEVEL)
 
@@ -48,3 +59,39 @@ def get_logger():
 def set_level(newlevel):
     global root
     root.setLevel(newlevel)
+
+
+#
+# A custom wrapper around the logger object, injecting user_id and call_id from
+# the flask context
+#
+
+class PymacaronLogger():
+
+    def __init__(self, name=None):
+        self.logger = logging.getLogger(name)
+
+    def get_extra(self):
+        from pymacaron.auth import get_userid
+        s = get_userid()
+        return {
+            'USER_ID': ' [%s]' % s if s else '',
+        }
+
+    def error(self, s, **kwargs):
+        self.logger.error(s, extra=self.get_extra(), **kwargs)
+
+    def info(self, s, **kwargs):
+        self.logger.info(s, extra=self.get_extra(), **kwargs)
+
+    def warn(self, s, **kwargs):
+        self.logger.warn(s, extra=self.get_extra(), **kwargs)
+
+    def debug(self, s, **kwargs):
+        self.logger.debug(s, extra=self.get_extra(), **kwargs)
+
+
+def get_pymlogger(name=None):
+    if not name:
+        name = __name__
+    return PymacaronLogger(name)
