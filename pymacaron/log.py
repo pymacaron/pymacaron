@@ -91,7 +91,7 @@ class PymacaronLogger():
         self.logger.debug(s, extra=self.get_extra(), **kwargs)
 
 
-def get_pymlogger(name=None):
+def pymlogger(name=None):
     if not name:
         name = __name__
     return PymacaronLogger(name)
