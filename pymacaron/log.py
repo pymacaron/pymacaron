@@ -71,24 +71,28 @@ class PymacaronLogger():
     def __init__(self, name=None):
         self.logger = logging.getLogger(name)
 
-    def get_extra(self):
+    def get_extra(self, extra):
         from pymacaron.auth import get_userid
         s = get_userid()
-        return {
+        extra.update({
             'USER_ID': ' [%s]' % s if s else '',
-        }
+        })
+        return extra
 
-    def error(self, s, **kwargs):
-        self.logger.error(s, extra=self.get_extra(), **kwargs)
+    def error(self, s, extra={}, **kwargs):
+        self.logger.error(s, extra=self.get_extra(extra), **kwargs)
 
-    def info(self, s, **kwargs):
-        self.logger.info(s, extra=self.get_extra(), **kwargs)
+    def info(self, s, extra={}, **kwargs):
+        self.logger.info(s, extra=self.get_extra(extra), **kwargs)
 
-    def warn(self, s, **kwargs):
-        self.logger.warn(s, extra=self.get_extra(), **kwargs)
+    def warn(self, s, extra={}, **kwargs):
+        self.logger.warn(s, extra=self.get_extra(extra), **kwargs)
 
-    def debug(self, s, **kwargs):
-        self.logger.debug(s, extra=self.get_extra(), **kwargs)
+    def warning(self, s, extra={}, **kwargs):
+        self.logger.warning(s, extra=self.get_extra(extra), **kwargs)
+
+    def debug(self, s, extra={}, **kwargs):
+        self.logger.debug(s, extra=self.get_extra(extra), **kwargs)
 
 
 def pymlogger(name=None):
