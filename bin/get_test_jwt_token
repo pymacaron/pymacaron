@@ -2,7 +2,7 @@
 
 import os
 import sys
-from pymacaron.log import pymlogger
+import logging
 import click
 import subprocess
 import yaml

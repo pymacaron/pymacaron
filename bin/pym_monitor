@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from pymacaron.log import pymlogger
+import logging
 import click
 from pymacaron.config import get_config
 from pymacaron.monitor import monitor_init
