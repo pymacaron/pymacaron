@@ -16,7 +16,7 @@ backlog = 2048
 workers = get_gunicorn_worker_count()
 worker_class = 'gthread'
 worker_connections = 1000
-timeout = 120
+timeout = 180
 keepalive = 2
 
 max_requests = 500
