@@ -50,6 +50,7 @@ def url_to_port_hostname(url):
 @click.option('--aws-keypair', is_flag=True, help="Name of the aws ssh keypair to deploy on ec2 instances")
 @click.option('--aws-instance-type', is_flag=True, help="Name of the aws instance type to use")
 @click.option('--aws-cert-arn', is_flag=True, help="ARN of ssl certificate to use for server, if https enabled")
+@click.option('--aws-zone-id', is_flag=True, help="Route53 zone ID of the domain containing the record for the live host")
 @click.option('--include-links', is_flag=True, help="Which symlinks to include in the docker image")
 @click.option('--aws-hosts-min', is_flag=True, help="Minimum size of autoscalling group (default: 1)")
 @click.option('--aws-hosts-max', is_flag=True, help="Maximum size of autoscalling group (default: 4)")
@@ -61,7 +62,7 @@ def url_to_port_hostname(url):
 @click.option('--gunicorn-worker-count', is_flag=True, help="Return the number of gunicorn workers to run")
 @click.option('--celery-worker-count', is_flag=True, help="Return the number of celery workers to run")
 @click.option('--cpu-count', is_flag=True, help="The number of CPUs available on a staging or live node (GKE only)")
-def main(env, name, env_jwt_secret, env_jwt_audience, host, port, env_secrets, git_root, deploy_target, docker_repo, docker_bucket, docker_base, aws_user, aws_region, aws_keypair, aws_instance_type, aws_cert_arn, include_links, aws_hosts_min, aws_hosts_max, with_async, gcp_region, gcp_memory, gcp_request_concurrency, memory_limit, gunicorn_worker_count, celery_worker_count, cpu_count):
+def main(env, name, env_jwt_secret, env_jwt_audience, host, port, env_secrets, git_root, deploy_target, docker_repo, docker_bucket, docker_base, aws_user, aws_region, aws_keypair, aws_instance_type, aws_cert_arn, aws_zone_id, include_links, aws_hosts_min, aws_hosts_max, with_async, gcp_region, gcp_memory, gcp_request_concurrency, memory_limit, gunicorn_worker_count, celery_worker_count, cpu_count):
     """Parse the pym config file 'pym-config.<env>.yaml' (or 'pym-config.yaml' if
     no env is specified) in a shell script friendly way.
     """
@@ -140,6 +141,9 @@ def main(env, name, env_jwt_secret, env_jwt_audience, host, port, env_secrets, g
     elif aws_cert_arn:
         if 'aws_cert_arn' in d:
             print(d['aws_cert_arn'])
+    elif aws_zone_id:
+        if 'aws_zone_id' in d:
+            print(d['aws_zone_id'])
     elif aws_hosts_min:
         if 'aws_hosts_min' in d:
             print(d['aws_hosts_min'])
