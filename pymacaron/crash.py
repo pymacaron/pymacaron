@@ -189,12 +189,19 @@ def populate_error_report(data):
         }
 
         # Endpoint data
+        raw_data = ''
+        try:
+            raw_data = str(request.get_data())
+        except Exception:
+            pass
+
         data['endpoint'] = {
             'id': "%s %s %s" % (ApiPool().current_server_name, request.method, request.path),
             'url': request.url,
             'base_url': request.base_url,
             'path': request.path,
-            'method': request.method
+            'method': request.method,
+            'data': raw_data,
         }
 
 
