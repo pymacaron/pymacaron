@@ -237,6 +237,7 @@ if [ ! -z "$GEN_TOKEN" ]; then
 fi
 
 echo "=> Running acceptance tests against $PYM_SERVER_HOST:$PYM_SERVER_PORT"
+echo "=> Starting on $(date)"
 STOP=''
 if [ -z "$NO_STOP" ]; then
     STOP='-x'
@@ -255,6 +256,8 @@ if [ ! -z "$CONTAINER_ID" ]; then
     echo "=> Stopping container $CONTAINER_ID"
     docker kill $CONTAINER_ID
 fi
+
+echo "=> Ended on $(date)"
 
 if [ "$RC" -ne 0 ]; then
     exit $RC
