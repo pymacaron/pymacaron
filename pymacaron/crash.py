@@ -53,6 +53,8 @@ def report_error(title=None, data={}, caught=None, is_fatal=False):
     types of crashes: fatal crashes (backend errors) or non-fatal ones (just
     reporting a glitch, but the api call did not fail)"""
 
+    log.info("Caught error: %s\ndata=%s" % (title, json.dumps(data, indent=4)))
+
     # Don't report errors if NO_ERROR_REPORTING set to 1 (set by run_acceptance_tests)
     if os.environ.get('DO_REPORT_ERROR', None):
         # Force error reporting
