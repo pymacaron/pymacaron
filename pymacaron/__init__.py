@@ -153,7 +153,9 @@ class API(object):
         log.debug("Searching path %s" % path)
         for root, dirs, files in os.walk(path):
             for f in files:
-                if f.endswith('.yaml'):
+                if f.startswith('.#') or f.startswith('#'):
+                    log.info("Ignoring file %s" % f)
+                elif f.endswith('.yaml'):
                     api_name = f.replace('.yaml', '')
 
                     if api_name in ignore:
