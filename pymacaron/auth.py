@@ -91,8 +91,9 @@ def load_auth_token(token, load=True):
             token,
             get_config().jwt_secret,
             audience=get_config().jwt_audience,
+            algorithms=["HS256"],
             # Allow for a time difference of up to 5min (300sec)
-            leeway=300
+            leeway=300,
         )
     except jwt.ExpiredSignature:
         raise AuthTokenExpiredError('Auth token is expired')
