@@ -96,17 +96,21 @@ def load_auth_token(token, load=True):
             leeway=300,
         )
     except jwt.exceptions.ExpiredSignatureError:
-        raise AuthTokenExpiredError('Auth token is expired')
-    except jwt.exceptions.InvalidAudienceError:
-        raise AuthInvalidTokenError('incorrect audience')
-    except jwt.exceptions.DecodeError:
-        raise AuthInvalidTokenError('token signature is invalid')
+        log.debug('JWT token has expired')
+        raise AuthTokenExpiredError('JWT token has expired')
     except jwt.exceptions.InvalidSignatureError:
-        raise AuthInvalidTokenError('token signature is invalid')
-    except jwt.exceptions.InvalidTokenError:
-        raise AuthInvalidTokenError('token signature is invalid')
+        log.debug('JWT token signature is invalid')
+        raise AuthInvalidTokenError('JWT token signature is invalid')
+    except jwt.exceptions.InvalidAudienceError:
+        log.debug('JWT has incorrect audience')
+        raise AuthInvalidTokenError('JWT has incorrect audience')
     except jwt.exceptions.InvalidIssuedAtError:
-        raise AuthInvalidTokenError('Token was issued in the future')
+        log.debug('JWT token was issued in the future')
+        raise AuthInvalidTokenError('JWT token was issued in the future')
+    except jwt.exceptions.InvalidTokenError:
+        # A catch-all for all other invalid token errors
+        log.debug('JWT token is invalid')
+        raise AuthInvalidTokenError('JWT token is invalid')
 
     # Save payload to stack
     payload['token'] = token
