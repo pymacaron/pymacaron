@@ -76,7 +76,7 @@ def load_auth_token(token, load=True):
     issuer = get_config().jwt_issuer
     try:
         headers = jwt.get_unverified_header(token)
-    except jwt.DecodeError:
+    except jwt.exceptions.DecodeError:
         raise AuthInvalidTokenError('token signature is invalid')
 
     log.debug("Token has headers %s" % headers)
@@ -95,13 +95,17 @@ def load_auth_token(token, load=True):
             # Allow for a time difference of up to 5min (300sec)
             leeway=300,
         )
-    except jwt.ExpiredSignature:
+    except jwt.exceptions.ExpiredSignatureError:
         raise AuthTokenExpiredError('Auth token is expired')
-    except jwt.InvalidAudienceError:
+    except jwt.exceptions.InvalidAudienceError:
         raise AuthInvalidTokenError('incorrect audience')
-    except jwt.DecodeError:
+    except jwt.exceptions.DecodeError:
         raise AuthInvalidTokenError('token signature is invalid')
-    except jwt.InvalidIssuedAtError:
+    except jwt.exceptions.InvalidSignatureError:
+        raise AuthInvalidTokenError('token signature is invalid')
+    except jwt.exceptions.InvalidTokenError:
+        raise AuthInvalidTokenError('token signature is invalid')
+    except jwt.exceptions.InvalidIssuedAtError:
         raise AuthInvalidTokenError('Token was issued in the future')
 
     # Save payload to stack
