@@ -38,6 +38,8 @@ def generate_models(swagger, model_file):
     module defining every corresponding pymacaron model class
     """
 
+    log.info(f"Regenerating {model_file}")
+
     all_models = list(swagger['definitions'].keys())
     all_models.sort()
     str_all_models = ', '.join([f'"{s}"' for s in all_models])
@@ -51,7 +53,6 @@ def generate_models(swagger, model_file):
         if '$ref' in o:
             s = o['$ref']
             assert s.startswith("#/definitions/"), f"Failed to parse ref '{s}' in definition of {model_name}:{attr_name}"
-            log.info(f"Looking at def '{o}'")
             t = s.split('/')[-1].replace("'", "").replace('"', '').strip()
         elif 'format' in o:
             t = o['format']
@@ -62,8 +63,6 @@ def generate_models(swagger, model_file):
 
         return swagger_to_python_type(t, all_models, model_name, attr_name)
 
-
-    log.info(f"Regenerating {model_file}")
     lines = [
         '# This is an auto-generated file - DO NOT EDIT!!!',
         'from pymacaron.model import PymacaronBaseModel',
@@ -205,9 +204,12 @@ def load_api_models_and_endpoints(api_name=None, api_path=None, dest_path=None, 
     pkg = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(pkg)
 
+    cnt = 0
     for model_name in pkg.__all_models:
         apipool.add_model(api_name, model_name, getattr(pkg, model_name))
+        cnt += 1
 
+    log.info(f"Loaded {cnt} models from {model_file}")
 
     #
     # Step 3: TODO: Load FastAPI endpoints??
