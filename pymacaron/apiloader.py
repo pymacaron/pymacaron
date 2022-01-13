@@ -77,7 +77,7 @@ def generate_models(swagger, model_file):
 
     # Now comes a tricky part: we need to sort class declarations so that
     # classes are declared before they are used in the type constraints of
-    # other classes
+    # other classes. So we declare classes first, then add their attributes.
 
     for model_name, model_def in swagger['definitions'].items():
 
@@ -93,6 +93,10 @@ def generate_models(swagger, model_file):
             '    __model_datetimes = []',
             '',
         ]
+
+    for model_name, model_def in swagger['definitions'].items():
+
+        lines.append('')
 
         for p_name, p_def in model_def['properties'].items():
             # Looking at the properties definition, typically one of:
@@ -117,11 +121,10 @@ def generate_models(swagger, model_file):
             if p_def.get('type', '').lower() == 'array':
                 assert 'items' in p_def, f"Expected 'items' in array definition of {model_name}:{p_name}"
                 t = def_to_type(p_def['items'], model_name, p_name)
-                lines.append(f'    {p_name}: List[{t}]')
-
+                lines.append(f'{model_name}.{p_name}: List[{t}]')
             else:
                 t = def_to_type(p_def, model_name, p_name)
-                lines.append(f'    {p_name}: {t}')
+                lines.append(f'{model_name}.{p_name}: {t}')
 
     lines.append('')
     lines.append('')
