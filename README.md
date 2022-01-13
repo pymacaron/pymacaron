@@ -2,7 +2,8 @@
 
 # PyMacaron
 
-Python microservice framework based on Flask, OpenAPI, gunicorn and celery, deployable on GKE and Beanstalk
+Python microservice framework based on FastAPI, OpenAPI and celery, deployable
+on GKE and Beanstalk
 
 PyMacaron's documentation is available at
 [http://pymacaron.com/](http://pymacaron.com/).

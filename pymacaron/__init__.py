@@ -11,6 +11,7 @@ from flask_cors import CORS
 from pymacaron_core.swagger.apipool import ApiPool
 from pymacaron_core.models import get_model
 import pymacaron.models
+from pymacaron.apiloader import load_api_models_and_endpoints
 from pymacaron.log import set_level, pymlogger
 from pymacaron.crash import set_error_reporter, generate_crash_handler_decorator
 from pymacaron.exceptions import format_error
@@ -22,11 +23,40 @@ from pymacaron.api import add_ping_hook
 log = pymlogger(__name__)
 
 
+# TODO: deprecate
 def _get_model_factory(model_name):
     # Using dynamic method creation to localize model_name
     def factory(**kwargs):
         return get_model(model_name)(**kwargs)
     return factory
+
+
+class modelpool():
+    # An api is a class whose attributes are Pymacaron models
+
+    def __init__(self, name):
+        self.api_name = name
+
+
+    def __getattr__(self, model_name):
+        raise Exception(f'Either {self.api_name}.yaml has not been loaded or it does not define object {model_name}')
+
+
+class apipool():
+    # A class dynamically populated with containers of model objects by
+    # load_api_models()
+
+    def __getattr__(self, api_name):
+        # Dynamically initialize the modelpool for this api
+        setattr(apipool, api_name, modelpool(api_name))
+
+
+    @classmethod
+    def add_model(cls, api_name, model_name, model_class):
+        # Set modelpool.<model_name> to model_class. This allows writing:
+        # o = apipool.ping.Ok()
+        models = getattr(apipool, api_name)
+        setattr(models, model_class)
 
 
 def get_port():
@@ -42,6 +72,7 @@ def get_port():
         log.info("No HTTP port specified. Will listen on port 80")
 
     return port
+
 
 
 #
@@ -91,6 +122,22 @@ class API(object):
         log.info("Initialized API (%s:%s) (Flask debug:%s)" % (host, port, debug))
 
 
+    def load_default_apis(self):
+        # Load models from default builtin apis
+        for name in ['ping', 'crash']:
+            yaml_path = pkg_resources.resource_filename(__name__, 'pymacaron/%s.yaml' % name)
+            if not os.path.isfile(yaml_path):
+                yaml_path = os.path.join(os.path.dirname(sys.modules[__name__].__file__), '%s.yaml' % name)
+            load_api_models_and_endpoints(
+                api_name=name,
+                api_path=yaml_path,
+                dest_path=get_config().apis_path,
+                load_models=True,
+                load_endpoints=True,
+            )
+
+
+    # TODO: deprecate
     def _load_model_aliases(self, api):
         """Load all PyMacaronModels generated for a given api into the namespace
         of pymacaron.models so a user may write 'from pymacaron.models import <SomeModel>'
@@ -102,6 +149,7 @@ class API(object):
                 setattr(pymacaron.models, model_name, _get_model_factory(model_name))
 
 
+    # TODO: deprecate
     def load_clients(self, path=None, apis=[]):
         """Generate client libraries for the given apis, without starting an
         api server"""
@@ -138,8 +186,7 @@ class API(object):
         """Load all swagger files found at the given path, except those whose
         names are in the 'ignore' list"""
 
-        if not path:
-            raise Exception("Missing path to api swagger files")
+        path = get_config().apis_path
 
         if type(ignore) is not list:
             raise Exception("'ignore' should be a list of api names")

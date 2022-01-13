@@ -4,6 +4,7 @@ import os
 from time import sleep
 from pymacaron_core.swagger.apipool import ApiPool
 from pymacaron.utils import get_container_version
+from pymacaron.utils import get_app_name
 from pymacaron.crash import report_error
 from pymacaron.exceptions import PyMacaronException
 
@@ -38,7 +39,7 @@ def do_ping():
 def do_version():
     """Return version details of the running server api"""
     v = ApiPool.ping.model.Version(
-        name=ApiPool().current_server_name,
+        name=get_app_name(),
         version=ApiPool().current_server_api.get_version(),
         container=get_container_version(),
         pym_env=os.environ.get('PYM_ENV', ''),

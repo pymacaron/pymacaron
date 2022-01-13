@@ -2,3 +2,6 @@ twine==1.15.0
 setuptools>=27.0.0
 idna<2.7,>=2.5
 PyJWT==2.3.0
+PyYAML==5.4.1
+pydantic
+ujson

@@ -1,6 +1,7 @@
 pymacaron_core
 pymacaron_unit
 dist/
+apis/
 pymacaron.egg-info/
 **/__pycache__
 *.tar

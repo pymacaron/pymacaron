@@ -28,11 +28,12 @@ class PyMacaronConfig(object):
         pym_env = os.environ.get('PYM_ENV', None)
         if env:
             pym_env = env
-        log.debug("Target environment is: [%s]" % pym_env)
+        log.debug(f"Target environment is: [{pym_env}]")
 
-        config_path = get_config_path('pym-config.%s.yaml' % pym_env, path=path)
+        config_name = f'pym-config.{pym_env}.yaml'
+        config_path = get_config_path(config_name, path=path)
         if not config_path:
-            log.debug("Did not find pym-config.%s.yaml - Defaulting to searching for pym-config.yaml" % (pym_env))
+            log.debug(f"Could not find {config_name} - Trying to find pym-config.yaml")
             config_path = get_config_path('pym-config.yaml', path=path)
 
         if not config_path:
@@ -40,7 +41,13 @@ class PyMacaronConfig(object):
 
         self.config_path = config_path
 
-        log.info("Loading config file at %s" % config_path)
+        # Find where the apis/ directory
+        self.apis_path = os.path.join(os.path.dirname(self.config_path), 'apis')
+        if not os.path.exists(self.apis_path):
+            raise Exception(f"Cannot find apis directory at {self.apis_path}")
+
+        # Load all attributes defined in pym-config into self
+        log.info(f"Loading config file at {config_path}")
         all_keys = []
         config_dict = {}
         with open(config_path, 'r') as stream:
@@ -69,7 +76,7 @@ class PyMacaronConfig(object):
             raise Exception("'pym-config.yaml' lacks the 'live_host' or 'live_url' key")
 
         # Magic here :-)
-        # For all keys whose value is in the list of enironment secrets, replace
+        # For all keys whose value is in the list of environment secrets, replace
         # that value with the value of the corresponding environment variable.
         if hasattr(self, 'env_secrets'):
             log.info("Substituting secret environment variable names for their values in config")
