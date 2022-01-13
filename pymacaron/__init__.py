@@ -37,7 +37,6 @@ class modelpool():
     def __init__(self, name):
         self.api_name = name
 
-
     def __getattr__(self, model_name):
         raise Exception(f'Either {self.api_name}.yaml has not been loaded or it does not define object {model_name}')
 
@@ -46,17 +45,14 @@ class apipool():
     # A class dynamically populated with containers of model objects by
     # load_api_models()
 
-    def __getattr__(self, api_name):
-        # Dynamically initialize the modelpool for this api
-        setattr(apipool, api_name, modelpool(api_name))
-
-
     @classmethod
     def add_model(cls, api_name, model_name, model_class):
         # Set modelpool.<model_name> to model_class. This allows writing:
         # o = apipool.ping.Ok()
+        if not hasattr(apipool, api_name):
+            setattr(apipool, api_name, modelpool(api_name))
         models = getattr(apipool, api_name)
-        setattr(models, model_class)
+        setattr(models, model_name, model_class)
 
 
 def get_port():

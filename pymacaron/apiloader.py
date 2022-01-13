@@ -1,5 +1,6 @@
 import os
 import yaml
+import importlib.util
 from pymacaron.log import pymlogger
 
 
@@ -68,10 +69,15 @@ def generate_models(swagger, model_file):
         'from pymacaron.model import PymacaronBaseModel',
         'from pydantic import BaseModel',
         'from typing import List',
+        'from datetime import datetime',
         '',
-        f'all_models = [{str_all_models}]',
+        f'__all_models = [{str_all_models}]',
         '',
     ]
+
+    # Now comes a tricky part: we need to sort class declarations so that
+    # classes are declared before they are used in the type constraints of
+    # other classes
 
     for model_name, model_def in swagger['definitions'].items():
 
@@ -111,7 +117,7 @@ def generate_models(swagger, model_file):
             if p_def.get('type', '').lower() == 'array':
                 assert 'items' in p_def, f"Expected 'items' in array definition of {model_name}:{p_name}"
                 t = def_to_type(p_def['items'], model_name, p_name)
-                lines.append(f'    {p_name}: List({t})')
+                lines.append(f'    {p_name}: List[{t}]')
 
             else:
                 t = def_to_type(p_def, model_name, p_name)
@@ -141,6 +147,10 @@ def load_api_models_and_endpoints(api_name=None, api_path=None, dest_path=None, 
 
     model_file = './' + os.path.relpath(os.path.join(dest_path, f'{api_name}_models.py'))
     app_file = './' + os.path.relpath(os.path.join(dest_path, f'{api_name}_app.py'))
+
+    #
+    # Step 1: Regenerate pydantic and FastAPI python code, if needed
+    #
 
     # Should we re-generate the models file?
     do_models = False
@@ -182,11 +192,20 @@ def load_api_models_and_endpoints(api_name=None, api_path=None, dest_path=None, 
         if not do_endpoints:
             log.info(f"No need to regenerate {app_file}")
 
-    # Step 4: load static model file into apipool
+    #
+    # Step 2: Load pydantic objects into pymacaron.apipool
+    #
+
     from pymacaron import apipool
 
-    for model_name, model_class in []:
-        apipool.add_model(api_name, model_name, model_class)
+    spec = importlib.util.spec_from_file_location(api_name, model_file)
+    pkg = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(pkg)
+
+    for model_name in pkg.__all_models:
+        apipool.add_model(api_name, model_name, getattr(pkg, model_name))
 
 
-    # Step 5: load static app file into server app
+    #
+    # Step 3: TODO: Load FastAPI endpoints??
+    #
