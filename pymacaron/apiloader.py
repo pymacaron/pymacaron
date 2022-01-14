@@ -33,29 +33,34 @@ def swagger_to_python_type(t, models, model_name, attr_name):
     return mapping[t]
 
 
-def generate_models(swagger, model_file):
+def generate_models_v2(swagger, model_file, api_name):
     """Extract all model definitions from this swagger file and write a python
     module defining every corresponding pymacaron model class
     """
 
     log.info(f"Regenerating {model_file}")
 
-    def def_to_type(prop_def, model_name, attr_name):
+    # List all model names in definitions
+    all_models = list(swagger['definitions'].keys())
+    all_models.sort()
+    str_all_models = ', '.join([f'"{s}"' for s in all_models])
+
+    def def_to_type(prop_def, model_name, prop_name):
         """Figure out the python type of a property"""
-        assert type(prop_def) is dict, f"Expected a dict instead of '{prop_def}' in definition of {model_name}:{attr_name}"
+        assert type(prop_def) is dict, f"Expected a dict instead of '{prop_def}' in definition of {model_name}:{prop_name}"
         t = None
         if '$ref' in prop_def:
             s = prop_def['$ref']
-            assert s.startswith("#/definitions/"), f"Failed to parse ref '{s}' in definition of {model_name}:{attr_name}"
+            assert s.startswith("#/definitions/"), f"Failed to parse ref '{s}' in definition of {model_name}:{prop_name}"
             t = s.split('/')[-1].replace("'", "").replace('"', '').strip()
         elif 'format' in prop_def:
             t = prop_def['format']
         elif 'type' in prop_def:
             t = prop_def['type']
         else:
-            raise Exception(f"Don't know how to identify type in '{prop_def}' definition of {model_name}:{attr_name}")
+            raise Exception(f"Don't know how to identify type in '{prop_def}' definition of {model_name}:{prop_name}")
 
-        return swagger_to_python_type(t, all_models, model_name, attr_name)
+        return swagger_to_python_type(t, all_models, model_name, prop_name)
 
     def get_parent(model_def):
         """Return (parent_module_path, parent_class) or None for this model definition"""
@@ -66,24 +71,32 @@ def generate_models(swagger, model_file):
             return (path, cls)
         return (None, None)
 
-    # List all model names in definitions
-    all_models = list(swagger['definitions'].keys())
-    all_models.sort()
-    str_all_models = ', '.join([f'"{s}"' for s in all_models])
+    def def_to_model_dependencies(model_def, model_name):
+        """Given a model definition, return all the model it references to"""
+        deps = []
+        for prop_name, prop_def in model_def['properties'].items():
+            if prop_def.get('type', '').lower() == 'array':
+                assert 'items' in prop_def, f"Expected 'items' in array definition of {model_name}:{prop_name}"
+                t = def_to_type(prop_def['items'], model_name, prop_name)
+            else:
+                t = def_to_type(prop_def, model_name, prop_name)
+            if t in all_models:
+                deps.append(t)
+        return deps
 
     # List all the parent classe we need to import before declaring models
     imports = []
     for model_name, model_def in swagger['definitions'].items():
         (path, cls) = get_parent(model_def)
         if path and cls:
-            imports.append(f'from {path} import {cls}')
+            imports.append(f'from {path} import {cls} as Parent{cls}')
 
     # Code lines of the python file
     lines = [
         '# This is an auto-generated file - DO NOT EDIT!!!',
         'from pymacaron.model import PymacaronBaseModel',
         'from pydantic import BaseModel',
-        'from typing import List',
+        'from typing import List, Optional',
         'from datetime import datetime',
     ] + imports + [
         '',
@@ -92,30 +105,40 @@ def generate_models(swagger, model_file):
     ]
 
     # Now comes a tricky part: we need to sort class declarations so that
-    # classes are declared before they are used in the type constraints of
-    # other classes. So we declare classes first, then add their attributes.
-
+    # classes are declared before they are referenced in the type constraints
+    # of other classes.
+    ordered_names = []
+    deps_by_name = {}
     for model_name, model_def in swagger['definitions'].items():
+        deps_by_name[model_name] = def_to_model_dependencies(model_def, model_name)
 
-        properties = list(model_def['properties'].keys())
-        properties.sort()
-        str_properties = ', '.join([f'"{s}"' for s in properties])
+    while len(deps_by_name):
+        for name in list(deps_by_name.keys()):
+            all_declared = True
+            for dep in deps_by_name[name]:
+                if dep not in ordered_names:
+                    all_declared = False
+            if all_declared:
+                ordered_names.append(name)
+                del deps_by_name[name]
+
+    # Now let's declare every class, in the right order
+    for model_name in ordered_names:
+        model_def = swagger['definitions'][model_name]
+
+        str_properties = ', '.join([f'"{s}"' for s in list(model_def['properties'].keys())])
 
         (path, cls) = get_parent(model_def)
-        x_parent = f', {cls}' if cls else ''
+        x_parent = f'Parent{cls}, ' if cls else ''
 
         lines += [
             '',
-            f'class {model_name}(BaseModel, PymacaronBaseModel{x_parent}):',
-            f'    __model_name = "{model_name}"',
-            f'    __model_attributes = [{str_properties}]',
-            '    __model_datetimes = []',
-            '',
+            f'class {model_name}({x_parent}PymacaronBaseModel, BaseModel):',
+            '    def get_property_names(self):',
+            f'        return [{str_properties}]',
+            '    def get_model_api(self):',
+            f'        return "{api_name}"',
         ]
-
-    for model_name, model_def in swagger['definitions'].items():
-
-        lines.append('')
 
         for p_name, p_def in model_def['properties'].items():
             # Looking at the properties definition, typically one of:
@@ -137,10 +160,10 @@ def generate_models(swagger, model_file):
             if p_def.get('type', '').lower() == 'array':
                 assert 'items' in p_def, f"Expected 'items' in array definition of {model_name}:{p_name}"
                 t = def_to_type(p_def['items'], model_name, p_name)
-                lines.append(f'{model_name}.{p_name}: List[{t}]')
+                lines.append(f'    {p_name}: Optional[List[{t}]] = None')
             else:
                 t = def_to_type(p_def, model_name, p_name)
-                lines.append(f'{model_name}.{p_name}: {t}')
+                lines.append(f'    {p_name}: Optional[{t}] = None')
 
     lines.append('')
     lines.append('')
@@ -149,7 +172,7 @@ def generate_models(swagger, model_file):
         f.write('\n'.join(lines))
 
 
-def generate_endpoints(swagger, app_file, model_file):
+def generate_endpoints_v2(swagger, app_file, model_file):
     """Extract all endpoint definitions from this swagger file and write a python
     module defining all the corresponding FastAPI endpoints
     """
@@ -199,11 +222,14 @@ def load_api_models_and_endpoints(api_name=None, api_path=None, dest_path=None, 
         if not swagger:
             raise Exception(f"Don't know how to load {api_path}")
 
+        swagger_version = swagger['swagger']
+        assert swagger_version == '2.0', f"OpenAPI version '{swagger_version}' is not supported"
+
         if do_models:
-            generate_models(swagger, model_file)
+            generate_models_v2(swagger, model_file, api_name)
 
         if do_endpoints:
-            generate_endpoints(swagger, app_file, model_file)
+            generate_endpoints_v2(swagger, app_file, model_file)
 
     else:
         if not do_models:

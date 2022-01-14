@@ -42,8 +42,9 @@ class modelpool():
     def __getattr__(self, model_name):
         raise Exception(f'Either {self.api_name}.yaml has not been loaded or it does not define object {model_name}')
 
-    def json_to_model(self, model_name, j):
+    def json_to_model(self, model_name, j, keep_datetime=None):
         """Given a model name and json dict, return an instantiated pymacaron object"""
+        assert keep_datetime is None, "keep_datetime support not implemented"
         return getattr(self, model_name).from_json(j)
 
 
@@ -54,11 +55,18 @@ class apipool():
     def add_model(cls, api_name, model_name, model_class):
         """Register a model class defined in an api"""
         # Set modelpool.<model_name> to model_class. This allows writing:
-        # o = apipool.ping.Ok()
+        #   from pymacaron import apipool
+        #   o = apipool.ping.Ok()
         if not hasattr(apipool, api_name):
             setattr(apipool, api_name, modelpool(api_name))
         models = getattr(apipool, api_name)
         setattr(models, model_name, model_class)
+
+    @classmethod
+    def get_model(cls, api_name):
+        """Return the pymacaron modelpool for this api"""
+        assert hasattr(apipool, api_name), f"Api {api_name} is not loaded in apipool"
+        return getattr(apipool, api_name)
 
 
 class apispecs():

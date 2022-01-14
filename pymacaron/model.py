@@ -1,4 +1,5 @@
 import ujson
+from datetime import datetime
 from pymacaron.log import pymlogger
 
 
@@ -7,45 +8,50 @@ log = pymlogger(__name__)
 
 class PymacaronBaseModel(object):
 
-    # Those class attributes must be overriden in the child class
-    __model_attributes = []
-    __model_name = None
-    __model_datetimes = []
-
-
     # See https://pydantic-docs.helpmanual.io/usage/exporting_models/ about ujson vs orjson
     class Config:
         json_loads = ujson.loads
+        json_encoders = {
+            # TODO: make itthe datetime encoding configurable
+            datetime: lambda d: d.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+        }
 
 
-    def to_json(self):
-        """Return a json representation of this PyMacaron object"""
+    def __str__(self):
+        """Return a generic string representation of a pymacaron model instance"""
+        return f'{self.get_model_name()}(self.dict())'
 
-        j = self.json(include=self.__model_attributes)
 
-        # TODO: implement keep_datetime
+    def to_json(self, keep_datetime=False):
+        """Return a json dictionary representation of this PyMacaron object"""
 
-        return j
+        if keep_datetime:
+            return self.dict()
+
+        # Else let pydantic serialize datetimes to json and back
+        s = self.json()
+        return ujson.loads(s)
 
 
     @classmethod
     def from_json(cls, j):
         """Take a json dictionary and return a model instance"""
-
-        # NOTE: the correct way to do this should be to call cls.parse_raw on the string representation of j
-
-        self = type(cls)
-        for k in self.__model_attributes:
-            if k in j:
-                setattr(self, k, j[k])
-
-        return self
+        return cls.parse_obj(j)
 
 
     def get_model_name(self):
         """Return the name of the OpenAPI schema object describing this PyMacaron Model instance"""
-        return getattr(self, '__model_name')
+        return type(self).__name__
 
+
+    def get_model_api(self):
+        """Return the name of the api to which this model belongs"""
+        raise Exception("Should be overriden in model declaration")
+
+
+    def get_property_names(self):
+        """Return the names of all of the model's properties"""
+        raise Exception("Should be overriden in model declaration")
 
     def clone(self):
         # Deprecated: should use pydantic.copy() instead
