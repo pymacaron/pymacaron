@@ -32,7 +32,9 @@ def _get_model_factory(model_name):
 
 
 class modelpool():
-    # An api is a class whose attributes are Pymacaron models
+    """The modelpool of an api is a class whose attributes are all the Pymacaron
+    model classes declared in that api
+    """
 
     def __init__(self, name):
         self.api_name = name
@@ -46,17 +48,34 @@ class modelpool():
 
 
 class apipool():
-    # A class dynamically populated with containers of model objects by
-    # load_api_models()
+    """The apipool contains the modelpools of all loaded apis"""
 
     @classmethod
     def add_model(cls, api_name, model_name, model_class):
+        """Register a model class defined in an api"""
         # Set modelpool.<model_name> to model_class. This allows writing:
         # o = apipool.ping.Ok()
         if not hasattr(apipool, api_name):
             setattr(apipool, api_name, modelpool(api_name))
         models = getattr(apipool, api_name)
         setattr(models, model_name, model_class)
+
+
+class apispecs():
+    """Keep track of the path of the openapi spec file of every loaded api"""
+
+    __api_name_to_path = {}
+
+    @classmethod
+    def register_api_path(cls, api_name, api_path):
+        """Remember where to find the openapi file of this api"""
+        apispecs.__api_name_to_path[api_name] = api_path
+
+    @classmethod
+    def get_api_path(cls, api_name):
+        """Get the path of the openapi file of this api, or None if that api has not been loaded"""
+        return apispecs.__api_name_to_path.get(api_name, None)
+
 
 
 def get_port():

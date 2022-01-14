@@ -228,9 +228,16 @@ def load_api_models_and_endpoints(api_name=None, api_path=None, dest_path=None, 
 
     log.info(f"Loaded {cnt} models from {model_file}")
 
-    # TODO: support adding inheritance via x-parent
     # TODO: support setting model attributes by calling __init__(**kwargs)
 
     #
     # Step 3: TODO: Load FastAPI endpoints??
     #
+
+
+    #
+    # Step 4: Remember where the api's swagger file is located
+    #
+
+    from pymacaron import apispecs
+    apispecs.register_api_path(api_name, api_path)
