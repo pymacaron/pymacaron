@@ -40,6 +40,10 @@ class modelpool():
     def __getattr__(self, model_name):
         raise Exception(f'Either {self.api_name}.yaml has not been loaded or it does not define object {model_name}')
 
+    def json_to_model(self, model_name, j):
+        """Given a model name and json dict, return an instantiated pymacaron object"""
+        return getattr(self, model_name).from_json(j)
+
 
 class apipool():
     # A class dynamically populated with containers of model objects by

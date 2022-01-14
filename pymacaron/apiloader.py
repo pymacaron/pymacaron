@@ -40,35 +40,52 @@ def generate_models(swagger, model_file):
 
     log.info(f"Regenerating {model_file}")
 
+    def def_to_type(prop_def, model_name, attr_name):
+        """Figure out the python type of a property"""
+        assert type(prop_def) is dict, f"Expected a dict instead of '{prop_def}' in definition of {model_name}:{attr_name}"
+        t = None
+        if '$ref' in prop_def:
+            s = prop_def['$ref']
+            assert s.startswith("#/definitions/"), f"Failed to parse ref '{s}' in definition of {model_name}:{attr_name}"
+            t = s.split('/')[-1].replace("'", "").replace('"', '').strip()
+        elif 'format' in prop_def:
+            t = prop_def['format']
+        elif 'type' in prop_def:
+            t = prop_def['type']
+        else:
+            raise Exception(f"Don't know how to identify type in '{prop_def}' definition of {model_name}:{attr_name}")
+
+        return swagger_to_python_type(t, all_models, model_name, attr_name)
+
+    def get_parent(model_def):
+        """Return (parent_module_path, parent_class) or None for this model definition"""
+        parent = model_def.get('x-parent', None)
+        if parent:
+            cls = parent.split('.')[-1]
+            path = '.'.join(parent.split('.')[0:-1])
+            return (path, cls)
+        return (None, None)
+
+    # List all model names in definitions
     all_models = list(swagger['definitions'].keys())
     all_models.sort()
     str_all_models = ', '.join([f'"{s}"' for s in all_models])
 
+    # List all the parent classe we need to import before declaring models
+    imports = []
+    for model_name, model_def in swagger['definitions'].items():
+        (path, cls) = get_parent(model_def)
+        if path and cls:
+            imports.append(f'from {path} import {cls}')
 
-    def def_to_type(o, model_name, attr_name):
-        # Take either {'type': <type>, 'format': ...} or {'$ref': '#/definitions/<type>'}
-        # and return the type (or format if available)
-        assert type(o) is dict, f"Expected a dict instead of '{o}' in definition of {model_name}:{attr_name}"
-        t = None
-        if '$ref' in o:
-            s = o['$ref']
-            assert s.startswith("#/definitions/"), f"Failed to parse ref '{s}' in definition of {model_name}:{attr_name}"
-            t = s.split('/')[-1].replace("'", "").replace('"', '').strip()
-        elif 'format' in o:
-            t = o['format']
-        elif 'type' in o:
-            t = o['type']
-        else:
-            raise Exception(f"Don't know how to identify type in '{o}' definition of {model_name}:{attr_name}")
-
-        return swagger_to_python_type(t, all_models, model_name, attr_name)
-
+    # Code lines of the python file
     lines = [
         '# This is an auto-generated file - DO NOT EDIT!!!',
         'from pymacaron.model import PymacaronBaseModel',
         'from pydantic import BaseModel',
         'from typing import List',
         'from datetime import datetime',
+    ] + imports + [
         '',
         f'__all_models = [{str_all_models}]',
         '',
@@ -84,9 +101,12 @@ def generate_models(swagger, model_file):
         properties.sort()
         str_properties = ', '.join([f'"{s}"' for s in properties])
 
+        (path, cls) = get_parent(model_def)
+        x_parent = f', {cls}' if cls else ''
+
         lines += [
             '',
-            f'class {model_name}(BaseModel, PymacaronBaseModel):',
+            f'class {model_name}(BaseModel, PymacaronBaseModel{x_parent}):',
             f'    __model_name = "{model_name}"',
             f'    __model_attributes = [{str_properties}]',
             '    __model_datetimes = []',
@@ -100,11 +120,8 @@ def generate_models(swagger, model_file):
         for p_name, p_def in model_def['properties'].items():
             # Looking at the properties definition, typically one of:
             #
-            # type: string
-            #
-            #
             # type: str
-            # format: datetime
+            # [format: datetime]
             #
             # ref: '#/definitions/<some_type>
             #
@@ -210,6 +227,9 @@ def load_api_models_and_endpoints(api_name=None, api_path=None, dest_path=None, 
         cnt += 1
 
     log.info(f"Loaded {cnt} models from {model_file}")
+
+    # TODO: support adding inheritance via x-parent
+    # TODO: support setting model attributes by calling __init__(**kwargs)
 
     #
     # Step 3: TODO: Load FastAPI endpoints??
