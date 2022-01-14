@@ -44,7 +44,8 @@ class modelpool():
 
     def json_to_model(self, model_name, j, keep_datetime=None):
         """Given a model name and json dict, return an instantiated pymacaron object"""
-        assert keep_datetime is None, "keep_datetime support not implemented"
+        # TODO: keep_datetime in this method should be deprecated...
+        assert keep_datetime is not False, "Support for keep_datetime=False not implemented"
         return getattr(self, model_name).from_json(j)
 
 
