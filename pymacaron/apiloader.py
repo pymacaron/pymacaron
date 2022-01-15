@@ -165,7 +165,67 @@ def generate_endpoints_v2(swagger, app_file, model_file):
 
     lines = [
         '# This is an auto-generated file - DO NOT EDIT!!!',
+        'from pymacaron.endpoint import pymacaron_flask_endpoint',
+        'from pymacaron.log import pymlogger',
+        '',
+        '',
+        'log = pymlogger(__name__)',
+        '',
+        '',
     ]
+
+    # log.info("GET /api/v4/chat/<chat_id>/message/<message_id> ==> gofrendly.v4.message.do_get_message")
+    # @app.route('/api/v4/chat/<str:chat_id>/message/<str:message_id>', methods=['GET'])
+    # def endpoint_do_get_message(chat_id, message_id):
+    #     from gofrendly.v4.message import do_get_message
+    #     return pymacaron_flask_endpoint(
+    #         api_name='chat',
+    #         f=do_get_message,
+    #         path_args={
+    #             'chat_id': chat_id,
+    #             'message_id': message_id,
+    #         },
+    #         body_model_name=None,
+    #         query_model=None,
+    #     )
+
+    # log.info("GET /api/v4/chat/<chat_id>/message/add ==> gofrendly.v4.message.do_post_message")
+    # @app.route('/api/v4/chat/<str:chat_id>/message/add', methods=['POST'])
+    # def endpoint_do_post_message(chat_id):
+    #     from gofrendly.v4.message import do_post_message
+    #     return pymacaron_flask_endpoint(
+    #         api_name='chat',
+    #         f=do_post_message,
+    #         path_args={
+    #             'chat_id': chat_id,
+    #         },
+    #         body_model_name='v4NewChatMessage',
+    #         query_model=None,
+    #     )
+
+    # log.info("GET /api/v4/chat/<chat_id>/messages/search ==> gofrendly.v4.message.do_search_messages")
+    # @app.route('/api/v4/chat/<str:chat_id>/messages/search', methods=['GET'])
+    # class endpoint_do_search_messages(BaseModel):
+    #     class QueryModel(BaseModel):
+    #         text: Optional[str] = None
+    #         id: Optional[str] = None
+    #
+    #     from gofrendly.v4.message import do_search_messages
+    #     return pymacaron_flask_endpoint(
+    #         api_name='chat',
+    #         f=do_search_message,
+    #         path_args={
+    #             'chat_id': chat_id,
+    #         },
+    #         body_model_name=None,
+    #         query_model=QueryModel,
+    #     )
+
+    # Optionally: global decorator
+    # log.info(...)
+    # @app.route('/api/v4/chat/<str:chat_id>/messages/search', methods=['GET'])
+    # @global_decorator()
+    # class...
 
     with open(app_file, 'w') as f:
         f.write('\n'.join(lines))
@@ -227,28 +287,31 @@ def load_api_models_and_endpoints(api_name=None, api_path=None, dest_path=None, 
             log.info(f"No need to regenerate {app_file}")
 
     #
-    # Step 2: Load pydantic objects into pymacaron.apipool
+    # Step 2: Load code
+    #
+
+    def load_code(path):
+        spec = importlib.util.spec_from_file_location(api_name, path)
+        pkg = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(pkg)
+        return pkg
+
+    model_pkg = load_code(model_file)
+
+    load_code(app_file)
+
+    #
+    # Step 3: Load all pydantic models into apipool
     #
 
     from pymacaron import apipool
 
-    spec = importlib.util.spec_from_file_location(api_name, model_file)
-    pkg = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(pkg)
-
     cnt = 0
-    for model_name in pkg.__all_models:
-        apipool.add_model(api_name, model_name, getattr(pkg, model_name))
+    for model_name in model_pkg.__all_models:
+        apipool.add_model(api_name, model_name, getattr(model_pkg, model_name))
         cnt += 1
 
     log.info(f"Loaded {cnt} models from {model_file}")
-
-    # TODO: support setting model attributes by calling __init__(**kwargs)
-
-    #
-    # Step 3: TODO: Load FastAPI endpoints??
-    #
-
 
     #
     # Step 4: Remember where the api's swagger file is located
