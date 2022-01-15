@@ -141,22 +141,6 @@ def generate_models_v2(swagger, model_file, api_name):
         ]
 
         for p_name, p_def in model_def['properties'].items():
-            # Looking at the properties definition, typically one of:
-            #
-            # type: str
-            # [format: datetime]
-            #
-            # ref: '#/definitions/<some_type>
-            #
-            # type: array
-            # items:
-            #     ref: '#/definitions/<some_type>
-            #
-            # type: array
-            # items:
-            #     type: number
-            #
-
             if p_def.get('type', '').lower() == 'array':
                 assert 'items' in p_def, f"Expected 'items' in array definition of {model_name}:{p_name}"
                 t = def_to_type(p_def['items'], model_name, p_name)
@@ -176,13 +160,18 @@ def generate_endpoints_v2(swagger, app_file, model_file):
     """Extract all endpoint definitions from this swagger file and write a python
     module defining all the corresponding FastAPI endpoints
     """
+
     log.info(f"Regenerating {app_file}")
-    s = ''
+
+    lines = [
+        '# This is an auto-generated file - DO NOT EDIT!!!',
+    ]
+
     with open(app_file, 'w') as f:
-        f.write(s)
+        f.write('\n'.join(lines))
 
 
-def load_api_models_and_endpoints(api_name=None, api_path=None, dest_path=None, load_models=True, load_endpoints=True):
+def load_api_models_and_endpoints(api_name=None, api_path=None, dest_path=None, load_models=True, load_endpoints=True, force=False):
     """Load all object models defined inside the OpenAPI specification located at
     api_path into a generated python module at dest_path/[api_name].py
     """
@@ -195,7 +184,7 @@ def load_api_models_and_endpoints(api_name=None, api_path=None, dest_path=None, 
     #
 
     # Should we re-generate the models file?
-    do_models = False
+    do_models = True if force else False
     if load_models or load_endpoints:
         if not os.path.exists(model_file):
             do_models = True
@@ -203,7 +192,7 @@ def load_api_models_and_endpoints(api_name=None, api_path=None, dest_path=None, 
             do_models = True
 
     # Should we re-generate the endpoints file?
-    do_endpoints = False
+    do_endpoints = True if force else False
     if load_endpoints:
         if not os.path.exists(model_file):
             do_endpoints = True
