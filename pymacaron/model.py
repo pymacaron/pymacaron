@@ -7,12 +7,17 @@ log = pymlogger(__name__)
 
 
 class PymacaronBaseModel(object):
+    """The base class from which all pymacaron model classes inherit. Some of these
+    methods are redundant with pydantic, but kept for backward compatibility
+    with code using older versions of pymacaron.
+
+    """
 
     # See https://pydantic-docs.helpmanual.io/usage/exporting_models/ about ujson vs orjson
     class Config:
         json_loads = ujson.loads
         json_encoders = {
-            # TODO: make itthe datetime encoding configurable
+            # TODO: make the datetime encoding configurable
             datetime: lambda d: d.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
         }
 
@@ -22,15 +27,35 @@ class PymacaronBaseModel(object):
         return f'{self.get_model_name()}(self.dict())'
 
 
-    def to_json(self, keep_datetime=False):
+    def __prune_none(self, j):
+        for k in list(j.keys()):
+            v = j[k]
+            if v is None:
+                del j[k]
+            elif type(v) is dict:
+                self.__prune_none(v)
+            elif type(v) is list:
+                for i in v:
+                    if type(i) is dict:
+                        self.__prune_none(i)
+
+
+    def to_json(self, keep_datetime=False, prune_none=True):
         """Return a json dictionary representation of this PyMacaron object"""
 
         if keep_datetime:
-            return self.dict()
+            j = self.dict()
+        else:
+            # Else let pydantic serialize datetimes to json and back
+            s = self.json()
+            j = ujson.loads(s)
 
-        # Else let pydantic serialize datetimes to json and back
-        s = self.json()
-        return ujson.loads(s)
+        # pydantic sets undefined attributes to None, which we may want to
+        # filter out, for example before saving to datastore
+        if prune_none:
+            self.__prune_none(j)
+
+        return j
 
 
     @classmethod
@@ -39,8 +64,13 @@ class PymacaronBaseModel(object):
         return cls.parse_obj(j)
 
 
+    def clone(self):
+        # Deprecated: should use pydantic.copy() instead
+        return self.copy()
+
+
     def get_model_name(self):
-        """Return the name of the OpenAPI schema object describing this PyMacaron Model instance"""
+        """Return the name of the OpenAPI schema object describing this pymacaron Model instance"""
         return type(self).__name__
 
 
@@ -52,7 +82,3 @@ class PymacaronBaseModel(object):
     def get_property_names(self):
         """Return the names of all of the model's properties"""
         raise Exception("Should be overriden in model declaration")
-
-    def clone(self):
-        # Deprecated: should use pydantic.copy() instead
-        return self.copy()
