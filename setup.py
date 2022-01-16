@@ -49,7 +49,6 @@ setup(
     python_requires='>=3.8',
     install_requires=[
         'pymacaron-unit>=1.0.10',
-        'pymacaron-core>=1.0.146',
         'flask>=1.0.4',
         'flask-cors',
         'flask-compress',
@@ -67,7 +66,6 @@ setup(
         'mock',
         'pycodestyle'
         'pymacaron-unit>=1.0.10',
-        'pymacaron-core>=1.0.146',
         'flask>=1.0.4',
         'flask-cors',
         'flask-compress',

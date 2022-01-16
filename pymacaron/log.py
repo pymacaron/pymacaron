@@ -37,14 +37,10 @@ def setup_logger(celery=False):
     #     fh.setFormatter(formatter)
     #     root.addHandler(fh)
 
-    # Make an exception for boto and bravado: its debug level is just too verbose...
+    # Make an exception for boto: its debug level is just too verbose...
     logging.getLogger('boto').setLevel(logging.INFO)
     logging.getLogger('boto3').setLevel(logging.WARNING)
     logging.getLogger('botocore').setLevel(logging.WARNING)
-    logging.getLogger('bravado_core.spec').setLevel(logging.INFO)
-    logging.getLogger('bravado_core.model').setLevel(logging.INFO)
-    logging.getLogger('bravado_core.operation').setLevel(logging.INFO)
-    logging.getLogger('swagger_spec_validator.ref_validators').setLevel(logging.INFO)
     logging.getLogger('celery').setLevel(logging.INFO)
     logging.getLogger('scout_apm.core').setLevel(logging.INFO)
     logging.getLogger('elasticsearch').setLevel(logging.INFO)
