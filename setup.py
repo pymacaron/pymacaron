@@ -58,6 +58,8 @@ setup(
         'pytz',
         'PyJWT',
         'PyYAML>=5.1.2',
+        'pydantic>=1.8.2',
+        'ujson>=5.1.0',
     ],
     tests_require=[
         'psutil',
@@ -73,6 +75,8 @@ setup(
         'pytz',
         'PyJWT',
         'PyYAML>=5.1.2',
+        'pydantic>=1.8.2',
+        'ujson>=5.1.0',
     ],
     packages=['pymacaron'],
     package_data={'pymacaron': ['*.yaml']},
