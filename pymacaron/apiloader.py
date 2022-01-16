@@ -246,6 +246,7 @@ def generate_endpoints_v2(swagger, app_file, model_file, api_name):
             endpoint_decorator = None
             if 'x-decorate-server' in endpoint_def:
                 endpoint_decorator = endpoint_def['x-decorate-server']
+                # TODO: support endpoint_decorator (jwt auth)
 
             # Name the endpoint
             def_name = f'endpoint_{http_method.lower()}_' + re.sub(r'\W+', '', str(route).replace('/', '_'))

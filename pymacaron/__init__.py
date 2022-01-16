@@ -191,6 +191,8 @@ class API(object):
         redirecting to http://petstore.swagger.io/
         """
 
+        # TODO: refactor publish_apis to use apispecs
+
         assert path
 
         if not self.apis:
@@ -367,6 +369,7 @@ class API(object):
                 api_path,
                 dest_dir=os.path.dirname(api_path),
                 load_endpoints=True if api_name in serve else False,
+                # TODO: support timeout, error_callback, formats, host/port
                 # timeout=self.timeout,
                 # error_callback=self.error_callback,
                 # formats=self.formats,
