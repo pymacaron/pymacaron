@@ -186,112 +186,6 @@ class API(object):
         log.info("Initialized API (%s:%s) (Flask debug:%s)" % (host, port, debug))
 
 
-    def load_default_apis(self):
-        # Load models from default builtin apis
-        for name in ['ping', 'crash']:
-            yaml_path = pkg_resources.resource_filename(__name__, 'pymacaron/%s.yaml' % name)
-            if not os.path.isfile(yaml_path):
-                yaml_path = os.path.join(os.path.dirname(sys.modules[__name__].__file__), '%s.yaml' % name)
-            apipool.load_swagger(
-                name,
-                yaml_path,
-                dest_dir=get_config().apis_path,
-                load_endpoints=True,
-            )
-
-
-    # TODO: deprecate
-    def _load_model_aliases(self, api):
-        """Load all PyMacaronModels generated for a given api into the namespace
-        of pymacaron.models so a user may write 'from pymacaron.models import <SomeModel>'
-        """
-
-        for model_name in dir(api.model):
-            model_class = getattr(api.model, model_name)
-            if inspect.isclass(model_class) and 'to_json' in dir(model_class):
-                setattr(pymacaron.models, model_name, _get_model_factory(model_name))
-
-
-    # TODO: deprecate
-    def load_clients(self, path=None, apis=[]):
-        """Generate client libraries for the given apis, without starting an
-        api server"""
-
-        if not path:
-            raise Exception("Missing path to api swagger files")
-
-        if type(apis) is not list:
-            raise Exception("'apis' should be a list of api names")
-
-        if len(apis) == 0:
-            raise Exception("'apis' is an empty list - Expected at least one api name")
-
-        for api_name in apis:
-            api_path = os.path.join(path, '%s.yaml' % api_name)
-            if not os.path.isfile(api_path):
-                raise Exception("Cannot find swagger specification at %s" % api_path)
-            log.info("Loading api %s from %s" % (api_name, api_path))
-            api = ApiPool.add(
-                api_name,
-                yaml_path=api_path,
-                timeout=self.timeout,
-                error_callback=self.error_callback,
-                formats=self.formats,
-                do_persist=False,
-                local=False,
-            )
-            self._load_model_aliases(api)
-
-        return self
-
-
-    def load_apis(self, path, ignore=[], include_crash_api=False):
-        """Load all swagger files found at the given path, except those whose
-        names are in the 'ignore' list"""
-
-        path = get_config().apis_path
-
-        if type(ignore) is not list:
-            raise Exception("'ignore' should be a list of api names")
-
-        # Always ignore pym-config.yaml
-        ignore.append('pym-config')
-
-        # Find all swagger apis under 'path'
-        apis = {}
-
-        log.debug("Searching path %s" % path)
-        for root, dirs, files in os.walk(path):
-            for f in files:
-                if f.startswith('.#') or f.startswith('#'):
-                    log.info("Ignoring file %s" % f)
-                elif f.endswith('.yaml'):
-                    api_name = f.replace('.yaml', '')
-
-                    if api_name in ignore:
-                        log.info("Ignoring api %s" % api_name)
-                        continue
-
-                    apis[api_name] = os.path.join(path, f)
-                    log.debug("Found api %s in %s" % (api_name, f))
-
-        # And add pymacaron's default ping and crash apis
-        for name in ['ping', 'crash']:
-            yaml_path = pkg_resources.resource_filename(__name__, 'pymacaron/%s.yaml' % name)
-            if not os.path.isfile(yaml_path):
-                yaml_path = os.path.join(os.path.dirname(sys.modules[__name__].__file__), '%s.yaml' % name)
-            apis[name] = yaml_path
-
-        if not include_crash_api:
-            del apis['crash']
-
-        # Save found apis
-        self.path_apis = path
-        self.apis = apis
-
-        return self
-
-
     def publish_apis(self, path='doc'):
         """Publish all loaded apis on under the uri /<path>/<api-name>, by
         redirecting to http://petstore.swagger.io/
@@ -339,6 +233,88 @@ class API(object):
         return self
 
 
+    def load_builtin_apis(self, names=['ping']):
+        """Load some or all of the builtin apis 'ping' and 'crash'"""
+        for name in names:
+            yaml_path = pkg_resources.resource_filename(__name__, 'pymacaron/%s.yaml' % name)
+            if not os.path.isfile(yaml_path):
+                yaml_path = os.path.join(os.path.dirname(sys.modules[__name__].__file__), '%s.yaml' % name)
+            apipool.load_swagger(
+                name,
+                yaml_path,
+                dest_dir=get_config().apis_path,
+                load_endpoints=True,
+            )
+
+
+    def load_clients(self, path=None, apis=[]):
+        """Generate client libraries for the given apis, without starting an
+        api server"""
+
+        if not path:
+            raise Exception("Missing path to api swagger files")
+
+        if type(apis) is not list:
+            raise Exception("'apis' should be a list of api names")
+
+        if len(apis) == 0:
+            raise Exception("'apis' is an empty list - Expected at least one api name")
+
+        for api_name in apis:
+            api_path = os.path.join(path, '%s.yaml' % api_name)
+            if not os.path.isfile(api_path):
+                raise Exception("Cannot find swagger specification at %s" % api_path)
+            apipool.load_swagger(
+                api_name,
+                api_path,
+                dest_dir=path,
+                load_endpoints=False,
+                # timeout=self.timeout,
+                # error_callback=self.error_callback,
+                # formats=self.formats,
+                # local=False,
+            )
+
+        return self
+
+
+    def load_apis(self, path, ignore=[]):
+        """Load all swagger files found at the given path, except those whose
+        names are in the 'ignore' list"""
+
+        path = get_config().apis_path
+
+        if type(ignore) is not list:
+            raise Exception("'ignore' should be a list of api names")
+
+        # Always ignore pym-config.yaml
+        ignore.append('pym-config')
+
+        # Find all swagger apis under 'path'
+        apis = {}
+
+        log.debug("Searching path %s" % path)
+        for root, dirs, files in os.walk(path):
+            for f in files:
+                if f.startswith('.#') or f.startswith('#'):
+                    log.info("Ignoring file %s" % f)
+                elif f.endswith('.yaml'):
+                    api_name = f.replace('.yaml', '')
+
+                    if api_name in ignore:
+                        log.info("Ignoring api %s" % api_name)
+                        continue
+
+                    apis[api_name] = os.path.join(path, f)
+                    log.debug("Found api %s in %s" % (api_name, f))
+
+        # Save found apis
+        self.path_apis = path
+        self.apis = apis
+
+        return self
+
+
     def start(self, serve=[]):
         """Load all apis, either as local apis served by the flask app, or as
         remote apis to be called from whithin the app's endpoints, then start
@@ -378,58 +354,26 @@ class API(object):
         if self.ping_hook:
             add_ping_hook(self.ping_hook)
 
+        self.load_builtin_apis()
+
         # Let's compress returned data when possible
         compress = Compress()
         compress.init_app(app)
 
-        # All apis that are not served locally are not persistent
-        not_persistent = []
-        for api_name in self.apis.keys():
-            if api_name in serve:
-                pass
-            else:
-                not_persistent.append(api_name)
-
         # Now load those apis into the ApiPool
         for api_name, api_path in self.apis.items():
-
-            host = None
-            port = None
-
-            if api_name in serve:
-                # We are serving this api locally: override the host:port specified in the swagger spec
-                host = self.host
-                port = self.port
-
-            do_persist = True if api_name not in not_persistent else False
-            local = True if api_name in serve else False
-
-            log.info("Loading api %s from %s (persist: %s)" % (api_name, api_path, do_persist))
-            api = ApiPool.add(
+            apipool.load_swagger(
                 api_name,
-                yaml_path=api_path,
-                timeout=self.timeout,
-                error_callback=self.error_callback,
-                formats=self.formats,
-                do_persist=do_persist,
-                host=host,
-                port=port,
-                local=local,
+                api_path,
+                dest_dir=os.path.dirname(api_path),
+                load_endpoints=True if api_name in serve else False,
+                # timeout=self.timeout,
+                # error_callback=self.error_callback,
+                # formats=self.formats,
+                # local=False,
+                # host=host,
+                # port=port,
             )
-
-            self._load_model_aliases(api)
-
-        # Make sure schema objects from different APIs don't conflict with each other
-        ApiPool.merge()
-
-        # Now spawn flask routes for all endpoints
-        for api_name in self.apis.keys():
-            if api_name in serve:
-                log.info("Spawning api %s" % api_name)
-                api = getattr(ApiPool, api_name)
-                # Spawn api and wrap every endpoint in a crash handler that
-                # catches replies and reports errors
-                api.spawn_api(app, decorator=generate_crash_handler_decorator(self.error_decorator))
 
         log.debug("Argv is [%s]" % '  '.join(sys.argv))
         if 'celery' in sys.argv[0].lower():

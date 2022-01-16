@@ -1,4 +1,5 @@
 import os
+import re
 import yaml
 import importlib.util
 from pymacaron.log import pymlogger
@@ -11,7 +12,7 @@ def modified_time(path):
     return os.path.getmtime(path)
 
 
-def swagger_to_python_type(t, models, model_name, attr_name):
+def swagger_type_to_python_type(t, models=[]):
     """Given a swagger type or format or ref definition, return its corresponding python type"""
     # Take a swagger type and return the corresponding python type
     if t in models:
@@ -26,11 +27,17 @@ def swagger_to_python_type(t, models, model_name, attr_name):
         'date': 'datetime',
         'datetime': 'datetime',
         'date-time': 'datetime',
+        'iso-date': 'datetime',
     }
 
-    assert t in mapping, f"Don't know the python type of swagger type '{t}' in definition of {model_name}:{attr_name}"
+    assert t in mapping, f"Don't know to map swagger type '{t}' to a python type"
 
     return mapping[t]
+
+
+def ref_to_model_name(s):
+    """Take the '#/definitions/...' string in a $ref: statement, and return the name of the model referenced"""
+    return s.split('/')[-1].replace("'", "").replace('"', '').strip()
 
 
 def generate_models_v2(swagger, model_file, api_name):
@@ -52,7 +59,7 @@ def generate_models_v2(swagger, model_file, api_name):
         if '$ref' in prop_def:
             s = prop_def['$ref']
             assert s.startswith("#/definitions/"), f"Failed to parse ref '{s}' in definition of {model_name}:{prop_name}"
-            t = s.split('/')[-1].replace("'", "").replace('"', '').strip()
+            t = ref_to_model_name(s)
         elif 'format' in prop_def:
             t = prop_def['format']
         elif 'type' in prop_def:
@@ -60,7 +67,7 @@ def generate_models_v2(swagger, model_file, api_name):
         else:
             raise Exception(f"Don't know how to identify type in '{prop_def}' definition of {model_name}:{prop_name}")
 
-        return swagger_to_python_type(t, all_models, model_name, prop_name)
+        return swagger_type_to_python_type(t, all_models)
 
     def get_parent(model_def):
         """Return (parent_module_path, parent_class) or None for this model definition"""
@@ -74,6 +81,7 @@ def generate_models_v2(swagger, model_file, api_name):
     def def_to_model_dependencies(model_def, model_name):
         """Given a model definition, return all the model it references to"""
         deps = []
+        assert 'properties' in model_def, f"No 'properties' defined for model '{model_name}'"
         for prop_name, prop_def in model_def['properties'].items():
             if prop_def.get('type', '').lower() == 'array':
                 assert 'items' in prop_def, f"Expected 'items' in array definition of {model_name}:{prop_name}"
@@ -133,6 +141,7 @@ def generate_models_v2(swagger, model_file, api_name):
 
         lines += [
             '',
+            '',
             f'class {model_name}({x_parent}PymacaronBaseModel, BaseModel):',
             '    def get_property_names(self):',
             f'        return [{str_properties}]',
@@ -156,15 +165,34 @@ def generate_models_v2(swagger, model_file, api_name):
         f.write('\n'.join(lines))
 
 
-def generate_endpoints_v2(swagger, app_file, model_file):
+def generate_endpoints_v2(swagger, app_file, model_file, api_name):
     """Extract all endpoint definitions from this swagger file and write a python
     module defining all the corresponding FastAPI endpoints
     """
+
+    def swagger_type_to_flask_converter(s):
+        mappings = {
+            # swagger -> flask
+            'string': 'string',
+            'integer': 'int',
+            'int32': 'int',
+            'number': 'float',
+        }
+        assert s in mappings, f"Don't know how to map swagger type '{s}' of a path parameter to a Flask converter"
+        return mappings[s]
+
+    if 'paths' not in swagger:
+        log.info(f"No routes defined in {app_file}")
+        return
 
     log.info(f"Regenerating {app_file}")
 
     lines = [
         '# This is an auto-generated file - DO NOT EDIT!!!',
+        'from flask import Flask',
+        'from flask_cors import CORS, cross_origin',
+        'from typing import Optional',
+        'from pydantic import BaseModel',
         'from pymacaron.endpoint import pymacaron_flask_endpoint',
         'from pymacaron.log import pymlogger',
         '',
@@ -172,7 +200,107 @@ def generate_endpoints_v2(swagger, app_file, model_file):
         'log = pymlogger(__name__)',
         '',
         '',
+        'app = Flask(__name__)',
+        'CORS(app)',
+        '',
     ]
+
+    for route in swagger['paths'].keys():
+        for http_method, endpoint_def in swagger['paths'][route].items():
+
+            http_method = http_method.upper()
+
+            # Extract path, query and body parameters from in declaration
+            query_params = {}
+            path_params = {}
+            str_body_model_name = 'None'
+
+            if 'parameters' in endpoint_def:
+                for param in endpoint_def['parameters']:
+                    err_str = f'{param} of route {http_method}:{route} in api "{api_name}"'
+                    assert 'in' in param, f"Missing 'in' declaration {err_str}"
+                    if param['in'] == 'path':
+                        assert 'name' in param and 'type' in param, f"Missing 'name' and/or 'type' declaration for path paramater {err_str}"
+                        path_params[param['name']] = param['type']
+                    elif param['in'] == 'query':
+                        assert 'name' in param and 'type' in param, f"Missing 'name' and/or 'type' declaration for query paramater {err_str}"
+                        query_params[param['name']] = param['type']
+                    elif param['in'] == 'body':
+                        assert 'schema' in param, f"Missing 'schema' declaration for body parameter {err_str}"
+                        assert '$ref' in param['schema'], f"Missing '$ref' declaration in schema of body parameter {err_str}"
+                        s = ref_to_model_name(param['schema']['$ref'])
+                        str_body_model_name = f'"{s}"'
+
+            # Extract x-bind-server
+            operation_id = None
+            if 'operationId' in endpoint_def:
+                operation_id = endpoint_def['operationId']
+            elif 'x-bind-server' in endpoint_def:
+                operation_id = endpoint_def['x-bind-server']
+            else:
+                raise Exception(f"Endpoint {http_method}:{route} has no 'x-bind-server' or 'operationId' declaration")
+            method_path = '.'.join(operation_id.split('.')[0:-1])
+            method_name = operation_id.split('.')[-1]
+
+            # Extract x-decorate-server
+            endpoint_decorator = None
+            if 'x-decorate-server' in endpoint_def:
+                endpoint_decorator = endpoint_def['x-decorate-server']
+
+            # Name the endpoint
+            def_name = f'endpoint_{http_method.lower()}_' + re.sub(r'\W+', '', str(route).replace('/', '_'))
+
+            # Compile flask route from swagger route (s/{}/<>/ + add :type)
+            flask_route = str(route)
+            for name, typ in path_params.items():
+                flask_converter = swagger_type_to_flask_converter(typ)
+                flask_route = flask_route.replace('{' + name + '}', f'<{flask_converter}:{name}>')
+
+            # If there are query parameters, generate a pydantic model used to
+            # parse their string representation
+            str_query_model = 'None'
+            query_model_lines = []
+            if len(query_params):
+                str_query_model = 'QueryModel'
+                query_model_lines = [
+                    '    class QueryModel(BaseModel):',
+                ]
+                for name, typ in query_params.items():
+                    python_type = swagger_type_to_python_type(typ)
+                    query_model_lines += [
+                        f'        {name}: Optional[{python_type}] = None',
+                    ]
+
+            # If there are path parameters, pass them as a dictionary to the
+            # generic pymacaron endpoint
+            path_args_lines = []
+            str_path_params = ''
+            if len(path_params):
+                str_path_params = ', '.join(path_params.keys())
+                for name in path_params.keys():
+                    path_args_lines += [
+                        f'            "{name}": {name},',
+                    ]
+
+            lines += [
+                '',
+                f'log.info("Binding {http_method} {route} ==> {operation_id}")',
+                f'@app.route("{flask_route}", methods=["{http_method}"])',
+                '@cross_origin(headers=["Content-Type", "Authorization"])',
+                f'def {def_name}({str_path_params}):',
+                f'    from {method_path} import {method_name}',
+            ] + query_model_lines + [
+                '    return pymacaron_flask_endpoint(',
+                f'        api_name="{api_name}",',
+                f'        f={method_name},',
+                '        path_args={',
+            ] + path_args_lines + [
+                '        },',
+                f'        body_model_name={str_body_model_name},',
+                f'        query_model={str_query_model},',
+                '    )',
+                '',
+            ]
 
     # log.info("GET /api/v4/chat/<chat_id>/message/<message_id> ==> gofrendly.v4.message.do_get_message")
     # @app.route('/api/v4/chat/<str:chat_id>/message/<str:message_id>', methods=['GET'])
@@ -280,7 +408,7 @@ def load_api_models_and_endpoints(api_name=None, api_path=None, dest_dir=None, l
             generate_models_v2(swagger, model_file, api_name)
 
         if do_endpoints:
-            generate_endpoints_v2(swagger, app_file, model_file)
+            generate_endpoints_v2(swagger, app_file, model_file, api_name)
 
     else:
         if not do_models:
@@ -300,7 +428,8 @@ def load_api_models_and_endpoints(api_name=None, api_path=None, dest_dir=None, l
 
     model_pkg = load_code(model_file)
 
-    load_code(app_file)
+    if load_endpoints:
+        load_code(app_file)
 
     #
     # Step 3: Load all pydantic models into apipool
