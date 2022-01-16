@@ -50,11 +50,14 @@ def get_request_body(api_name, model_name):
     return cls(**kwargs)
 
 
-def get_path_and_query_parameters(params_model, path_args):
+def get_path_and_query_parameters(query_model, path_args):
     # Parse and validate the query arguments (if any)
-    m = params_model.parse_str(request.query_string)
+    d = {}
+    if query_model:
+        d = query_model.parse_str(request.query_string)
 
-    d = m.dict()
+    # And add the path arguments (without type checking them: we rely on Flask
+    # to have done it)
     d.update(path_args)
 
     return d

@@ -112,7 +112,7 @@ class apipool():
 
         """
 
-        load_api_models_and_endpoints(
+        app_pkg = load_api_models_and_endpoints(
             api_name=api_name,
             api_path=api_path,
             dest_dir=dest_dir,
@@ -121,6 +121,8 @@ class apipool():
         )
 
         apispecs.register_api_path(api_name, api_path)
+
+        return app_pkg
 
 
 def get_port():
@@ -364,7 +366,7 @@ class API(object):
 
         # Now load those apis into the ApiPool
         for api_name, api_path in self.apis.items():
-            apipool.load_swagger(
+            app_pkg = apipool.load_swagger(
                 api_name,
                 api_path,
                 dest_dir=os.path.dirname(api_path),
@@ -377,6 +379,9 @@ class API(object):
                 # host=host,
                 # port=port,
             )
+            log.info(f"[{app_pkg}] for {api_name}")
+            if app_pkg:
+                app_pkg.load_endpoints(app)
 
         log.debug("Argv is [%s]" % '  '.join(sys.argv))
         if 'celery' in sys.argv[0].lower():
