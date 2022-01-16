@@ -48,7 +48,6 @@ setup(
     long_description_content_type='text/markdown',
     install_requires=[
         'pymacaron-unit>=1.0.10',
-        'pymacaron-core>=1.0.146',
         'flask>=1.0.4',
         'flask-cors',
         'flask-compress',
@@ -64,7 +63,6 @@ setup(
         'mock',
         'pycodestyle'
         'pymacaron-unit>=1.0.10',
-        'pymacaron-core>=1.0.146',
         'flask>=1.0.4',
         'flask-cors',
         'flask-compress',
