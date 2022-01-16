@@ -1,6 +1,7 @@
 from setuptools import setup
 import sys
 import os
+from os import path
 from glob import glob
 
 version = None
@@ -20,9 +21,9 @@ if not version:
         path_pkg_info = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'PKG-INFO')
         if os.path.isfile(path_pkg_info):
             with open(path_pkg_info, 'r')as f:
-                for l in f.readlines():
-                    if 'Version' in l:
-                        _, version = l.split(' ')
+                for line in f.readlines():
+                    if 'Version' in line:
+                        _, version = line.split(' ')
         else:
             print("WARNING: cannot set version in custom setup.py")
 
@@ -31,7 +32,6 @@ if version:
 print("version: %s" % version)
 
 # read the contents of the README file
-from os import path
 this_directory = path.abspath(path.dirname(__file__))
 with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
@@ -46,13 +46,14 @@ setup(
     description='REST microservice framework based on Flask, OpenAPI, gunicorn and celery, deployable towards GKE and Beanstalk',
     long_description=long_description,
     long_description_content_type='text/markdown',
+    python_requires='>=3.8',
     install_requires=[
         'pymacaron-unit>=1.0.10',
         'pymacaron-core>=1.0.146',
         'flask>=1.0.4',
         'flask-cors',
         'flask-compress',
-	'Werkzeug==0.16.0',
+        'Werkzeug==0.16.0',
         'click',
         'pytz',
         'PyJWT',
