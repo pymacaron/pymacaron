@@ -31,6 +31,22 @@ def _get_model_factory(model_name):
     return factory
 
 
+class apispecs():
+    """Keep track of the path of the openapi spec file of every loaded api"""
+
+    __api_name_to_path = {}
+
+    @classmethod
+    def register_api_path(cls, api_name, api_path):
+        """Remember where to find the openapi file of this api"""
+        apispecs.__api_name_to_path[api_name] = api_path
+
+    @classmethod
+    def get_api_path(cls, api_name):
+        """Get the path of the openapi file of this api, or None if that api has not been loaded"""
+        return apispecs.__api_name_to_path.get(api_name, None)
+
+
 class modelpool():
     """The modelpool of an api is a class whose attributes are all the Pymacaron
     model classes declared in that api
@@ -69,22 +85,42 @@ class apipool():
         assert hasattr(apipool, api_name), f"Api {api_name} is not loaded in apipool"
         return getattr(apipool, api_name)
 
-
-class apispecs():
-    """Keep track of the path of the openapi spec file of every loaded api"""
-
-    __api_name_to_path = {}
-
     @classmethod
-    def register_api_path(cls, api_name, api_path):
-        """Remember where to find the openapi file of this api"""
-        apispecs.__api_name_to_path[api_name] = api_path
+    def load_swagger(cls, api_name, api_path, dest_dir=None, load_endpoints=True, force=False):
+        """Load a swagger/openapi specification into pymacaron: generate its model
+        classes (declared with pydantic), and optionally generate the Flask api
+        endpoints binding endpoint methods to routes.
 
-    @classmethod
-    def get_api_path(cls, api_name):
-        """Get the path of the openapi file of this api, or None if that api has not been loaded"""
-        return apispecs.__api_name_to_path.get(api_name, None)
+        Syntax:
+            apipool.load_swagger('ping', '../apis/ping.yaml')
 
+        api_name : str
+            Name of the api, used to access api models.
+        api_path : str
+            Path of the swagger file of the api.
+        dest_dir: str
+            Optional. Path to a directory under which to write the generated
+            '<api_name>_models.py' and '<api_name>_app.py' files. Defaults to
+            the same directory as the swagger file.
+        load_endpoints: bool
+            Optional. Set to false to only generate model declarations, and not
+            endpoint declarations. Defaults to true.
+        force: bool
+            Optional. Force regenerating the model and endpoint code even if
+            the code files are up to date with the swagger file. Defaults to
+            false.
+
+        """
+
+        load_api_models_and_endpoints(
+            api_name=api_name,
+            api_path=api_path,
+            dest_dir=dest_dir,
+            load_endpoints=load_endpoints,
+            force=force,
+        )
+
+        apispecs.register_api_path(api_name, api_path)
 
 
 def get_port():
@@ -156,11 +192,10 @@ class API(object):
             yaml_path = pkg_resources.resource_filename(__name__, 'pymacaron/%s.yaml' % name)
             if not os.path.isfile(yaml_path):
                 yaml_path = os.path.join(os.path.dirname(sys.modules[__name__].__file__), '%s.yaml' % name)
-            load_api_models_and_endpoints(
-                api_name=name,
-                api_path=yaml_path,
-                dest_path=get_config().apis_path,
-                load_models=True,
+            apipool.load_swagger(
+                name,
+                yaml_path,
+                dest_dir=get_config().apis_path,
                 load_endpoints=True,
             )
 

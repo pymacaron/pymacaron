@@ -231,34 +231,36 @@ def generate_endpoints_v2(swagger, app_file, model_file):
         f.write('\n'.join(lines))
 
 
-def load_api_models_and_endpoints(api_name=None, api_path=None, dest_path=None, load_models=True, load_endpoints=True, force=False):
+def load_api_models_and_endpoints(api_name=None, api_path=None, dest_dir=None, load_endpoints=True, force=False):
     """Load all object models defined inside the OpenAPI specification located at
-    api_path into a generated python module at dest_path/[api_name].py
+    api_path into a generated python module at dest_dir/[api_name].py
     """
 
-    model_file = './' + os.path.relpath(os.path.join(dest_path, f'{api_name}_models.py'))
-    app_file = './' + os.path.relpath(os.path.join(dest_path, f'{api_name}_app.py'))
+    model_file = './' + os.path.relpath(os.path.join(dest_dir, f'{api_name}_models.py'))
+    app_file = './' + os.path.relpath(os.path.join(dest_dir, f'{api_name}_app.py'))
 
     #
     # Step 1: Regenerate pydantic and FastAPI python code, if needed
     #
 
     # Should we re-generate the models file?
-    do_models = True if force else False
-    if load_models or load_endpoints:
-        if not os.path.exists(model_file):
-            do_models = True
-        elif modified_time(model_file) < modified_time(api_path):
-            do_models = True
+    do_models = False
+    if force:
+        do_models = True
+    elif not os.path.exists(model_file):
+        do_models = True
+    elif modified_time(model_file) < modified_time(api_path):
+        do_models = True
 
     # Should we re-generate the endpoints file?
-    do_endpoints = True if force else False
+    do_endpoints = False
     if load_endpoints:
-        if not os.path.exists(model_file):
+        if force:
+            do_endpoints = True
+        elif not os.path.exists(model_file):
             do_endpoints = True
         elif modified_time(model_file) < modified_time(api_path):
             do_endpoints = True
-
 
     # Do we need to re-generate anything?
     if do_models or do_endpoints:
@@ -312,10 +314,3 @@ def load_api_models_and_endpoints(api_name=None, api_path=None, dest_path=None, 
         cnt += 1
 
     log.info(f"Loaded {cnt} models from {model_file}")
-
-    #
-    # Step 4: Remember where the api's swagger file is located
-    #
-
-    from pymacaron import apispecs
-    apispecs.register_api_path(api_name, api_path)
