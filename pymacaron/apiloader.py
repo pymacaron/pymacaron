@@ -285,7 +285,7 @@ def generate_endpoints_v2(swagger, app_file, model_file, api_name):
 
             lines += [
                 '',
-                f'log.info("Binding {http_method} {route} ==> {operation_id}")',
+                f'log.info("Binding [{api_name}] {http_method} {route} ==> {operation_id}")',
                 f'@app.route("{flask_route}", methods=["{http_method}"])',
                 '@cross_origin(headers=["Content-Type", "Authorization"])',
                 f'def {def_name}({str_path_params}):',
