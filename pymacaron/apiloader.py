@@ -200,8 +200,7 @@ def generate_endpoints_v2(swagger, app_file, model_file, api_name):
         'log = pymlogger(__name__)',
         '',
         '',
-        'app = Flask(__name__)',
-        'CORS(app)',
+        'def load_endpoints(app):',
         '',
     ]
 
@@ -264,12 +263,12 @@ def generate_endpoints_v2(swagger, app_file, model_file, api_name):
             if len(query_params):
                 str_query_model = 'QueryModel'
                 query_model_lines = [
-                    '    class QueryModel(BaseModel):',
+                    '        class QueryModel(BaseModel):',
                 ]
                 for name, typ in query_params.items():
                     python_type = swagger_type_to_python_type(typ)
                     query_model_lines += [
-                        f'        {name}: Optional[{python_type}] = None',
+                        f'            {name}: Optional[{python_type}] = None',
                     ]
 
             # If there are path parameters, pass them as a dictionary to the
@@ -285,21 +284,21 @@ def generate_endpoints_v2(swagger, app_file, model_file, api_name):
 
             lines += [
                 '',
-                f'log.info("Binding [{api_name}] {http_method} {route} ==> {operation_id}")',
-                f'@app.route("{flask_route}", methods=["{http_method}"])',
-                '@cross_origin(headers=["Content-Type", "Authorization"])',
-                f'def {def_name}({str_path_params}):',
-                f'    from {method_path} import {method_name}',
+                f'    log.info("Binding [{api_name}] {http_method} {route} ==> {operation_id}")',
+                f'    @app.route("{flask_route}", methods=["{http_method}"])',
+                '    @cross_origin(headers=["Content-Type", "Authorization"])',
+                f'    def {def_name}({str_path_params}):',
+                f'        from {method_path} import {method_name}',
             ] + query_model_lines + [
-                '    return pymacaron_flask_endpoint(',
-                f'        api_name="{api_name}",',
-                f'        f={method_name},',
-                '        path_args={',
+                '        return pymacaron_flask_endpoint(',
+                f'            api_name="{api_name}",',
+                f'            f={method_name},',
+                '            path_args={',
             ] + path_args_lines + [
-                '        },',
-                f'        body_model_name={str_body_model_name},',
-                f'        query_model={str_query_model},',
-                '    )',
+                '            },',
+                f'            body_model_name={str_body_model_name},',
+                f'            query_model={str_query_model},',
+                '        )',
                 '',
             ]
 
@@ -363,6 +362,14 @@ def generate_endpoints_v2(swagger, app_file, model_file, api_name):
 def load_api_models_and_endpoints(api_name=None, api_path=None, dest_dir=None, load_endpoints=True, force=False):
     """Load all object models defined inside the OpenAPI specification located at
     api_path into a generated python module at dest_dir/[api_name].py
+
+    Optionally generate Flask endpoints and route declarations, binding the
+    APIs routes to the methods implementing them, and converting request
+    parameters and response to and from pymacaron models.
+
+    If endpoints were generated, return a module object with a load_endpoints()
+    method to call with the Flask app in argument.
+
     """
 
     model_file = './' + os.path.relpath(os.path.join(dest_dir, f'{api_name}_models.py'))
@@ -425,12 +432,16 @@ def load_api_models_and_endpoints(api_name=None, api_path=None, dest_dir=None, l
         spec = importlib.util.spec_from_file_location(api_name, path)
         pkg = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(pkg)
+        log.info("pkg [%s]" % pkg)
         return pkg
 
     model_pkg = load_code(model_file)
 
+    app_pkg = None
     if load_endpoints:
-        load_code(app_file)
+        log.info("Setting app_pkg!")
+        app_pkg = load_code(app_file)
+        log.info("Set app_pkg=%s" % app_pkg)
 
     #
     # Step 3: Load all pydantic models into apipool
@@ -444,3 +455,5 @@ def load_api_models_and_endpoints(api_name=None, api_path=None, dest_dir=None, l
         cnt += 1
 
     log.info(f"Loaded {cnt} models from {model_file}")
+
+    return app_pkg
