@@ -265,7 +265,7 @@ class API(object):
         return self
 
 
-    def load_apis(self, path=None, ignore=[], only_models=[]):
+    def load_apis(self, path=None, ignore=[], only_models=[], force=False):
         """Find all swagger files under the given path. Ignore those whose name is in
         the ignore list. Generate and load models for all others. Generate
         Flask app code for all except those in ignore and only_models list.
@@ -309,6 +309,7 @@ class API(object):
                 api_path,
                 dest_dir=os.path.dirname(api_path),
                 load_endpoints=False if api_name in only_models else True,
+                force=force,
                 # TODO: support timeout, error_callback, formats, host/port
                 # timeout=self.timeout,
                 # error_callback=self.error_callback,

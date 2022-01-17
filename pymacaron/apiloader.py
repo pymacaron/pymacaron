@@ -187,7 +187,7 @@ def generate_endpoints_v2(swagger, app_file, model_file, api_name):
 
     log.info(f"Regenerating {app_file}")
 
-    lines = [
+    lines_header = [
         '# This is an auto-generated file - DO NOT EDIT!!!',
         'from flask import Flask',
         'from flask_cors import CORS, cross_origin',
@@ -202,6 +202,11 @@ def generate_endpoints_v2(swagger, app_file, model_file, api_name):
         '',
         'def load_endpoints(app):',
         '',
+    ]
+
+    lines_imports = []
+
+    lines_endpoints = [
     ]
 
     for route in swagger['paths'].keys():
@@ -241,14 +246,24 @@ def generate_endpoints_v2(swagger, app_file, model_file, api_name):
             method_path = '.'.join(operation_id.split('.')[0:-1])
             method_name = operation_id.split('.')[-1]
 
-            # Extract x-decorate-server
-            endpoint_decorator = None
-            if 'x-decorate-server' in endpoint_def:
-                endpoint_decorator = endpoint_def['x-decorate-server']
-                # TODO: support endpoint_decorator (jwt auth)
-
             # Name the endpoint
             def_name = f'endpoint_{http_method.lower()}_' + re.sub(r'\W+', '', str(route).replace('/', '_'))
+
+            # Import the method that implements the endpoint and apply its decorator, if any
+            lines_imports += [
+                '',
+                f'    from {method_path} import {method_name} as f_{method_name}',
+            ]
+
+            if 'x-decorate-server' in endpoint_def:
+                s = endpoint_def['x-decorate-server']
+                decorator_f = s.split('.')[-1]
+                decorator_pkg = '.'.join(s.split('.')[0:-1])
+                # TODO: import decorator
+                lines_imports += [
+                    f'    from {decorator_pkg} import {decorator_f}',
+                    f'    f_{method_name} = {decorator_f}(f_{method_name})',
+                ]
 
             # Compile flask route from swagger route (s/{}/<>/ + add :type)
             flask_route = str(route)
@@ -282,17 +297,17 @@ def generate_endpoints_v2(swagger, app_file, model_file, api_name):
                         f'            "{name}": {name},',
                     ]
 
-            lines += [
+            lines_endpoints += [
                 '',
                 f'    log.info("Binding [{api_name}] {http_method} {route} ==> {operation_id}")',
                 f'    @app.route("{flask_route}", methods=["{http_method}"])',
                 '    @cross_origin(headers=["Content-Type", "Authorization"])',
                 f'    def {def_name}({str_path_params}):',
-                f'        from {method_path} import {method_name}',
+
             ] + query_model_lines + [
                 '        return pymacaron_flask_endpoint(',
                 f'            api_name="{api_name}",',
-                f'            f={method_name},',
+                f'            f=f_{method_name},',
                 '            path_args={',
             ] + path_args_lines + [
                 '            },',
@@ -356,7 +371,7 @@ def generate_endpoints_v2(swagger, app_file, model_file, api_name):
     # class...
 
     with open(app_file, 'w') as f:
-        f.write('\n'.join(lines))
+        f.write('\n'.join(lines_header + lines_imports + lines_endpoints))
 
 
 def load_api_models_and_endpoints(api_name=None, api_path=None, dest_dir=None, load_endpoints=True, force=False):
