@@ -67,7 +67,8 @@ def get_request_body(api_name, model_name):
             # Assuming we got a json body
             kwargs = request.get_json(force=True)
 
-    # The pymacaron model class we should instantiate
+    # The pymacaron model class we should instantiate - Let pydantic do all the
+    # type checking
     cls = getattr(apipool.get_model(api_name), model_name)
 
     return cls(**kwargs)
@@ -77,7 +78,8 @@ def get_path_and_query_parameters(query_model, path_args):
     # Parse and validate the query arguments (if any)
     d = {}
     if query_model:
-        d = query_model.parse_str(request.query_string)
+        # Let pydantic validate query arguments
+        d = query_model.parse_obj(request.args.to_dict()).dict()
 
     # And add the path arguments (without type checking them: we rely on Flask
     # to have done it)
