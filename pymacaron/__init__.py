@@ -9,8 +9,6 @@ from flask_compress import Compress
 from flask_cors import CORS
 from pymacaron.apiloader import load_api_models_and_endpoints
 from pymacaron.log import set_level, pymlogger
-from pymacaron.crash import set_error_reporter, generate_crash_handler_decorator
-from pymacaron.exceptions import format_error
 from pymacaron.config import get_config
 from pymacaron.monitor import monitor_init
 from pymacaron.api import add_ping_hook
@@ -168,17 +166,24 @@ def get_port():
 class API(object):
 
 
-    def __init__(self, app, host='localhost', port=None, debug=False, log_level=logging.DEBUG, formats=None, timeout=20, error_reporter=None, default_user_id=None, error_callback=format_error, error_decorator=None, ping_hook=[]):
+    def __init__(self, app, host='localhost', port=None, debug=False, log_level=logging.DEBUG, formats=None, error_reporter=None, error_callback=None, default_user_id=None, ping_hook=[]):
         """
 
         Configure the Pymacaron microservice prior to starting it. Arguments:
 
-        - app: the flask app
-        - port: (optional) the http port to listen on (defaults to 80)
-        - debug: (optional) whether to run with flask's debug mode (defaults to False)
-        - error_reporter: (optional) a callback to call when catching exceptions, for custom reporting to slack, email or whatever
-        - log_level: (optional) the microservice's log level (defaults to logging.DEBUG)
-        - ping_hook: (optional) a function to call each time Amazon calls the ping endpoint, which happens every few seconds
+        app : the flask app
+
+        port : (optional) the http port to listen on (defaults to 80)
+
+        debug : (optional) whether to run with flask's debug mode (defaults to False)
+
+        error_callback : (optional) takes the exception caught while executing an endpoint and return its json representation in the microservice's own error format
+
+        error_reporter : (optional) takes the exception caught in an endpoint together with a title and long text trace, and reports them wherever is relevant
+
+        log_level : (optional) the microservice's log level (defaults to logging.DEBUG)
+
+        ping_hook : (optional) a function to call each time Amazon calls the ping endpoint, which happens every few seconds
 
         """
         assert app
@@ -189,9 +194,8 @@ class API(object):
         self.host = host
         self.debug = debug
         self.formats = formats
-        self.timeout = timeout
         self.error_callback = error_callback
-        self.error_decorator = error_decorator
+        self.error_reporter = error_reporter
         self.ping_hook = ping_hook
         self.app_pkgs = []
 
@@ -202,9 +206,6 @@ class API(object):
             self.default_user_id = default_user_id
 
         set_level(log_level)
-
-        if error_reporter:
-            set_error_reporter(error_reporter)
 
         log.info("Initialized API (%s:%s) (Flask debug:%s)" % (host, port, debug))
 
@@ -227,10 +228,6 @@ class API(object):
                 yaml_path,
                 dest_dir=get_config().apis_path,
                 load_endpoints=True,
-                # timeout=self.timeout,
-                # error_callback=self.error_callback,
-                # formats=self.formats,
-                # local=False,
             )
 
 
@@ -256,10 +253,6 @@ class API(object):
                 api_path,
                 dest_dir=path,
                 load_endpoints=False,
-                # timeout=self.timeout,
-                # error_callback=self.error_callback,
-                # formats=self.formats,
-                # local=False,
             )
 
         return self
@@ -310,9 +303,7 @@ class API(object):
                 dest_dir=os.path.dirname(api_path),
                 load_endpoints=False if api_name in only_models else True,
                 force=force,
-                # TODO: support timeout, error_callback, formats, host/port
-                # timeout=self.timeout,
-                # error_callback=self.error_callback,
+                # TODO: support, formats, host/port
                 # formats=self.formats,
                 # local=False,
                 # host=host,
@@ -352,7 +343,13 @@ class API(object):
 
         # Now execute Flask code declaring API routes
         for app_pkg in self.app_pkgs:
-            app_pkg.load_endpoints(self.app)
+            app_pkg.load_endpoints(
+                app=self.app,
+                error_callback=self.error_callback,
+                error_reporter=self.error_reporter,
+                # formats=self.formats,
+                # local=False,
+            )
 
         log.debug("Argv is [%s]" % '  '.join(sys.argv))
         if 'celery' in sys.argv[0].lower():

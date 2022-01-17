@@ -4,7 +4,10 @@ from werkzeug import FileStorage
 from pymacaron.log import pymlogger
 from pymacaron import apipool
 from pymacaron.model import PymacaronBaseModel
+from pymacaron.exceptions import PyMacaronException
+from pymacaron.exceptions import UnhandledServerError
 from pymacaron.exceptions import BadResponseException
+
 
 
 log = pymlogger(__name__)
@@ -64,18 +67,47 @@ def get_path_and_query_parameters(query_model, path_args):
     return d
 
 
-def pymacaron_flask_endpoint(api_name=None, f=None, error_callback=None, query_model=None, body_model_name=None, path_args={}, produces='application/json', result_models=[]):
-    # TODO: catch error
+def pymacaron_flask_endpoint(api_name=None, f=None, error_callback=None, error_reporter=None, query_model=None, body_model_name=None, path_args={}, produces='application/json', result_models=[]):
+    """Call endpoint in a try/catch loop handling exceptions"""
 
-    return call_f(
-        api_name=api_name,
-        f=f,
-        query_model=query_model,
-        body_model_name=body_model_name,
-        path_args=path_args,
-        produces=produces,
-        result_models=result_models,
-    )
+    try:
+        return call_f(
+            api_name=api_name,
+            f=f,
+            query_model=query_model,
+            body_model_name=body_model_name,
+            path_args=path_args,
+            produces=produces,
+            result_models=result_models,
+        )
+
+    except BaseException as e:
+        log.info(f"Method {f.__name__} raised exception [{str(e)}]")
+
+        # If it's not a PyMacaronException or a child class of it, it's an
+        # unhandled error (aka server crash)
+        if not isinstance(e, PyMacaronException):
+            e = UnhandledServerError(str(e))
+
+        status = e.status
+
+        # if error_reporter:
+        #     error_reporter(
+        #         title='foobar',
+        #         data={'foo': 'bar'},
+        #         exception=e,
+        #     )
+
+        if error_callback:
+            # The error_callback takes the error instance and returns a json
+            # dictionary back
+            d = error_callback(e)
+            log.info(f"Converted exception to API error {d}")
+            r = jsonify(d)
+            r.status_code = status
+            return r
+
+        return e.jsonify()
 
 
 def call_f(api_name=None, f=None, error_callback=None, query_model=None, body_model_name=None, path_args={}, produces='application/json', result_models=[]):
@@ -123,45 +155,45 @@ def call_f(api_name=None, f=None, error_callback=None, query_model=None, body_mo
 
     result = f(*args, **kwargs)
 
+    log.info("<= DONE %s %s -> %s" % (endpoint_method, endpoint_path, f.__name__))
+    log.info(" ")
+    log.info(" ")
+
     if produces == 'application/json':
         assert result_models, "BUG: no result models specified"
         str_result_models = ', '.join([str(m) for m in result_models])
+
         if not result:
             raise BadResponseException('Nothing to return in response')
+
         elif isinstance(result, PymacaronBaseModel):
             # Were we expecting this result model?
-            found = False
+            model = None
             for m in result_models:
                 if isinstance(result, m):
-                    found = True
-            if not found:
+                    model = m
+            if not model:
                 raise BadResponseException(f'Expected to return an instance of {str_result_models} but got {result}')
             return jsonify(result.to_json())
+
         elif ".".join([result.__module__, result.__class__.__name__]) == 'flask.wrappers.Response':
             # result is already a flask response
             return result
+
         else:
             raise BadResponseException(f'Expected to return an instance of {str_result_models} but got {result} of type {type(result)}')
 
     else:
+        # TODO: implement support for returning html content
+        #     if type(result) is not tuple:
+        #         e = error_callback(PyMacaronCoreException("Method %s should return %s but returned %s" %
+        #                                                   (endpoint.handler_server, endpoint.produces, type(result))))
+        #         return _responsify(api_spec, e, 500)
+
+        #     # Return an html page
+        #     return result
+
         assert 0, "Support for returning '{produces}' not implemented yet!"
-
-
-
-    # if not result:
-    #     e = error_callback(PyMacaronCoreException("Have nothing to send in response"))
-    #     return _responsify(api_spec, e, 500)
-    #
-    # Did we get the expected response?
-    #
-    # if endpoint.produces_html:
-    #     if type(result) is not tuple:
-    #         e = error_callback(PyMacaronCoreException("Method %s should return %s but returned %s" %
-    #                                                   (endpoint.handler_server, endpoint.produces, type(result))))
-    #         return _responsify(api_spec, e, 500)
-
-    #     # Return an html page
-    #     return result
 
     # elif endpoint.produces_json:
     #     if not hasattr(result, '__module__') or not hasattr(result, '__class__'):
@@ -193,9 +225,3 @@ def call_f(api_name=None, f=None, error_callback=None, query_model=None, body_mo
     #     r = jsonify(result_json)
     #     r.status_code = 200
     #     return r
-
-    log.info("<= DONE %s %s -> %s" % (endpoint_method, endpoint_path, f.__name__))
-    log.info(" ")
-    log.info(" ")
-
-    return res
