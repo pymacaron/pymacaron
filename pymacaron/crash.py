@@ -5,13 +5,11 @@ import os
 import inspect
 import sys
 import traceback
-from functools import wraps
-from pprint import pformat
-from flask import request, Response
+from flask import request
 from pymacaron_core.swagger.apipool import ApiPool
 from pymacaron.config import get_config
-from pymacaron.utils import timenow, is_ec2_instance
-from pymacaron.exceptions import UnhandledServerError
+from pymacaron.utils import is_ec2_instance
+from pymacaron.exceptions import PyMacaronException
 
 
 log = pymlogger(__name__)
@@ -55,6 +53,13 @@ def postmortem(f=None, t0=None, t1=None, exception=None, args=[], kwargs={}):
     exc_type, exc_value, exc_traceback = sys.exc_info()
     trace = traceback.format_exception(exc_type, exc_value, exc_traceback, 30)
 
+    status = 500
+    if isinstance(exception, PyMacaronException):
+        status = exception.status
+
+    if status < 500:
+        return
+
     str_trace = '\n'.join(trace)
     log.info(f"ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR:\n{str_trace}")
 
@@ -65,6 +70,8 @@ def postmortem(f=None, t0=None, t1=None, exception=None, args=[], kwargs={}):
         # success responses
         'error_id': str(uuid.uuid4()),
 
+        'is_fatal_error': True if status >= 500 else False,
+
         # Call results
         'time': {
             'start': t0.isoformat(),
@@ -74,7 +81,7 @@ def postmortem(f=None, t0=None, t1=None, exception=None, args=[], kwargs={}):
 
         # Response details
         'response': {
-            'status': 500,
+            'status': status,
             'error_code': exception.code if hasattr(exception, 'code') else 'UNKNOWN',
             'error_description': str(exception),
             'user_message': exception.user_message if hasattr(exception, 'user_message') else None,
