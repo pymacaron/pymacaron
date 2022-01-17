@@ -3,14 +3,11 @@ import sys
 import logging
 import click
 import pkg_resources
-import inspect
 from uuid import uuid4
 from flask import Response, redirect
 from flask_compress import Compress
 from flask_cors import CORS
-from pymacaron_core.swagger.apipool import ApiPool
 from pymacaron_core.models import get_model
-import pymacaron.models
 from pymacaron.apiloader import load_api_models_and_endpoints
 from pymacaron.log import set_level, pymlogger
 from pymacaron.crash import set_error_reporter, generate_crash_handler_decorator

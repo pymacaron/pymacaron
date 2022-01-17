@@ -1,14 +1,12 @@
 from pymacaron.log import pymlogger
 from pprint import pformat
 from flask import jsonify
-from pymacaron_core.exceptions import ValidationError, PyMacaronCoreException
-from pymacaron_core.models import get_model
 
 
 log = pymlogger(__name__)
 
 
-class PyMacaronException(PyMacaronCoreException):
+class PyMacaronException():
     code = 'UNKNOWN_EXCEPTION'
     status = 500
     error_id = None
@@ -50,7 +48,9 @@ class PyMacaronException(PyMacaronCoreException):
 
     def to_model(self):
         """Return a bravado-core Error instance"""
-        e = get_model('Error')(
+        from pymacaron import apipool
+        # TODO: fix this code
+        e = apipool.get_model('Error')(
             status=self.status,
             error=self.code.upper(),
             error_description=str(self),
@@ -86,7 +86,7 @@ add_error('InternalServerError', 'SERVER_ERROR', 500)
 add_error('AuthMissingHeaderError', 'AUTHORIZATION_HEADER_MISSING', 401)
 add_error('AuthTokenExpiredError', 'TOKEN_EXPIRED', 401)
 add_error('AuthInvalidTokenError', 'TOKEN_INVALID', 401)
-add_error('ValidationError', 'INVALID_PARAMETER', 400)
+# add_error('ValidationError', 'INVALID_PARAMETER', 400)
 
 #
 # Manipulate various error objects
