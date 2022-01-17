@@ -2,7 +2,6 @@ from pymacaron.log import pymlogger
 import pprint
 import os
 from time import sleep
-from pymacaron import apipool
 from pymacaron.utils import get_container_version
 from pymacaron.utils import get_app_name
 from pymacaron.crash import report_error
@@ -30,6 +29,7 @@ def add_ping_hook(hook):
 
 def do_ping():
     log.debug("Replying ping:ok")
+    from pymacaron import apipool
     v = apipool.ping.Ok()
     for h in ping_hooks:
         log.info("Calling ping hook %s" % str(h))
@@ -38,6 +38,7 @@ def do_ping():
 
 def do_version():
     """Return version details of the running server api"""
+    from pymacaron import apipool
     v = apipool.ping.Version(
         name=get_app_name(),
         version=None,
@@ -55,10 +56,12 @@ def do_crash_pymacaron_exception():
 
 def do_crash_report_error():
     report_error("called crash/reporterror to test error reporting")
+    from pymacaron import apipool
     return apipool.crash.Ok()
 
 def do_crash_slow_call():
     sleep(6)
+    from pymacaron import apipool
     return apipool.crash.Ok()
 
 def do_crash_return_fatal_error_response():
@@ -68,6 +71,7 @@ def do_crash_return_non_fatal_error_response():
     return MyNonFatalCustomError("endpoint returns a non-fatal Error response").http_reply()
 
 def do_crash_return_error_model():
+    from pymacaron import apipool
     return apipool.crash.Error(
         status=543,
         error='ANOTHER_CUSTOM_ERROR',

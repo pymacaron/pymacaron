@@ -432,16 +432,13 @@ def load_api_models_and_endpoints(api_name=None, api_path=None, dest_dir=None, l
         spec = importlib.util.spec_from_file_location(api_name, path)
         pkg = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(pkg)
-        log.info("pkg [%s]" % pkg)
         return pkg
 
     model_pkg = load_code(model_file)
 
     app_pkg = None
     if load_endpoints:
-        log.info("Setting app_pkg!")
         app_pkg = load_code(app_file)
-        log.info("Set app_pkg=%s" % app_pkg)
 
     #
     # Step 3: Load all pydantic models into apipool
