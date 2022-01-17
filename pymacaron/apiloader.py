@@ -189,8 +189,7 @@ def generate_endpoints_v2(swagger, app_file, model_file, api_name):
 
     lines_header = [
         '# This is an auto-generated file - DO NOT EDIT!!!',
-        'from flask import Flask',
-        'from flask_cors import CORS, cross_origin',
+        'from flask_cors import cross_origin',
         'from typing import Optional',
         'from pydantic import BaseModel',
         'from pymacaron.endpoint import pymacaron_flask_endpoint',
@@ -201,6 +200,7 @@ def generate_endpoints_v2(swagger, app_file, model_file, api_name):
         '',
         '',
         'def load_endpoints(app):',
+        '    from pymacaron import apipool',
         '',
     ]
 
@@ -234,6 +234,22 @@ def generate_endpoints_v2(swagger, app_file, model_file, api_name):
                         assert '$ref' in param['schema'], f"Missing '$ref' declaration in schema of body parameter {err_str}"
                         s = ref_to_model_name(param['schema']['$ref'])
                         str_body_model_name = f'"{s}"'
+
+            # What does the endpoint produces?
+            assert 'produces' in endpoint_def, f"Missing 'produces' in declaration of endpoint {http_method}:{route} in api '{api_name}'"
+            produces = endpoint_def['produces'][0]
+            assert produces == 'application/json'
+
+            # Model returned?
+            assert 'responses' in endpoint_def, f"Missing 'responses' in declaration of endpoint {http_method}:{route} in api '{api_name}'"
+            result_models_lines = []
+            for response_type, response_def in endpoint_def['responses'].items():
+                assert 'schema' in response_def, f"Missing 'schema' in response '{response_type}' in declaration of endpoint {http_method}:{route} in api '{api_name}'"
+                assert '$ref' in response_def['schema'], f"Missing '$ref' in response '{response_type}' in declaration of endpoint {http_method}:{route} in api '{api_name}'"
+                s = ref_to_model_name(response_def['schema']['$ref'])
+                result_models_lines += [
+                    f'                apipool.{api_name}.{s},',
+                ]
 
             # Extract x-bind-server
             operation_id = None
@@ -294,12 +310,11 @@ def generate_endpoints_v2(swagger, app_file, model_file, api_name):
                 str_path_params = ', '.join(path_params.keys())
                 for name in path_params.keys():
                     path_args_lines += [
-                        f'            "{name}": {name},',
+                        f'                "{name}": {name},',
                     ]
 
             lines_endpoints += [
                 '',
-                f'    log.info("Binding [{api_name}] {http_method} {route} ==> {operation_id}")',
                 f'    @app.route("{flask_route}", methods=["{http_method}"])',
                 '    @cross_origin(headers=["Content-Type", "Authorization"])',
                 f'    def {def_name}({str_path_params}):',
@@ -313,7 +328,12 @@ def generate_endpoints_v2(swagger, app_file, model_file, api_name):
                 '            },',
                 f'            body_model_name={str_body_model_name},',
                 f'            query_model={str_query_model},',
+                f'            produces="{produces}",',
+                '            result_models=[',
+            ] + result_models_lines + [
+                '            ],',
                 '        )',
+                f'    log.info("Binding [{api_name}] {http_method} {route} ==> {operation_id}")',
                 '',
             ]
 

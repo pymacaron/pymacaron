@@ -63,6 +63,11 @@ class PyMacaronException():
             e.error_caught = pformat(self.error_caught)
         return e
 
+
+class BadResponseException(PyMacaronException):
+    pass
+
+
 #
 # Interface to allow creating further Exception classes
 #
