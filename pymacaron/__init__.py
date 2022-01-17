@@ -11,6 +11,7 @@ from pymacaron.apiloader import load_api_models_and_endpoints
 from pymacaron.log import set_level, pymlogger
 from pymacaron.config import get_config
 from pymacaron.monitor import monitor_init
+from pymacaron.crash import set_error_reporter
 from pymacaron.api import add_ping_hook
 
 
@@ -322,6 +323,8 @@ class API(object):
 
         self.app.secret_key = os.urandom(24)
 
+        set_error_reporter(self.error_reporter)
+
         # Initialize JWT config
         conf = get_config()
         if hasattr(conf, 'jwt_secret'):
@@ -346,7 +349,6 @@ class API(object):
             app_pkg.load_endpoints(
                 app=self.app,
                 error_callback=self.error_callback,
-                error_reporter=self.error_reporter,
                 # formats=self.formats,
                 # local=False,
             )

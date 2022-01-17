@@ -199,7 +199,7 @@ def generate_endpoints_v2(swagger, app_file, model_file, api_name):
         'log = pymlogger(__name__)',
         '',
         '',
-        'def load_endpoints(app=None, error_reporter=None, error_callback=None):',
+        'def load_endpoints(app=None, error_callback=None):',
         '    from pymacaron import apipool',
         '',
     ]
@@ -234,6 +234,8 @@ def generate_endpoints_v2(swagger, app_file, model_file, api_name):
                         assert '$ref' in param['schema'], f"Missing '$ref' declaration in schema of body parameter {err_str}"
                         s = ref_to_model_name(param['schema']['$ref'])
                         str_body_model_name = f'"{s}"'
+                    else:
+                        assert 0, f"param type {param['in']} not supported yet in parameter {err_str}"
 
             # What does the endpoint produces?
             assert 'produces' in endpoint_def, f"Missing 'produces' in declaration of endpoint {http_method}:{route} in api '{api_name}'"
@@ -333,7 +335,6 @@ def generate_endpoints_v2(swagger, app_file, model_file, api_name):
             ] + result_models_lines + [
                 '            ],',
                 '            error_callback=error_callback,',
-                '            error_reporter=error_reporter,',
                 '        )',
                 f'    log.info("Binding [{api_name}] {http_method} {route} ==> {operation_id}")',
                 '',

@@ -2,8 +2,10 @@ import os
 from flask import request, jsonify
 from werkzeug import FileStorage
 from pymacaron.log import pymlogger
+from pymacaron.utils import timenow
 from pymacaron import apipool
 from pymacaron.model import PymacaronBaseModel
+from pymacaron.crash import postmortem
 from pymacaron.exceptions import PyMacaronException
 from pymacaron.exceptions import UnhandledServerError
 from pymacaron.exceptions import BadResponseException
@@ -67,8 +69,10 @@ def get_path_and_query_parameters(query_model, path_args):
     return d
 
 
-def pymacaron_flask_endpoint(api_name=None, f=None, error_callback=None, error_reporter=None, query_model=None, body_model_name=None, path_args={}, produces='application/json', result_models=[]):
+def pymacaron_flask_endpoint(api_name=None, f=None, error_callback=None, query_model=None, body_model_name=None, path_args={}, produces='application/json', result_models=[]):
     """Call endpoint in a try/catch loop handling exceptions"""
+
+    t0 = timenow()
 
     try:
         return call_f(
@@ -84,19 +88,20 @@ def pymacaron_flask_endpoint(api_name=None, f=None, error_callback=None, error_r
     except BaseException as e:
         log.info(f"Method {f.__name__} raised exception [{str(e)}]")
 
+        # Report this exception and tons of info about it
+        postmortem(
+            f=f,
+            t0=t0,
+            t1=timenow(),
+            exception=e,
+        )
+
         # If it's not a PyMacaronException or a child class of it, it's an
         # unhandled error (aka server crash)
         if not isinstance(e, PyMacaronException):
             e = UnhandledServerError(str(e))
 
         status = e.status
-
-        # if error_reporter:
-        #     error_reporter(
-        #         title='foobar',
-        #         data={'foo': 'bar'},
-        #         exception=e,
-        #     )
 
         if error_callback:
             # The error_callback takes the error instance and returns a json

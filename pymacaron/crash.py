@@ -31,89 +31,89 @@ def function_name(f):
 # Default error reporting
 #
 
-def default_error_reporter(title, message, exception=None):
+def default_error_reporter(title=None, data=None, exception=None):
     """By default, error messages are just logged"""
-    log.error("error: %s" % title)
-    log.error("details:\n%s" % message)
+    log.error(f"error: {title}")
+    log.error(f"exception: {exception}")
+    log.error(f"details:\n{json.dumps(data, indent=4, sort_keys=True)}")
 
 
-def report_error(title=None, data={}, caught=None, is_fatal=False):
-    """Format a crash report and send it somewhere relevant. There are two
-    types of crashes: fatal crashes (backend errors) or non-fatal ones (just
-    reporting a glitch, but the api call did not fail)"""
+error_reporter = default_error_reporter
 
-    log.info("Caught error: %s\ndata=%s" % (title, json.dumps(data, indent=4)))
 
-    # Don't report errors if NO_ERROR_REPORTING set to 1 (set by run_acceptance_tests)
-    if os.environ.get('DO_REPORT_ERROR', None):
-        # Force error reporting
-        pass
-    elif os.environ.get('NO_ERROR_REPORTING', '') == '1':
-        log.info("NO_ERROR_REPORTING is set: not reporting error!")
-        return
-    elif 'is_ec2_instance' in data:
-        if not data['is_ec2_instance']:
-            # Not running on amazon: no reporting
-            log.info("DATA[is_ec2_instance] is False: not reporting error!")
-            return
-    elif not is_ec2_instance():
-        log.info("Not running on an EC2 instance: not reporting error!")
-        return
+def set_error_reporter(f):
+    global error_reporter
+    error_reporter = f
 
-    # Fill error report with tons of usefull data
-    if 'user' not in data:
-        populate_error_report(data)
 
-    # Add the message
-    data['title'] = title
-    data['is_fatal_error'] = is_fatal
+def postmortem(f=None, t0=None, t1=None, exception=None, args=[], kwargs={}):
+    """Print the error's trace, and call the error reporter with a bunch of data on what happened"""
 
-    # Add the error caught, if any:
-    if caught:
-        data['error_caught'] = "%s" % caught
+    data = {}
 
-    # Add a trace - Formatting traceback may raise a UnicodeDecodeError...
-    data['stack'] = []
+    # Gather data about the exception that occured
+    exc_type, exc_value, exc_traceback = sys.exc_info()
+    trace = traceback.format_exception(exc_type, exc_value, exc_traceback, 30)
+
+    str_trace = '\n'.join(trace)
+    log.info(f"ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR:\n{str_trace}")
+
+    data.update({
+        'trace': trace,
+
+        # Set only on the original error, not on forwarded ones, not on
+        # success responses
+        'error_id': str(uuid.uuid4()),
+
+        # Call results
+        'time': {
+            'start': t0.isoformat(),
+            'end': t1.isoformat(),
+            'microsecs': (t1.timestamp() - t0.timestamp()) * 1000000,
+        },
+
+        # Response details
+        'response': {
+            'status': 500,
+            'error_code': exception.code if hasattr(exception, 'code') else 'UNKNOWN',
+            'error_description': str(exception),
+            'user_message': exception.user_message if hasattr(exception, 'user_message') else None,
+        },
+    })
+
+    populate_error_report(data)
+
+    global error_reporter
+    log.info("Reporting crash...")
+
+    fname = function_name(f)
+
     try:
-        data['stack'] = [l for l in traceback.format_stack()]
-    except Exception:
-        data['stack'] = 'Skipped trace - contained non-ascii chars'
-
-    # inspect may raise a UnicodeDecodeError...
-    fname = ''
-    try:
-        fname = inspect.stack()[1][3]
+        error_reporter(
+            title=f"{fname}(): {exception}",
+            data=data,
+            exception=exception,
+        )
     except Exception as e:
-        fname = 'unknown-method'
+        # Don't block on replying to api caller
+        log.error("Failed to report report: %s" % str(e))
 
-    # Format the error's title
-    status, code = 'unknown_status', 'unknown_error_code'
-    app_name = get_config().name
-    if 'response' in data:
-        status = data['response'].get('status', status)
-        code = data['response'].get('error_code', code)
-        title_details = "%s %s %s" % (app_name, status, code)
-    else:
-        title_details = "%s %s()" % (app_name, fname)
 
-    if is_fatal:
-        title_details = 'FATAL ERROR %s' % title_details
-    else:
-        title_details = 'NON-FATAL ERROR %s' % title_details
+def report_warning(title=None, data={}, exception=None):
 
-    if title:
-        title = "%s: %s" % (title_details, title)
-    else:
-        title = title_details
+    populate_error_report(data)
 
     global error_reporter
     log.info("Reporting crash...")
 
     try:
-        error_reporter(title, json.dumps(data, sort_keys=True, indent=4))
+        error_reporter(
+            title=title,
+            data=data,
+        )
     except Exception as e:
         # Don't block on replying to api caller
-        log.error("Failed to send email report: %s" % str(e))
+        log.error("Failed to report warning report: %s" % str(e))
 
 
 def populate_error_report(data):
@@ -196,175 +196,88 @@ def populate_error_report(data):
         }
 
 
-def generate_crash_handler_decorator(error_decorator=None):
-    """Return the crash_handler to pass to pymacaron_core, with optional error decoration"""
-
-    def crash_handler(f):
-        """Return a decorator that reports failed api calls via the error_reporter,
-        for use on every server endpoint"""
-
-        @wraps(f)
-        def wrapper(*args, **kwargs):
-            """Generate a report of this api call, and if the call failed or was too slow,
-            forward this report via the error_reporter"""
-
-            data = {}
-            t0 = timenow()
-            exception_string = ''
-
-            # Call endpoint and log execution time
-            try:
-                res = f(*args, **kwargs)
-            except Exception as e:
-                # An unhandled exception occured!
-                exception_string = str(e)
-                exc_type, exc_value, exc_traceback = sys.exc_info()
-                trace = traceback.format_exception(exc_type, exc_value, exc_traceback, 30)
-                data['trace'] = trace
-
-                # If it is a PyMacaronException, just call its http_reply()
-                if hasattr(e, 'http_reply'):
-                    res = e.http_reply()
-                else:
-                    # Otherwise, forge a Response
-                    e = UnhandledServerError(exception_string)
-                    log.error("UNHANDLED EXCEPTION: %s" % '\n'.join(trace))
-                    res = e.http_reply()
-
-            t1 = timenow()
-
-            # Is the response an Error instance?
-            response_type = type(res).__name__
-            status_code = 200
-            is_an_error = 0
-            error = ''
-            error_description = ''
-            error_user_message = ''
-
-            error_id = ''
-
-            if isinstance(res, Response):
-                # Got a flask.Response object
-                res_data = None
-
-                status_code = str(res.status_code)
-
-                if str(status_code) == '200':
-
-                    # It could be any valid json response, but it could also be an Error model
-                    # that pymacaron_core handled as a status 200 because it does not know of
-                    # pymacaron Errors
-                    if res.content_type == 'application/json':
-                        s = str(res.data)
-                        if '"error":' in s and '"error_description":' in s and '"status":' in s:
-                            # This looks like an error, let's decode it
-                            res_data = res.get_data()
-                else:
-                    # Assuming it is a PyMacaronException.http_reply()
-                    res_data = res.get_data()
-
-                if res_data:
-                    if type(res_data) is bytes:
-                        res_data = res_data.decode("utf-8")
-
-                    is_json = True
-                    try:
-                        j = json.loads(res_data)
-                    except ValueError as e:
-                        # This was a plain html response. Fake an error
-                        is_json = False
-                        j = {'error': res_data, 'status': status_code}
-
-                    # Make sure that the response gets the same status as the PyMacaron Error it contained
-                    status_code = j['status']
-                    res.status_code = int(status_code)
-
-                    # Patch Response to contain a unique id
-                    if is_json:
-                        if 'error_id' not in j:
-                            # If the error is forwarded by multiple micro-services, we
-                            # want the error_id to be set only on the original error
-                            error_id = str(uuid.uuid4())
-                            j['error_id'] = error_id
-                            res.set_data(json.dumps(j))
-
-                        if error_decorator:
-                            # Apply error_decorator, if any defined
-                            res.set_data(json.dumps(error_decorator(j)))
-
-                    # And extract data from this error
-                    error = j.get('error', 'NO_ERROR_IN_JSON')
-                    error_description = j.get('error_description', res_data)
-                    if error_description == '':
-                        error_description = res_data
-
-                    if not exception_string:
-                        exception_string = error_description
-
-                    error_user_message = j.get('user_message', '')
-                    is_an_error = 1
+# DEPRECATED
 
 
-            request_args = []
-            if len(args):
-                request_args.append(args)
-            if kwargs:
-                request_args.append(kwargs)
+def report_error(title=None, data={}, caught=None, is_fatal=False):
+    """Format a crash report and send it somewhere relevant. There are two
+    types of crashes: fatal crashes (backend errors) or non-fatal ones (just
+    reporting a glitch, but the api call did not fail)"""
 
-            data.update({
-                # Set only on the original error, not on forwarded ones, not on
-                # success responses
-                'error_id': error_id,
+    log.info("Caught error: %s\ndata=%s" % (title, json.dumps(data, indent=4)))
 
-                # Call results
-                'time': {
-                    'start': t0.isoformat(),
-                    'end': t1.isoformat(),
-                    'microsecs': (t1.timestamp() - t0.timestamp()) * 1000000,
-                },
+    # Don't report errors if NO_ERROR_REPORTING set to 1 (set by run_acceptance_tests)
+    if os.environ.get('DO_REPORT_ERROR', None):
+        # Force error reporting
+        pass
+    elif os.environ.get('NO_ERROR_REPORTING', '') == '1':
+        log.info("NO_ERROR_REPORTING is set: not reporting error!")
+        return
+    elif 'is_ec2_instance' in data:
+        if not data['is_ec2_instance']:
+            # Not running on amazon: no reporting
+            log.info("DATA[is_ec2_instance] is False: not reporting error!")
+            return
+    elif not is_ec2_instance():
+        log.info("Not running on an EC2 instance: not reporting error!")
+        return
 
-                # Response details
-                'response': {
-                    'type': response_type,
-                    'status': str(status_code),
-                    'is_error': is_an_error,
-                    'error_code': error,
-                    'error_description': error_description,
-                    'user_message': error_user_message,
-                },
+    # Fill error report with tons of usefull data
+    if 'user' not in data:
+        populate_error_report(data)
 
-                # Request details
-                'request': {
-                    'params': pformat(request_args),
-                },
-            })
+    # Add the message
+    data['title'] = title
+    data['is_fatal_error'] = is_fatal
 
-            populate_error_report(data)
+    # Add the error caught, if any:
+    if caught:
+        data['error_caught'] = "%s" % caught
 
-            # inspect may raise a UnicodeDecodeError...
-            fname = function_name(f)
+    # Add a trace - Formatting traceback may raise a UnicodeDecodeError...
+    data['stack'] = []
+    try:
+        data['stack'] = [l for l in traceback.format_stack()]
+    except Exception:
+        data['stack'] = 'Skipped trace - contained non-ascii chars'
 
-            #
-            # Should we report this call?
-            #
+    # inspect may raise a UnicodeDecodeError...
+    fname = ''
+    try:
+        fname = inspect.stack()[1][3]
+    except Exception as e:
+        fname = 'unknown-method'
 
-            # If it is an internal errors, report it
-            if data['response']['status'] and int(data['response']['status']) >= 500:
-                report_error(
-                    title="%s(): %s" % (fname, exception_string),
-                    data=data,
-                    is_fatal=True
-                )
+    # Format the error's title
+    status, code = 'unknown_status', 'unknown_error_code'
+    app_name = get_config().name
+    if 'response' in data:
+        status = data['response'].get('status', status)
+        code = data['response'].get('error_code', code)
+        title_details = "%s %s %s" % (app_name, status, code)
+    else:
+        title_details = "%s %s()" % (app_name, fname)
 
-            log.info("")
-            log.info(" <= Done!")
-            log.info("")
+    if is_fatal:
+        title_details = 'FATAL ERROR %s' % title_details
+    else:
+        title_details = 'NON-FATAL ERROR %s' % title_details
 
-            return res
+    if title:
+        title = "%s: %s" % (title_details, title)
+    else:
+        title = title_details
 
-        return wrapper
+    global error_reporter
+    log.info("Reporting crash...")
 
-    return crash_handler
+    try:
+        error_reporter(title, json.dumps(data, sort_keys=True, indent=4))
+    except Exception as e:
+        # Don't block on replying to api caller
+        log.error("Failed to send email report: %s" % str(e))
+
+
 
 #
 # Generic crash-handler as a decorator
