@@ -15,7 +15,7 @@ from pymacaron.exceptions import BadResponseException
 log = pymlogger(__name__)
 
 
-def get_form_data(form_data):
+def get_form_data(form_args=None):
     # Just extract whatever we can from that form, data or file alike
     log.debug("FETCHING FORM DATA: %s" % request.form.to_dict())
 
@@ -30,6 +30,13 @@ def get_form_data(form_data):
             kwargs[name] = v.read()
         else:
             raise Exception("Support for multipart/form-data containing %s is not implemented" % type(v))
+
+    # If the swagger specified an exact list of form arguments, remove anything
+    # that does not match it
+    if form_args:
+        for k in list(kwargs.keys()):
+            if k not in form_args:
+                del kwargs[k]
 
     return kwargs
 
