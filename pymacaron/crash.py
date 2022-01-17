@@ -23,7 +23,6 @@ except ImportError:
     from flask import _request_ctx_stack as stack
 
 
-
 def function_name(f):
     return "%s.%s" % (inspect.getmodule(f).__name__, f.__name__)
 
@@ -32,20 +31,10 @@ def function_name(f):
 # Default error reporting
 #
 
-def default_error_reporter(title, message):
+def default_error_reporter(title, message, exception=None):
     """By default, error messages are just logged"""
     log.error("error: %s" % title)
     log.error("details:\n%s" % message)
-
-error_reporter = default_error_reporter
-
-def set_error_reporter(callback=None):
-    """Here you can override the default crash reporter (and send yourself
-    emails, sms, slacks...)"""
-
-    global error_reporter
-    if error_reporter:
-        error_reporter = callback
 
 
 def report_error(title=None, data={}, caught=None, is_fatal=False):

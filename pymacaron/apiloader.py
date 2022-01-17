@@ -199,7 +199,7 @@ def generate_endpoints_v2(swagger, app_file, model_file, api_name):
         'log = pymlogger(__name__)',
         '',
         '',
-        'def load_endpoints(app):',
+        'def load_endpoints(app=None, error_reporter=None, error_callback=None):',
         '    from pymacaron import apipool',
         '',
     ]
@@ -332,6 +332,8 @@ def generate_endpoints_v2(swagger, app_file, model_file, api_name):
                 '            result_models=[',
             ] + result_models_lines + [
                 '            ],',
+                '            error_callback=error_callback,',
+                '            error_reporter=error_reporter,',
                 '        )',
                 f'    log.info("Binding [{api_name}] {http_method} {route} ==> {operation_id}")',
                 '',
