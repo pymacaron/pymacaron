@@ -216,6 +216,7 @@ def generate_endpoints_v2(swagger, app_file, model_file, api_name):
 
             # Extract path, query and body parameters from in declaration
             query_params = {}
+            form_params = {}
             path_params = {}
             str_body_model_name = 'None'
 
@@ -234,6 +235,11 @@ def generate_endpoints_v2(swagger, app_file, model_file, api_name):
                         assert '$ref' in param['schema'], f"Missing '$ref' declaration in schema of body parameter {err_str}"
                         s = ref_to_model_name(param['schema']['$ref'])
                         str_body_model_name = f'"{s}"'
+                    elif param['in'] == 'formData':
+                        assert 'name' in param, f"Missing 'name' declaration for formData parameter {err_str}"
+                        assert 'type' in param, f"Missing 'type' declaration for formData parameter {err_str}"
+                        assert param['type'] == 'file', f"Type {param['type']} is not supported for formData in parameter {err_str}"
+                        form_params[param['name']] = param['type']
                     else:
                         assert 0, f"param type {param['in']} not supported yet in parameter {err_str}"
 
@@ -315,6 +321,16 @@ def generate_endpoints_v2(swagger, app_file, model_file, api_name):
                         f'                "{name}": {name},',
                     ]
 
+
+            # If there are path parameters, pass them as a dictionary to the
+            # generic pymacaron endpoint
+            form_args_lines = []
+            if len(form_params):
+                for name, typ in form_params.items():
+                    form_args_lines += [
+                        f'                "{name}": "{typ}",',
+                    ]
+
             lines_endpoints += [
                 '',
                 f'    @app.route("{flask_route}", methods=["{http_method}"])',
@@ -327,6 +343,9 @@ def generate_endpoints_v2(swagger, app_file, model_file, api_name):
                 f'            f=f_{method_name},',
                 '            path_args={',
             ] + path_args_lines + [
+                '            },',
+                '            form_args={',
+            ] + form_args_lines + [
                 '            },',
                 f'            body_model_name={str_body_model_name},',
                 f'            query_model={str_query_model},',

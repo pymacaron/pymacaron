@@ -15,6 +15,25 @@ from pymacaron.exceptions import BadResponseException
 log = pymlogger(__name__)
 
 
+def get_form_data(form_data):
+    # Just extract whatever we can from that form, data or file alike
+    log.debug("FETCHING FORM DATA: %s" % request.form.to_dict())
+
+    kwargs = request.form.to_dict()
+
+    # Go through all the objects passed in form-data and try converting to something json-friendly
+    files = request.files.to_dict()
+    for k in list(files.keys()):
+        v = files[k]
+        if isinstance(v, FileStorage):
+            name = v.name
+            kwargs[name] = v.read()
+        else:
+            raise Exception("Support for multipart/form-data containing %s is not implemented" % type(v))
+
+    return kwargs
+
+
 def get_request_body(api_name, model_name):
     """Return an instantiated pymacaron model containing the request's body or form data"""
 
@@ -31,21 +50,12 @@ def get_request_body(api_name, model_name):
 
         if ctype.startswith('application/x-www-form-urlencoded'):
             # Get the dict() containing the form's key-values
-            kwargs = request.form.to_dict()
+            kwargs = get_form_data()
 
         elif ctype.startswith('multipart/form-data'):
             # Store the request's form and files
-            kwargs = request.form.to_dict()
+            kwargs = get_form_data()
 
-            # Go through all the objects passed in form-data and try converting to something json-friendly
-            files = request.files.to_dict()
-            for k in list(files.keys()):
-                v = files[k]
-                if type(v) is FileStorage:
-                    name = v.name
-                    kwargs[name] = v.read()
-                else:
-                    raise Exception("Support for multipart/form-data containing %s is not implemented" % type(v))
         else:
             # Assuming we got a json body
             kwargs = request.get_json(force=True)
@@ -69,7 +79,7 @@ def get_path_and_query_parameters(query_model, path_args):
     return d
 
 
-def pymacaron_flask_endpoint(api_name=None, f=None, error_callback=None, query_model=None, body_model_name=None, path_args={}, produces='application/json', result_models=[]):
+def pymacaron_flask_endpoint(api_name=None, f=None, error_callback=None, query_model=None, body_model_name=None, form_args={}, path_args={}, produces='application/json', result_models=[]):
     """Call endpoint in a try/catch loop handling exceptions"""
 
     t0 = timenow()
@@ -81,6 +91,7 @@ def pymacaron_flask_endpoint(api_name=None, f=None, error_callback=None, query_m
             query_model=query_model,
             body_model_name=body_model_name,
             path_args=path_args,
+            form_args=form_args,
             produces=produces,
             result_models=result_models,
         )
@@ -115,7 +126,7 @@ def pymacaron_flask_endpoint(api_name=None, f=None, error_callback=None, query_m
         return e.jsonify()
 
 
-def call_f(api_name=None, f=None, error_callback=None, query_model=None, body_model_name=None, path_args={}, produces='application/json', result_models=[]):
+def call_f(api_name=None, f=None, error_callback=None, query_model=None, body_model_name=None, form_args={}, path_args={}, produces='application/json', result_models=[]):
     """A generic flask endpoint that calls a given pymacaron endpoint
     implementation and handle conversion between query/body parameters,
     pymacaron models and flask response. Also handle error handling and
@@ -154,6 +165,9 @@ def call_f(api_name=None, f=None, error_callback=None, query_model=None, body_mo
         #     return _responsify(api_spec, ee, 400)
 
     kwargs = get_path_and_query_parameters(query_model, path_args)
+
+    if form_args:
+        kwargs.update(get_form_data(form_args))
 
     if os.environ.get('PYM_DEBUG', None) == '1':
         log.debug("PYM_DEBUG: Request args are: [args: %s] [kwargs: %s]" % (args, kwargs))
