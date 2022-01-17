@@ -1,9 +1,10 @@
 import os
 from flask import request, jsonify
-from flask_cors import cross_origin
 from werkzeug import FileStorage
 from pymacaron.log import pymlogger
 from pymacaron import apipool
+from pymacaron.model import PymacaronBaseModel
+from pymacaron.exceptions import BadResponseException
 
 
 log = pymlogger(__name__)
@@ -63,31 +64,21 @@ def get_path_and_query_parameters(query_model, path_args):
     return d
 
 
-def _responsify(api_name, error, status):
-    """Take a bravado-core model representing an error, and return a Flask Response
-    with the given error code and error instance as body"""
-
-    result_json = api_spec.model_to_json(error)
-    r = jsonify(result_json)
-    r.status_code = status
-    return r
-
-
-
-@cross_origin(headers=['Content-Type', 'Authorization'])
-def pymacaron_flask_endpoint(api_name=None, f=None, error_callback=None, query_model=None, body_model_name=None, path_args={}):
+def pymacaron_flask_endpoint(api_name=None, f=None, error_callback=None, query_model=None, body_model_name=None, path_args={}, produces='application/json', result_models=[]):
     # TODO: catch error
 
-    return call_endpoint_implementation(
+    return call_f(
         api_name=api_name,
         f=f,
         query_model=query_model,
         body_model_name=body_model_name,
         path_args=path_args,
+        produces=produces,
+        result_models=result_models,
     )
 
 
-def call_endpoint_implementation(api_name=None, f=None, error_callback=None, query_model=None, body_model_name=None, path_args={}):
+def call_f(api_name=None, f=None, error_callback=None, query_model=None, body_model_name=None, path_args={}, produces='application/json', result_models=[]):
     """A generic flask endpoint that calls a given pymacaron endpoint
     implementation and handle conversion between query/body parameters,
     pymacaron models and flask response. Also handle error handling and
@@ -118,19 +109,44 @@ def call_endpoint_implementation(api_name=None, f=None, error_callback=None, que
     # TODO: fetch params from Flask request and compile args/kwargs to call f() with
     args = []
     if body_model_name:
-        try:
-            args.append(get_request_body(api_name, body_model_name))
-        except BadRequest:
-            ee = error_callback(ValidationError("Cannot parse json data: have you set 'Content-Type' to 'application/json'?"))
-            return _responsify(api_spec, ee, 400)
-
+        args.append(get_request_body(api_name, body_model_name))
+        # try:
+        #     args.append(get_request_body(api_name, body_model_name))
+        # except BadRequest:
+        #     ee = error_callback(ValidationError("Cannot parse json data: have you set 'Content-Type' to 'application/json'?"))
+        #     return _responsify(api_spec, ee, 400)
 
     kwargs = get_path_and_query_parameters(query_model, path_args)
 
     if os.environ.get('PYM_DEBUG', None) == '1':
         log.debug("PYM_DEBUG: Request args are: [args: %s] [kwargs: %s]" % (args, kwargs))
 
-    res = f(*args, **kwargs)
+    result = f(*args, **kwargs)
+
+    if produces == 'application/json':
+        assert result_models, "BUG: no result models specified"
+        str_result_models = ', '.join([str(m) for m in result_models])
+        if not result:
+            raise BadResponseException('Nothing to return in response')
+        elif isinstance(result, PymacaronBaseModel):
+            # Were we expecting this result model?
+            found = False
+            for m in result_models:
+                if isinstance(result, m):
+                    found = True
+            if not found:
+                raise BadResponseException(f'Expected to return an instance of {str_result_models} but got {result}')
+            return jsonify(result.to_json())
+        elif ".".join([result.__module__, result.__class__.__name__]) == 'flask.wrappers.Response':
+            # result is already a flask response
+            return result
+        else:
+            raise BadResponseException(f'Expected to return an instance of {str_result_models} but got {result} of type {type(result)}')
+
+    else:
+        assert 0, "Support for returning '{produces}' not implemented yet!"
+
+
 
     # if not result:
     #     e = error_callback(PyMacaronCoreException("Have nothing to send in response"))
