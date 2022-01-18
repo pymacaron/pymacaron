@@ -273,6 +273,7 @@ def generate_endpoints_v2(swagger, app_file, model_file, api_name):
                 raise Exception(f"Endpoint {http_method}:{route} has no 'x-bind-server' or 'operationId' declaration")
             method_path = '.'.join(operation_id.split('.')[0:-1])
             method_name = operation_id.split('.')[-1]
+            unique_method_name = 'f_' + operation_id.replace('.', '_')
 
             # Name the endpoint
             def_name = f'endpoint_{http_method.lower()}_' + re.sub(r'\W+', '', str(route).replace('/', '_'))
@@ -280,7 +281,7 @@ def generate_endpoints_v2(swagger, app_file, model_file, api_name):
             # Import the method that implements the endpoint and apply its decorator, if any
             lines_imports += [
                 '',
-                f'    from {method_path} import {method_name} as f_{method_name}',
+                f'    from {method_path} import {method_name} as {unique_method_name}',
             ]
 
             if 'x-decorate-server' in endpoint_def:
@@ -290,7 +291,7 @@ def generate_endpoints_v2(swagger, app_file, model_file, api_name):
                 # TODO: import decorator
                 lines_imports += [
                     f'    from {decorator_pkg} import {decorator_f}',
-                    f'    f_{method_name} = {decorator_f}(f_{method_name})',
+                    f'    {unique_method_name} = {decorator_f}({unique_method_name})',
                 ]
 
             # Compile flask route from swagger route (s/{}/<>/ + add :type)
@@ -344,7 +345,7 @@ def generate_endpoints_v2(swagger, app_file, model_file, api_name):
             ] + query_model_lines + [
                 '        return pymacaron_flask_endpoint(',
                 f'            api_name="{api_name}",',
-                f'            f=f_{method_name},',
+                f'            f={unique_method_name},',
                 '            path_args={',
             ] + path_args_lines + [
                 '            },',
