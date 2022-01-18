@@ -1,4 +1,5 @@
 import os
+import json
 from flask import request, jsonify
 from werkzeug import FileStorage
 from pymacaron.log import pymlogger
@@ -91,7 +92,15 @@ def get_path_and_query_parameters(query_model, path_args):
 def pymacaron_flask_endpoint(api_name=None, f=None, error_callback=None, query_model=None, body_model_name=None, form_args={}, path_args={}, produces='application/json', result_models=[]):
     """Call endpoint in a try/catch loop handling exceptions"""
 
+    endpoint_method = request.method
+    endpoint_path = request.path
     t0 = timenow()
+
+    log.info(" ")
+    log.info(" ")
+    log.info("=> INCOMING REQUEST %s %s -> %s" % (endpoint_method, endpoint_path, f.__name__))
+    log.info(" ")
+    log.info(" ")
 
     try:
         return call_f(
@@ -106,7 +115,9 @@ def pymacaron_flask_endpoint(api_name=None, f=None, error_callback=None, query_m
         )
 
     except BaseException as e:
+
         log.error(f"Method {f.__name__} raised exception [{str(e)}]")
+        log.info(" ")
 
         # Report this exception and tons of info about it
         postmortem(
@@ -127,12 +138,18 @@ def pymacaron_flask_endpoint(api_name=None, f=None, error_callback=None, query_m
             # The error_callback takes the error instance and returns a json
             # dictionary back
             d = error_callback(e)
-            log.info(f"Converted exception to API error {d}")
+            log.info(f"Returning API error (status:{status}): {json.dumps(d, indent=4, sort_keys=True)}")
             r = jsonify(d)
             r.status_code = status
             return r
 
         return e.jsonify()
+
+    finally:
+        log.info(" ")
+        log.info("<= DONE %s %s -> %s" % (endpoint_method, endpoint_path, f.__name__))
+        log.info(" ")
+        log.info(" ")
 
 
 def call_f(api_name=None, f=None, error_callback=None, query_model=None, body_model_name=None, form_args={}, path_args={}, produces='application/json', result_models=[]):
@@ -150,15 +167,6 @@ def call_f(api_name=None, f=None, error_callback=None, query_model=None, body_mo
     body_model_name: name of the model that defines the HTTP body data expected by this endpoint (None if none)
 
     """
-
-    endpoint_method = request.method
-    endpoint_path = request.path
-
-    log.info(" ")
-    log.info(" ")
-    log.info("=> INCOMING REQUEST %s %s -> %s" % (endpoint_method, endpoint_path, f.__name__))
-    log.info(" ")
-    log.info(" ")
 
     if os.environ.get('PYM_DEBUG', None) == '1':
         log.debug("PYM_DEBUG: Request headers are: %s" % dict(request.headers))
@@ -182,10 +190,6 @@ def call_f(api_name=None, f=None, error_callback=None, query_model=None, body_mo
         log.debug("PYM_DEBUG: Request args are: [args: %s] [kwargs: %s]" % (args, kwargs))
 
     result = f(*args, **kwargs)
-
-    log.info("<= DONE %s %s -> %s" % (endpoint_method, endpoint_path, f.__name__))
-    log.info(" ")
-    log.info(" ")
 
     if produces == 'application/json':
         assert result_models, "BUG: no result models specified"
