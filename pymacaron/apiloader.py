@@ -421,7 +421,7 @@ def generate_endpoints_v2(swagger, app_file, model_file, api_name):
         f.write('\n'.join(lines_header + lines_imports + lines_endpoints))
 
 
-def load_api_models_and_endpoints(api_name=None, api_path=None, dest_dir=None, load_endpoints=True, force=False):
+def load_api_models_and_endpoints(api_name=None, api_path=None, dest_dir=None, create_endpoints=True, force=False):
     """Load all object models defined inside the OpenAPI specification located at
     api_path into a generated python module at dest_dir/[api_name].py
 
@@ -455,7 +455,7 @@ def load_api_models_and_endpoints(api_name=None, api_path=None, dest_dir=None, l
 
     # Should we re-generate the endpoints file?
     do_endpoints = False
-    if load_endpoints:
+    if create_endpoints:
         if force:
             do_endpoints = True
         elif not os.path.exists(model_file):
@@ -502,7 +502,7 @@ def load_api_models_and_endpoints(api_name=None, api_path=None, dest_dir=None, l
     model_pkg = load_code(model_file)
 
     app_pkg = None
-    if load_endpoints:
+    if create_endpoints:
         app_pkg = load_code(app_file)
 
     #

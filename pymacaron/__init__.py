@@ -60,7 +60,7 @@ class apipool():
         return getattr(apipool, api_name)
 
     @classmethod
-    def load_swagger(cls, api_name, api_path, dest_dir=None, load_endpoints=True, force=False):
+    def load_swagger(cls, api_name, api_path, dest_dir=None, create_endpoints=False, force=False):
         """Load a swagger/openapi specification into pymacaron: generate its model
         classes (declared with pydantic), and optionally generate the Flask api
         endpoints binding endpoint methods to routes.
@@ -76,7 +76,7 @@ class apipool():
             Optional. Path to a directory under which to write the generated
             '<api_name>_models.py' and '<api_name>_app.py' files. Defaults to
             the same directory as the swagger file.
-        load_endpoints: bool
+        create_endpoints: bool
             Optional. Set to false to only generate model declarations, and not
             endpoint declarations. Defaults to true.
         force: bool
@@ -90,7 +90,7 @@ class apipool():
             api_name=api_name,
             api_path=api_path,
             dest_dir=dest_dir,
-            load_endpoints=load_endpoints,
+            create_endpoints=create_endpoints,
             force=force,
         )
 
@@ -228,7 +228,7 @@ class API(object):
                 name,
                 yaml_path,
                 dest_dir=get_config().apis_path,
-                load_endpoints=True,
+                create_endpoints=True,
             )
 
 
@@ -253,7 +253,7 @@ class API(object):
                 api_name,
                 api_path,
                 dest_dir=path,
-                load_endpoints=False,
+                create_endpoints=False,
             )
 
         return self
@@ -302,7 +302,7 @@ class API(object):
                 api_name,
                 api_path,
                 dest_dir=os.path.dirname(api_path),
-                load_endpoints=False if api_name in only_models else True,
+                create_endpoints=False if api_name in only_models else True,
                 force=force,
                 # TODO: support, formats, host/port
                 # formats=self.formats,
