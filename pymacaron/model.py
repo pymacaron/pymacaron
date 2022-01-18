@@ -15,6 +15,9 @@ class PymacaronBaseModel(object):
 
     # See https://pydantic-docs.helpmanual.io/usage/exporting_models/ about ujson vs orjson
     class Config:
+        # Do type validation each time a property is set
+        validate_assignment = True
+
         json_loads = ujson.loads
         json_encoders = {
             # TODO: make the datetime encoding configurable
@@ -27,20 +30,40 @@ class PymacaronBaseModel(object):
         return f'{self.get_model_name()}(self.dict())'
 
 
-    def __prune_none(self, j):
+    def __set_nullable(self):
+        # Set all x-nullable model properties to None, recursively
+        for k in self.get_property_names():
+            if k in self.get_nullable_properties():
+                setattr(self, k, None)
+            else:
+                v = getattr(self, k)
+                if isinstance(v, PymacaronBaseModel):
+                    v.__set_nullable()
+                elif type(v) is list:
+                    for vv in v:
+                        if isinstance(vv, PymacaronBaseModel):
+                            vv.__set_nullable()
+
+
+    def __prune_none(self, j, o, keep_nullable=False):
+        # Remove all None keys in a dictionary, recursively
         for k in list(j.keys()):
             v = j[k]
             if v is None:
-                del j[k]
+                if keep_nullable and k in o.get_nullable_properties():
+                    pass
+                else:
+                    del j[k]
             elif type(v) is dict:
-                self.__prune_none(v)
+                self.__prune_none(v, getattr(o, k), keep_nullable=keep_nullable)
             elif type(v) is list:
-                for i in v:
-                    if type(i) is dict:
-                        self.__prune_none(i)
+                for i in range(len(v)):
+                    jj = v[i]
+                    if type(jj) is dict:
+                        self.__prune_none(jj, getattr(o, k)[i], keep_nullable=keep_nullable)
 
 
-    def to_json(self, keep_datetime=False, prune_none=True):
+    def to_json(self, keep_datetime=False, keep_nullable=False):
         """Return a json dictionary representation of this PyMacaron object"""
 
         if keep_datetime:
@@ -50,10 +73,9 @@ class PymacaronBaseModel(object):
             s = self.json()
             j = ujson.loads(s)
 
-        # pydantic sets undefined attributes to None, which we may want to
-        # filter out, for example before saving to datastore
-        if prune_none:
-            self.__prune_none(j)
+        # pydantic sets all undefined properties to None. We want to remove them, except
+        # optionally those that are defined as x-nullable in swagger.
+        self.__prune_none(j, self, keep_nullable=keep_nullable)
 
         return j
 

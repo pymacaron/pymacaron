@@ -136,6 +136,8 @@ def generate_models_v2(swagger, model_file, api_name):
 
         str_properties = ', '.join([f'"{s}"' for s in list(model_def['properties'].keys())])
 
+        str_nullable_properties = ', '.join([f'"{s}"' for s, d in model_def['properties'].items() if d.get('x-nullable', False) is True])
+
         (path, cls) = get_parent(model_def)
         x_parent = f'Parent{cls}, ' if cls else ''
 
@@ -147,6 +149,8 @@ def generate_models_v2(swagger, model_file, api_name):
             f'        return [{str_properties}]',
             '    def get_model_api(self):',
             f'        return "{api_name}"',
+            '    def get_nullable_properties(self):',
+            f'        return [{str_nullable_properties}]',
         ]
 
         for p_name, p_def in model_def['properties'].items():

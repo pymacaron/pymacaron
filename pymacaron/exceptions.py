@@ -69,7 +69,7 @@ class BadResponseException(PyMacaronException):
 
 
 class UnhandledServerError(PyMacaronException):
-    code = 'BAD_RESPONSE'
+    code = 'SERVER_ERROR'
     status = 500
 
 
