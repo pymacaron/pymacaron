@@ -41,8 +41,8 @@ def do_version():
     from pymacaron import apipool
     v = apipool.ping.Version(
         name=get_app_name(),
+        version=get_container_version(),
         apis=apipool.get_api_names(),
-        container=get_container_version(),
         pym_env=os.environ.get('PYM_ENV', ''),
     )
     log.info("/version: " + pprint.pformat(v))

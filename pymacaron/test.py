@@ -42,9 +42,9 @@ class PyMacaronTestCase(testcase.PyMacaronTestCase):
         self.base_url = '%s://%s:%s' % (proto, self.host, self.port)
 
     def assertIsVersion(self, j):
-        self.assertTrue(type(j['version']) is str)
+        self.assertTrue(type(j['apis']) is list)
         self.assertTrue(type(j['name']) is str)
-        self.assertTrue(type(j['container']) is str)
+        self.assertTrue(type(j['version']) is str)
         self.assertTrue(type(j['pym_env']) is str)
 
     def assertHasPing(self):

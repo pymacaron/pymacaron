@@ -91,27 +91,22 @@ definitions:
       name:
         type: string
         description: Name of this microservice
+      version:
+        type: string
+        description: Version of the docker contained running the api
       apis:
         type: array
         description: Name of the apis implemented by this microservice
         items:
           type: string
-      container:
-        type: string
-        description: Version of the docker contained running the api
       pym_env:
         type: string
         description: Content of PYM_ENV in the container
     example:
-      version: 1.0.34
-      name: macaron
-      container: master-20160215-1903-42-e469af
-      pym_env: helloworld-staging
-    required:
-      - version
-      - name
-      - container
-      - pym_env
+      version: 'master-20160215-1903-42-e469af'
+      name: 'macaron'
+      apis: ['bar', 'foo']
+      pym_env: 'helloworld-staging'
 
 
   Ok:
