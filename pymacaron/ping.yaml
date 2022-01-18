@@ -90,13 +90,12 @@ definitions:
     properties:
       name:
         type: string
-        description: Name of the api being served
-      version:
-        type: string
-        description: Version of the swagger spec of the api being served
-      live:
-        type: boolean
-        description: Whether this is a production server or not
+        description: Name of this microservice
+      apis:
+        type: array
+        description: Name of the apis implemented by this microservice
+        items:
+          type: string
       container:
         type: string
         description: Version of the docker contained running the api

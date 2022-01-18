@@ -60,6 +60,11 @@ class apipool():
         return getattr(apipool, api_name)
 
     @classmethod
+    def get_api_names(cls):
+        """Return the names of loaded apis"""
+        return sorted(apipool.__api_paths.keys())
+
+    @classmethod
     def load_swagger(cls, api_name, api_path, dest_dir=None, create_endpoints=False, force=False):
         """Load a swagger/openapi specification into pymacaron: generate its model
         classes (declared with pydantic), and optionally generate the Flask api
@@ -224,12 +229,14 @@ class API(object):
             yaml_path = pkg_resources.resource_filename(__name__, 'pymacaron/%s.yaml' % name)
             if not os.path.isfile(yaml_path):
                 yaml_path = os.path.join(os.path.dirname(sys.modules[__name__].__file__), '%s.yaml' % name)
-            apipool.load_swagger(
+            app_pkg = apipool.load_swagger(
                 name,
                 yaml_path,
                 dest_dir=get_config().apis_path,
                 create_endpoints=True,
             )
+            if app_pkg:
+                self.app_pkgs.append(app_pkg)
 
 
     def load_clients(self, path=None, apis=[]):
@@ -304,11 +311,8 @@ class API(object):
                 dest_dir=os.path.dirname(api_path),
                 create_endpoints=False if api_name in only_models else True,
                 force=force,
-                # TODO: support, formats, host/port
+                # TODO: custom formats
                 # formats=self.formats,
-                # local=False,
-                # host=host,
-                # port=port,
             )
             if app_pkg:
                 self.app_pkgs.append(app_pkg)

@@ -279,19 +279,26 @@ def generate_endpoints_v2(swagger, app_file, model_file, api_name):
             def_name = f'endpoint_{http_method.lower()}_' + re.sub(r'\W+', '', str(route).replace('/', '_'))
 
             # Import the method that implements the endpoint and apply its decorator, if any
-            lines_imports += [
-                '',
-                f'    from {method_path} import {method_name} as {unique_method_name}',
-            ]
-
             if 'x-decorate-server' in endpoint_def:
                 s = endpoint_def['x-decorate-server']
                 decorator_f = s.split('.')[-1]
                 decorator_pkg = '.'.join(s.split('.')[0:-1])
-                # TODO: import decorator
+
+                # Rename unique_method_name to indicate that it is decorated
+                # (so as to not conflict with the same method imported without
+                # decorator)
+                unique_method_name = f'{unique_method_name}_via_{decorator_f}'
+
                 lines_imports += [
+                    '',
+                    f'    from {method_path} import {method_name} as {unique_method_name}',
                     f'    from {decorator_pkg} import {decorator_f}',
                     f'    {unique_method_name} = {decorator_f}({unique_method_name})',
+                ]
+            else:
+                lines_imports += [
+                    '',
+                    f'    from {method_path} import {method_name} as {unique_method_name}',
                 ]
 
             # Compile flask route from swagger route (s/{}/<>/ + add :type)

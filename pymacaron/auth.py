@@ -1,11 +1,12 @@
 import jwt
-from pymacaron.log import pymlogger
 from urllib.parse import unquote_plus
 from contextlib import contextmanager
 from functools import wraps
 from flask import request
-from pymacaron.exceptions import AuthInvalidTokenError, AuthTokenExpiredError
-from pymacaron.exceptions import AuthMissingHeaderError, PyMacaronException
+from pymacaron.log import pymlogger
+from pymacaron.exceptions import AuthInvalidTokenError
+from pymacaron.exceptions import AuthTokenExpiredError
+from pymacaron.exceptions import AuthMissingHeaderError
 from pymacaron.utils import timenow, to_epoch
 from pymacaron.config import get_config
 
@@ -30,12 +31,7 @@ def requires_auth(f):
 
     @wraps(f)
     def requires_auth_decorator(*args, **kwargs):
-
-        try:
-            authenticate_http_request()
-        except PyMacaronException as e:
-            return e.http_reply()
-
+        authenticate_http_request()
         return f(*args, **kwargs)
 
     return requires_auth_decorator
