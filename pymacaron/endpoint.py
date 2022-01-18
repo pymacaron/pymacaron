@@ -117,7 +117,6 @@ def pymacaron_flask_endpoint(api_name=None, f=None, error_callback=None, query_m
     except BaseException as e:
 
         log.error(f"Method {f.__name__} raised exception [{str(e)}]")
-        log.info(" ")
 
         # Report this exception and tons of info about it
         postmortem(
@@ -193,7 +192,7 @@ def call_f(api_name=None, f=None, error_callback=None, query_model=None, body_mo
 
     if produces == 'application/json':
         assert result_models, "BUG: no result models specified"
-        str_result_models = ', '.join([str(m) for m in result_models])
+        str_result_models = ' or '.join([str(m) for m in result_models])
 
         if not result:
             raise BadResponseException('Nothing to return in response')
@@ -205,7 +204,7 @@ def call_f(api_name=None, f=None, error_callback=None, query_model=None, body_mo
                 if isinstance(result, m):
                     model = m
             if not model:
-                raise BadResponseException(f'Expected to return an instance of {str_result_models} but got {result}')
+                raise BadResponseException(f'Expected to return an instance of {str_result_models}, but got a {result}')
             return jsonify(result.to_json(keep_nullable=True))
 
         elif ".".join([result.__module__, result.__class__.__name__]) == 'flask.wrappers.Response':
