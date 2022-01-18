@@ -22,7 +22,7 @@ if [ "$GIT_DIFF_REMOTE" -ne 0 ]; then
 fi
 
 GIT_COUNT=$(git rev-list HEAD --count)
-VERSION="1.99.$GIT_COUNT"
+VERSION="2.0.$GIT_COUNT"
 echo "=> VERSION=$VERSION"
 
 echo "=> Running nosetests"
