@@ -433,6 +433,9 @@ def load_api_models_and_endpoints(api_name=None, api_path=None, dest_dir=None, l
 
     """
 
+    if not dest_dir:
+        dest_dir = os.path.dirname(api_path)
+
     model_file = './' + os.path.relpath(os.path.join(dest_dir, f'{api_name}_models.py'))
     app_file = './' + os.path.relpath(os.path.join(dest_dir, f'{api_name}_app.py'))
 
