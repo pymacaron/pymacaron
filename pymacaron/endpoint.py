@@ -106,7 +106,7 @@ def pymacaron_flask_endpoint(api_name=None, f=None, error_callback=None, query_m
         )
 
     except BaseException as e:
-        log.info(f"Method {f.__name__} raised exception [{str(e)}]")
+        log.error(f"Method {f.__name__} raised exception [{str(e)}]")
 
         # Report this exception and tons of info about it
         postmortem(
@@ -202,7 +202,7 @@ def call_f(api_name=None, f=None, error_callback=None, query_model=None, body_mo
                     model = m
             if not model:
                 raise BadResponseException(f'Expected to return an instance of {str_result_models} but got {result}')
-            return jsonify(result.to_json())
+            return jsonify(result.to_json(keep_nullable=True))
 
         elif ".".join([result.__module__, result.__class__.__name__]) == 'flask.wrappers.Response':
             # result is already a flask response

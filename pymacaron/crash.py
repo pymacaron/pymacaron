@@ -61,7 +61,7 @@ def postmortem(f=None, t0=None, t1=None, exception=None, args=[], kwargs={}):
         return
 
     str_trace = '\n'.join(trace)
-    log.info(f"ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR:\n{str_trace}")
+    log.error(f"ERROR - ERROR - ERROR - ERROR - ERROR - ERROR:\n{str_trace}")
 
     data.update({
         'trace': trace,
