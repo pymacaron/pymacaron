@@ -12,13 +12,14 @@ def modified_time(path):
     return os.path.getmtime(path)
 
 
-def swagger_type_to_python_type(t, models=[]):
+def swagger_type_to_pydantic_type(t, models=[]):
     """Given a swagger type or format or ref definition, return its corresponding python type"""
     # Take a swagger type and return the corresponding python type
     if t in models:
         return t
 
     mapping = {
+        # swagger type: pydantic type (https://pydantic-docs.helpmanual.io/usage/types)
         'boolean': 'bool',
         'int32': 'int',
         'integer': 'int',
@@ -67,7 +68,7 @@ def generate_models_v2(swagger, model_file, api_name):
         else:
             raise Exception(f"Don't know how to identify type in '{prop_def}' definition of {model_name}:{prop_name}")
 
-        return swagger_type_to_python_type(t, all_models)
+        return swagger_type_to_pydantic_type(t, all_models)
 
     def get_parent(model_def):
         """Return (parent_module_path, parent_class) or None for this model definition"""
@@ -317,7 +318,7 @@ def generate_endpoints_v2(swagger, app_file, model_file, api_name):
                     '        class QueryModel(BaseModel):',
                 ]
                 for name, typ in query_params.items():
-                    python_type = swagger_type_to_python_type(typ)
+                    python_type = swagger_type_to_pydantic_type(typ)
                     query_model_lines += [
                         f'            {name}: Optional[{python_type}] = None',
                     ]

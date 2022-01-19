@@ -5,6 +5,7 @@ from werkzeug import FileStorage
 from pymacaron.log import pymlogger
 from pymacaron.utils import timenow
 from pymacaron import apipool
+from pymacaron import jsonencoders
 from pymacaron.model import PymacaronBaseModel
 from pymacaron.crash import postmortem
 from pymacaron.exceptions import PyMacaronException
@@ -198,14 +199,19 @@ def call_f(api_name=None, f=None, error_callback=None, query_model=None, body_mo
             raise BadResponseException('Nothing to return in response')
 
         elif isinstance(result, PymacaronBaseModel):
-            # Were we expecting this result model?
-            model = None
+            # Validate that we got the right model as results
+            found = False
             for m in result_models:
                 if isinstance(result, m):
-                    model = m
-            if not model:
+                    found = True
+            if not found:
                 raise BadResponseException(f'Expected to return an instance of {str_result_models}, but got a {result}')
-            return jsonify(result.to_json(keep_nullable=True))
+
+            return jsonify(result.to_json(
+                keep_nullable=True,
+                keep_datetime=False,
+                datetime_encoder=jsonencoders.get_datetime_encoder(),
+            ))
 
         elif ".".join([result.__module__, result.__class__.__name__]) == 'flask.wrappers.Response':
             # result is already a flask response

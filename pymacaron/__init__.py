@@ -3,6 +3,7 @@ import sys
 import logging
 import click
 import pkg_resources
+from datetime import datetime
 from uuid import uuid4
 from flask import Response, redirect
 from flask_compress import Compress
@@ -149,6 +150,19 @@ class apipool():
             app.add_url_rule('/%s/%s' % (path, api_filename), str(uuid4()), serve_api_spec(api_path))
 
 
+class jsonencoders:
+
+    # Default encoder when serializing datetime to Flask response
+    __json_encoders = {
+        datetime: str,
+    }
+
+    @classmethod
+    def get_datetime_encoder(cls):
+        assert datetime in jsonencoders.__json_encoders
+        return jsonencoders.__json_encoders[datetime]
+
+
 def get_port():
     """Find which TCP port to listen to, based on environment variables"""
     if 'PORT' in os.environ:
@@ -172,7 +186,7 @@ def get_port():
 class API(object):
 
 
-    def __init__(self, app, host='localhost', port=None, debug=False, log_level=logging.DEBUG, formats=None, error_reporter=None, error_callback=None, default_user_id=None, ping_hook=[]):
+    def __init__(self, app, host='localhost', port=None, debug=False, log_level=logging.DEBUG, json_encoders=None, error_reporter=None, error_callback=None, default_user_id=None, ping_hook=[]):
         """
 
         Configure the Pymacaron microservice prior to starting it. Arguments:
@@ -191,6 +205,8 @@ class API(object):
 
         ping_hook : (optional) a function to call each time Amazon calls the ping endpoint, which happens every few seconds
 
+        json_encoders: (optional) custom pydantic json encoders, to use when serializing pymacaron models to json
+
         """
         assert app
         assert port
@@ -199,7 +215,6 @@ class API(object):
         self.port = port
         self.host = host
         self.debug = debug
-        self.formats = formats
         self.error_callback = error_callback
         self.error_reporter = error_reporter
         self.ping_hook = ping_hook
@@ -212,6 +227,13 @@ class API(object):
             self.default_user_id = default_user_id
 
         set_level(log_level)
+
+        if json_encoders:
+            log.info(f"Will use custom json encoder when serializing Flask response: {json_encoders}")
+            assert type(json_encoders) is dict, "json_encoders must be a dict of type/callable"
+            assert datetime in json_encoders, "json_encoders must define an encoder for datetime"
+            assert callable(json_encoders[datetime]), "json_encoders[datetime] must be a callable"
+            jsonencoders.__json_encoders = json_encoders
 
         log.info("Initialized API (%s:%s) (Flask debug:%s)" % (host, port, debug))
 
