@@ -115,7 +115,7 @@ def pymacaron_flask_endpoint(api_name=None, f=None, error_callback=None, query_m
             result_models=result_models,
         )
 
-    except BaseException as e:
+    except (BaseException, Exception) as e:
 
         log.error(f"Method {f.__name__} raised exception [{str(e)}]")
 
