@@ -171,15 +171,9 @@ def call_f(api_name=None, f=None, error_callback=None, query_model=None, body_mo
     if os.environ.get('PYM_DEBUG', None) == '1':
         log.debug("PYM_DEBUG: Request headers are: %s" % dict(request.headers))
 
-    # TODO: fetch params from Flask request and compile args/kwargs to call f() with
     args = []
     if body_model_name:
         args.append(get_request_body(api_name, body_model_name))
-        # try:
-        #     args.append(get_request_body(api_name, body_model_name))
-        # except BadRequest:
-        #     ee = error_callback(ValidationError("Cannot parse json data: have you set 'Content-Type' to 'application/json'?"))
-        #     return _responsify(api_spec, ee, 400)
 
     kwargs = get_path_and_query_parameters(query_model, path_args)
 
@@ -231,34 +225,3 @@ def call_f(api_name=None, f=None, error_callback=None, query_model=None, body_mo
         #     return result
 
         assert 0, "Support for returning '{produces}' not implemented yet!"
-
-    # elif endpoint.produces_json:
-    #     if not hasattr(result, '__module__') or not hasattr(result, '__class__'):
-    #         e = error_callback(PyMacaronCoreException("Method %s did not return a class instance but a %s" %
-    #                                                   (endpoint.handler_server, type(result))))
-    #         return _responsify(api_spec, e, 500)
-
-    #     # If it's already a flask Response, just pass it through.
-    #     # Errors in particular may be either passed back as flask Responses, or
-    #     # raised as exceptions to be caught and formatted by the error_callback
-    #     result_type = result.__module__ + "." + result.__class__.__name__
-    #     if result_type == 'flask.wrappers.Response':
-    #         return result
-
-    #     # We may have got a pymacaron Error instance, in which case
-    #     # it has a http_reply() method...
-    #     if hasattr(result, 'http_reply'):
-    #         # Let's transform this Error into a flask Response
-    #         log.info("Looks like a pymacaron error instance - calling .http_reply()")
-    #         return result.http_reply()
-
-    #     # Otherwise, assume no error occured and make a flask Response out of
-    #     # the result.
-
-    #     # TODO: check that result is an instance of a model expected as response from this endpoint
-    #     result_json = api_spec.model_to_json(result)
-
-    #     # Send a Flask Response with code 200 and result_json
-    #     r = jsonify(result_json)
-    #     r.status_code = 200
-    #     return r
