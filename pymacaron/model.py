@@ -74,9 +74,10 @@ class PymacaronBaseModel(object):
         # Optionally serialize datetimes
         if not keep_datetime:
             if not datetime_encoder:
-                # The default encoding of datetime is just str()
-                datetime_encoder = str
-            self.__serialize_datetime(j, datetime_encoder)
+                # The default encoding of datetime is .isoformat()
+                self.__serialize_datetime(j, lambda d: d.isoformat())
+            else:
+                self.__serialize_datetime(j, datetime_encoder)
 
         return j
 

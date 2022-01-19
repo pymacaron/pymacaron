@@ -154,7 +154,7 @@ class jsonencoders:
 
     # Default encoder when serializing datetime to Flask response
     __json_encoders = {
-        datetime: str,
+        datetime: lambda d: d.isoformat(),
     }
 
     @classmethod
