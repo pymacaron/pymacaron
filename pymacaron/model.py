@@ -5,6 +5,26 @@ from pymacaron.log import pymlogger
 log = pymlogger(__name__)
 
 
+def prune_none(**kwargs):
+    """Remove all keys that are set to None and set the pydantic object's
+    properties to the remaining ones.
+
+    Usage:
+    apipool.myapi.MyModel(**prune_none(**kwargs))
+
+    Pydantic's default __init__(**kwargs)
+    sets all properties listed in kwargs, even those that are None. When
+    later doing dict(exclude_unset=True), those None properties are kept,
+    and we want to avoid that and rely to swagger's x-nullable instead
+    """
+
+    for k in list(kwargs.keys()):
+        v = kwargs[k]
+        if v is None:
+            del kwargs[k]
+    return kwargs
+
+
 class PymacaronBaseModel(object):
     """The base class from which all pymacaron model classes inherit. Some of these
     methods are redundant with pydantic, but kept for backward compatibility
@@ -58,14 +78,14 @@ class PymacaronBaseModel(object):
                         self.__serialize_datetime(jj, f)
 
 
-    def to_json(self, keep_datetime=False, keep_nullable=False, datetime_encoder=None):
+    def to_json(self, keep_datetime=False, keep_nullable=False, datetime_encoder=None, exclude_unset=True, exclude_none=False):
         """Return a dictionary representation this PyMacaron object, with datetime
         types serialized to strings.
         """
 
         # We want a json dict of only the object's properties that have been set.
         # https://stackoverflow.com/questions/66229384/pydantic-detect-if-a-field-value-is-missing-or-given-as-null
-        j = self.dict(exclude_none=True)
+        j = self.dict(exclude_unset=exclude_unset, exclude_none=exclude_none)
 
         # Optionally set nullable fields to None
         if keep_nullable:
