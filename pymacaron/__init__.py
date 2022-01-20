@@ -158,6 +158,14 @@ class jsonencoders:
     }
 
     @classmethod
+    def set_json_encoders(cls, encoders):
+        assert type(encoders) is dict, "json_encoders must be a dict of type/callable"
+        assert datetime in encoders, "json_encoders must define an encoder for datetime"
+        assert callable(encoders[datetime]), "json_encoders[datetime] must be a callable"
+        cls.__json_encoders = encoders
+
+
+    @classmethod
     def get_datetime_encoder(cls):
         assert datetime in jsonencoders.__json_encoders
         return jsonencoders.__json_encoders[datetime]
@@ -229,11 +237,8 @@ class API(object):
         set_level(log_level)
 
         if json_encoders:
-            log.info(f"Will use custom json encoder when serializing Flask response: {json_encoders}")
-            assert type(json_encoders) is dict, "json_encoders must be a dict of type/callable"
-            assert datetime in json_encoders, "json_encoders must define an encoder for datetime"
-            assert callable(json_encoders[datetime]), "json_encoders[datetime] must be a callable"
-            jsonencoders.__json_encoders = json_encoders
+            log.info(f"Using custom json encoder when serializing Flask response: {json_encoders}")
+            jsonencoders.set_json_encoders(json_encoders)
 
         log.info("Initialized API (%s:%s) (Flask debug:%s)" % (host, port, debug))
 

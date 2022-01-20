@@ -73,6 +73,11 @@ class UnhandledServerError(PyMacaronException):
     status = 500
 
 
+class InvalidParameterError(PyMacaronException):
+    code = 'INVALID_PARAMETER'
+    status = 400
+
+
 #
 # Interface to allow creating further Exception classes
 #

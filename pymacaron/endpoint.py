@@ -2,6 +2,7 @@ import os
 import json
 from flask import request, jsonify
 from werkzeug import FileStorage
+from pydantic.error_wrappers import ValidationError
 from pymacaron.log import pymlogger
 from pymacaron.utils import timenow
 from pymacaron import apipool
@@ -10,6 +11,7 @@ from pymacaron.model import PymacaronBaseModel
 from pymacaron.crash import postmortem
 from pymacaron.exceptions import PyMacaronException
 from pymacaron.exceptions import UnhandledServerError
+from pymacaron.exceptions import InvalidParameterError
 from pymacaron.exceptions import BadResponseException
 
 
@@ -19,7 +21,6 @@ log = pymlogger(__name__)
 
 def get_form_data(form_args=None):
     # Just extract whatever we can from that form, data or file alike
-    log.debug("FETCHING FORM DATA: %s" % request.form.to_dict())
 
     kwargs = request.form.to_dict()
 
@@ -119,6 +120,10 @@ def pymacaron_flask_endpoint(api_name=None, f=None, error_callback=None, query_m
 
         log.error(f"Method {f.__name__} raised exception [{str(e)}]")
 
+        if isinstance(e, ValidationError):
+            # Convert this pydantic validation error into a pymacaron one
+            e = InvalidParameterError(str(e))
+
         # Report this exception and tons of info about it
         postmortem(
             f=f,
@@ -202,6 +207,8 @@ def call_f(api_name=None, f=None, error_callback=None, query_model=None, body_mo
                 raise BadResponseException(f'Expected to return an instance of {str_result_models}, but got a {result}')
 
             return jsonify(result.to_json(
+                exclude_unset=True,
+                exclude_none=False,
                 keep_nullable=True,
                 keep_datetime=False,
                 datetime_encoder=jsonencoders.get_datetime_encoder(),
