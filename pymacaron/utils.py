@@ -77,3 +77,23 @@ def get_container_version():
 
 def get_app_name():
     return get_config().name
+
+
+def prune_none(**kwargs):
+    """Remove all keys that are set to None and set the pydantic object's
+    properties to the remaining ones.
+
+    Usage:
+    apipool.myapi.MyModel(**prune_none(**kwargs))
+
+    Pydantic's default __init__(**kwargs)
+    sets all properties listed in kwargs, even those that are None. When
+    later doing dict(exclude_unset=True), those None properties are kept,
+    and we want to avoid that and rely to swagger's x-nullable instead
+    """
+
+    for k in list(kwargs.keys()):
+        v = kwargs[k]
+        if v is None:
+            del kwargs[k]
+    return kwargs
