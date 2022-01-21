@@ -1,8 +1,7 @@
 ![pymacaron logo](https://github.com/pymacaron/pymacaron/blob/master/logo/pymacaron-logo-small.png)
+# Pymacaron
 
-# PyMacaron
-
-Python microservice framework based on FastAPI, OpenAPI and celery, deployable
+Python microservice framework based on Flask, OpenAPI and Celery, deployable
 on GKE and Beanstalk
 
 PyMacaron's documentation is available at
@@ -15,7 +14,7 @@ This page dives deeper into internal implementation details.
 ### Built-in endpoints
 
 The following endpoints are built-in into every pymacaron instance, based
-on [this swagger spec](https://github.com/pymacaron/pymacaron/blob/master/pymacaron/ping.yaml):
+on [this swagger specification](https://github.com/pymacaron/pymacaron/blob/master/pymacaron/ping.yaml):
 
 ```
 # Assuming you did in a separate terminal:
@@ -26,9 +25,10 @@ $ curl http://127.0.0.1:8080/ping
 
 $ curl http://127.0.0.1:8080/version
 {
-  "container": "",
-  "name": "ping",
-  "version": "0.0.1"
+  "apis":["ping"],
+  "name": "helloworld",
+  "pym_env":"staging",
+  "version": "220120-2219-3820-a6f45b",
 }
 
 $ curl http://127.0.0.1:8080/auth/version
@@ -41,9 +41,10 @@ $ curl http://127.0.0.1:8080/auth/version
 
 $ curl -H "Authorization: Bearer eyJpc3M[...]y8kNg" http://127.0.0.1:8080/auth/version
 {
-  "container": "",
-  "name": "ping",
-  "version": "0.0.1"
+  "apis":["ping"],
+  "name": "helloworld",
+  "pym_env":"staging",
+  "version": "220120-2219-3820-a6f45b",
 }
 
 ```
@@ -57,9 +58,8 @@ handling out of the box. It is done as follows:
 
 ```python
 import flask
-from pymacaron_core.swagger.apipool import ApiPool
+from pymacaron import apipool
 from pymacaron.exceptions import is_error
-from pymacaron import load_clients
 
 # Declare a Flask app and mock its context
 app = flask.Flask(__name__)

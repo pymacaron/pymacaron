@@ -6,9 +6,10 @@ import inspect
 import sys
 import traceback
 from flask import request
-from pymacaron_core.swagger.apipool import ApiPool
-from pymacaron.config import get_config
+from pymacaron.utils import get_container_version
+from pymacaron.utils import get_app_name
 from pymacaron.utils import is_ec2_instance
+from pymacaron.config import get_config
 from pymacaron.exceptions import PyMacaronException
 
 
@@ -103,7 +104,7 @@ def postmortem(f=None, t0=None, t1=None, exception=None, args=[], kwargs={}):
         )
     except Exception as e:
         # Don't block on replying to api caller
-        log.error("Failed to report report: %s" % str(e))
+        log.error(f"Failed to report report: {e}")
 
 
 def report_warning(title=None, data={}, exception=None):
@@ -120,23 +121,11 @@ def report_warning(title=None, data={}, exception=None):
         )
     except Exception as e:
         # Don't block on replying to api caller
-        log.error("Failed to report warning report: %s" % str(e))
+        log.error(f"Failed to report warning report: {e}")
 
 
 def populate_error_report(data):
     """Add generic stats to the error report"""
-
-    # Did pymacaron_core set a call_id and call_path?
-    call_id, call_path = '', ''
-    if hasattr(stack.top, 'call_id'):
-        call_id = stack.top.call_id
-    if hasattr(stack.top, 'call_path'):
-        call_path = stack.top.call_path
-
-    # Unique ID associated to all responses associated to a given
-    # call to apis, across all micro-services
-    data['call_id'] = call_id
-    data['call_path'] = call_path
 
     # Are we in aws?
     data['is_ec2_instance'] = is_ec2_instance()
@@ -168,43 +157,42 @@ def populate_error_report(data):
 
     data['user'] = user_data
 
-    # Is the current code running as a server?
-    if ApiPool().current_server_api:
-        # Server info
-        server = request.base_url
-        server = server.replace('http://', '')
-        server = server.replace('https://', '')
-        server = server.split('/')[0]
-        parts = server.split(':')
-        fqdn = parts[0]
-        port = parts[1] if len(parts) == 2 else ''
+    # Server info
+    server = request.base_url
+    server = server.replace('http://', '')
+    server = server.replace('https://', '')
+    server = server.split('/')[0]
+    parts = server.split(':')
+    fqdn = parts[0]
+    port = parts[1] if len(parts) == 2 else ''
 
-        data['server'] = {
-            'fqdn': fqdn,
-            'port': port,
-            'api_name': ApiPool().current_server_name,
-            'api_version': ApiPool().current_server_api.get_version(),
-        }
+    data['server'] = {
+        'fqdn': fqdn,
+        'port': port,
+        'api_name': get_app_name(),
+        'api_version': get_container_version(),
+    }
 
-        # Endpoint data
-        raw_data = ''
-        try:
-            raw_data = str(request.get_data())
-        except Exception:
-            pass
+    # Endpoint data
+    raw_data = ''
+    try:
+        raw_data = str(request.get_data())
+    except Exception:
+        pass
 
-        data['endpoint'] = {
-            'id': "%s %s %s" % (ApiPool().current_server_name, request.method, request.path),
-            'url': request.url,
-            'base_url': request.base_url,
-            'path': request.path,
-            'method': request.method,
-            'data': raw_data,
-        }
+    data['endpoint'] = {
+        'id': f"{get_app_name()}, {request.method}, {request.path}",
+        'url': request.url,
+        'base_url': request.base_url,
+        'path': request.path,
+        'method': request.method,
+        'data': raw_data,
+    }
 
 
+#
 # DEPRECATED
-
+#
 
 def report_error(title=None, data={}, caught=None, is_fatal=False):
     """Format a crash report and send it somewhere relevant. There are two

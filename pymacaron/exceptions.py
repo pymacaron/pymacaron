@@ -101,3 +101,10 @@ add_error('AuthMissingHeaderError', 'AUTHORIZATION_HEADER_MISSING', 401)
 add_error('AuthTokenExpiredError', 'TOKEN_EXPIRED', 401)
 add_error('AuthInvalidTokenError', 'TOKEN_INVALID', 401)
 # add_error('ValidationError', 'INVALID_PARAMETER', 400)
+
+
+def is_error(o):
+    """True if o is a Flask error Response"""
+    if hasattr(o, 'status') and int(o.status) >= 300:
+        return True
+    return False
