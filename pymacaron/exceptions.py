@@ -16,7 +16,7 @@ class PyMacaronException(BaseException):
     def __str__(self):
         return f'{self.__class__.__name__}({self.status}|{self.code}|{self.user_message})'
 
-    def __init__(self, msg):
+    def __init__(self, msg=None):
         self.user_message = msg
 
     def caught(self, error):
@@ -61,6 +61,11 @@ class PyMacaronException(BaseException):
         if self.error_caught:
             d['error_caught'] = pformat(self.error_caught)
         return d
+
+
+class InternalValidationError(PyMacaronException):
+    code = 'INTERNAL_VALIDATION_ERROR'
+    status = 500
 
 
 class BadResponseException(PyMacaronException):

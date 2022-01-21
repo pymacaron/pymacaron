@@ -13,7 +13,7 @@ from pymacaron.exceptions import PyMacaronException
 from pymacaron.exceptions import UnhandledServerError
 from pymacaron.exceptions import InvalidParameterError
 from pymacaron.exceptions import BadResponseException
-
+from pymacaron.exceptions import InternalValidationError
 
 
 log = pymlogger(__name__)
@@ -116,6 +116,7 @@ def pymacaron_flask_endpoint(api_name=None, f=None, error_callback=None, query_m
             result_models=result_models,
         )
 
+    # Catch ALL exceptions
     except (BaseException, Exception) as e:
 
         log.error(f"Method {f.__name__} raised exception [{str(e)}]")
@@ -188,7 +189,12 @@ def call_f(api_name=None, f=None, error_callback=None, query_model=None, body_mo
     if os.environ.get('PYM_DEBUG', None) == '1':
         log.debug("PYM_DEBUG: Request args are: [args: %s] [kwargs: %s]" % (args, kwargs))
 
-    result = f(*args, **kwargs)
+    try:
+        result = f(*args, **kwargs)
+    except ValidationError as e:
+        # A pydantic validation error occuring inside the endpoint is actually
+        # a fatal crash. We re-raise it but changed its type
+        raise InternalValidationError(str(e)) from e
 
     if produces == 'application/json':
         assert result_models, "BUG: no result models specified"
