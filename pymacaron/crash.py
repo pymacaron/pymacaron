@@ -45,6 +45,25 @@ def set_error_reporter(f):
     error_reporter = f
 
 
+def do_report_error(title=None, data=None, exception=None):
+    global error_reporter
+    log.info("Reporting error...")
+
+    error_reporter(
+        title=title,
+        data=data,
+    )
+
+    try:
+        pass
+    except Exception as e:
+        # Don't block on replying to api caller
+        log.error(f"An error occured while trying to report this error: {e}\n")
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        trace = traceback.format_exception(exc_type, exc_value, exc_traceback, 30)
+        log.error(trace)
+
+
 def postmortem(f=None, t0=None, t1=None, exception=None, args=[], kwargs={}):
     """Print the error's trace, and call the error reporter with a bunch of data on what happened"""
 
@@ -91,37 +110,20 @@ def postmortem(f=None, t0=None, t1=None, exception=None, args=[], kwargs={}):
 
     populate_error_report(data)
 
-    global error_reporter
-    log.info("Reporting crash...")
-
     fname = function_name(f)
-
-    try:
-        error_reporter(
-            title=f"{fname}(): {exception}",
-            data=data,
-            exception=exception,
-        )
-    except Exception as e:
-        # Don't block on replying to api caller
-        log.error(f"Failed to report report: {e}")
+    do_report_error(
+        title=f"{fname}(): {exception}",
+        data=data,
+        exception=exception,
+    )
 
 
 def report_warning(title=None, data={}, exception=None):
-
     populate_error_report(data)
-
-    global error_reporter
-    log.info("Reporting crash...")
-
-    try:
-        error_reporter(
-            title=title,
-            data=data,
-        )
-    except Exception as e:
-        # Don't block on replying to api caller
-        log.error(f"Failed to report warning report: {e}")
+    do_report_error(
+        title=title,
+        data=data,
+    )
 
 
 def populate_error_report(data):
@@ -171,22 +173,26 @@ def populate_error_report(data):
         'port': port,
         'api_name': get_app_name(),
         'api_version': get_container_version(),
+        'PYM_ENV': os.environ.get('PYM_ENV', ''),
     }
 
     # Endpoint data
-    raw_data = ''
+    body_str = ''
+    query_str = ''
     try:
-        raw_data = str(request.get_data())
+        body_str = str(request.get_data())
+        query_str = str(request.get.args)
     except Exception:
         pass
 
-    data['endpoint'] = {
+    data['request'] = {
         'id': f"{get_app_name()}, {request.method}, {request.path}",
         'url': request.url,
         'base_url': request.base_url,
         'path': request.path,
         'method': request.method,
-        'data': raw_data,
+        'request_body': body_str,
+        'request_query': query_str,
     }
 
 
