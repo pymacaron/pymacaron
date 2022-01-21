@@ -1,5 +1,6 @@
 from datetime import datetime
 from pymacaron.log import pymlogger
+from pymacaron.utils import prune_none as do_prune_none
 
 
 log = pymlogger(__name__)
@@ -83,8 +84,10 @@ class PymacaronBaseModel(object):
 
 
     @classmethod
-    def from_json(cls, j):
+    def from_json(cls, j, prune_none=True):
         """Take a json dictionary and return a model instance"""
+        if prune_none:
+            do_prune_none(j)
         return cls.parse_obj(j)
 
 

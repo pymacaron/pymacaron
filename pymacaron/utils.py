@@ -79,21 +79,43 @@ def get_app_name():
     return get_config().name
 
 
-def prune_none(**kwargs):
-    """Remove all keys that are set to None and set the pydantic object's
-    properties to the remaining ones.
+def __prune_none(j: dict):
+    """Remove all keys that are set to None in this python dictionary, recursively"""
+    for k in list(j.keys()):
+        v = j[k]
+        if v is None:
+            del j[k]
+        elif type(v) is dict:
+            __prune_none(v)
+        elif type(v) is list:
+            for vv in v:
+                if type(vv) is dict:
+                    __prune_none(vv)
+
+
+def prune_none(*args, **kwargs):
+    """Takes either a python dictionary, or a **kwargs key-value pairs, and remove
+    all keys that are set to None, recursively on dictionaries and list of
+    dictionaries.
 
     Usage:
-    apipool.myapi.MyModel(**prune_none(**kwargs))
 
-    Pydantic's default __init__(**kwargs)
-    sets all properties listed in kwargs, even those that are None. When
-    later doing dict(exclude_unset=True), those None properties are kept,
-    and we want to avoid that and rely to swagger's x-nullable instead
+    apipool.myapi.MyModel(**prune_none(foo='bar', bar=None))
+
+    apipool.myapi.MyModel(**prune_none({'foo': 'bar', bar: None, 'baz': {'a': None, 'b': 1}))
+
     """
 
-    for k in list(kwargs.keys()):
-        v = kwargs[k]
-        if v is None:
-            del kwargs[k]
-    return kwargs
+    log.info(f"args {args} {type(args)}")
+
+    if len(args) == 1:
+        j = args[0]
+        assert type(j) is dict
+    elif len(args) > 1:
+        j = dict(args)
+    else:
+        j = kwargs
+
+    __prune_none(j)
+
+    return j

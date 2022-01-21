@@ -30,11 +30,11 @@ class modelpool():
     def __getattr__(self, model_name):
         raise Exception(f'Either {self.api_name}.yaml has not been loaded or it does not define object {model_name}')
 
-    def json_to_model(self, model_name, j, keep_datetime=None):
+    def json_to_model(self, model_name, j, keep_datetime=None, prune_none=True):
         """Given a model name and json dict, return an instantiated pymacaron object"""
         # TODO: keep_datetime in this method should be deprecated...
         assert keep_datetime is not False, "Support for keep_datetime=False not implemented"
-        return getattr(self, model_name).from_json(j)
+        return getattr(self, model_name).from_json(j, prune_none=prune_none)
 
 
 class apipool():
