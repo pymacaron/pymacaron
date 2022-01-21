@@ -54,8 +54,21 @@ def get_logger():
 
 def set_level(newlevel):
     global root
+    global DEFAULT_LEVEL
     root.setLevel(newlevel)
-
+    DEFAULT_LEVEL = newlevel
+    names = [
+        'pymacaron_async',
+        'flask_cors.core',
+        'werkzeug',
+        'pymacaron',
+        'elasticsearch',
+        'celery.worker.strategy',
+        'celery.app.trace',
+        'scout_apm.core.agent.commands',
+    ]
+    for name in names:
+        logging.getLogger(name).setLevel(newlevel)
 
 #
 # A custom wrapper around the logger object, injecting user_id and call_id from
