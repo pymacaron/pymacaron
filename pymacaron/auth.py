@@ -44,7 +44,7 @@ def add_auth(f):
         token = get_user_token()
         if 'headers' not in kwargs:
             kwargs['headers'] = {}
-        kwargs['headers']['Authorization'] = "Bearer %s" % token
+        kwargs['headers']['Authorization'] = f"Bearer {token}"
         return f(*args, **kwargs)
 
     return add_auth_decorator
@@ -58,35 +58,30 @@ def load_auth_token(token, load=True):
     """Validate an auth0 token. Returns the token's payload, or an exception
     of the type:"""
 
-    assert get_config().jwt_secret, "No JWT secret configured for pymacaron"
-    assert get_config().jwt_issuer, "No JWT issuer configured for pymacaron"
-    assert get_config().jwt_audience, "No JWT audience configured for pymacaron"
+    conf = get_config()
 
-    log.info("Validating token, using issuer:%s, audience:%s, secret:%s***" % (
-        get_config().jwt_issuer,
-        get_config().jwt_audience,
-        get_config().jwt_secret[1:8],
-    ))
+    assert conf.jwt_secret, "No JWT secret configured for pymacaron"
+    assert conf.jwt_issuer, "No JWT issuer configured for pymacaron"
+    assert conf.jwt_audience, "No JWT audience configured for pymacaron"
 
     # First extract the issuer
-    issuer = get_config().jwt_issuer
+    issuer = conf.jwt_issuer
     try:
         headers = jwt.get_unverified_header(token)
     except jwt.exceptions.DecodeError:
         raise AuthInvalidTokenError('token signature is invalid')
 
-    log.debug("Token has headers %s" % headers)
+    log.info(f"JWT token has headers '{headers}'")
 
     if 'iss' in headers:
         issuer = headers['iss']
 
     # Then validate the token against this issuer
-    log.info("Validating token in issuer %s" % issuer)
     try:
         payload = jwt.decode(
             token,
-            get_config().jwt_secret,
-            audience=get_config().jwt_audience,
+            conf.jwt_secret,
+            audience=conf.jwt_audience,
             algorithms=["HS256"],
             # Allow for a time difference of up to 5min (300sec)
             leeway=300,
@@ -136,7 +131,7 @@ def authenticate_http_request(token=None):
         if auth:
             auth = unquote_plus(auth)
 
-    log.debug("Validating Auth header [%s]" % auth)
+    log.debug(f"Validating Auth header [{auth}]")
 
     if not auth:
         raise AuthMissingHeaderError('There is no Authorization header in the HTTP request')
@@ -148,7 +143,7 @@ def authenticate_http_request(token=None):
     elif len(parts) == 1:
         raise AuthInvalidTokenError('Token not found in Authorization header')
     elif len(parts) > 2:
-        raise AuthInvalidTokenError('Authorization header must be Bearer + \s + token')
+        raise AuthInvalidTokenError('Authorization header must be Bearer + \\s + token')
 
     token = parts[1]
 
@@ -191,7 +186,7 @@ def generate_token(user_id, expire_in=None, data={}, issuer=None, iat=None):
         "iss": issuer,
     }
 
-    log.debug("Encoding token with data %s and headers %s (secret:%s****)" % (data, headers, get_config().jwt_secret[0:8]))
+    log.debug("Encoding token with data '{data}' and headers '{headers}'")
 
     t = jwt.encode(
         data,
