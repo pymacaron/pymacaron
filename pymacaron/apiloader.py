@@ -64,7 +64,7 @@ def generate_models_v2(swagger, model_file, api_name):
         elif 'enum' in prop_def:
             assert type(prop_def['enum']) is list
             str_enum = ', '.join(f'"{s}"' for s in prop_def['enum'])
-            t = f'Literal[{str_enum}]'
+            t = f'Literal[None, {str_enum}]'
             return t
         elif 'format' in prop_def:
             t = prop_def['format']
