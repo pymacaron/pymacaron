@@ -49,6 +49,7 @@ setup(
     python_requires='>=3.8',
     install_requires=[
         'pymacaron-unit>=1.0.10',
+        'python-dateutil',
         'flask>=1.0.4',
         'flask-cors',
         'flask-compress',

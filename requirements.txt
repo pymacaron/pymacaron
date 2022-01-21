@@ -5,3 +5,4 @@ PyJWT==2.3.0
 PyYAML==5.4.1
 pydantic>=0.1
 ujson>=3.2.0
+python-dateutil
