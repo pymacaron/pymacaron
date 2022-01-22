@@ -1,3 +1,5 @@
+import ujson
+from difflib import unified_diff
 from datetime import datetime
 from pymacaron.log import pymlogger
 from pymacaron.utils import prune_none as do_prune_none
@@ -109,3 +111,42 @@ class PymacaronBaseModel(object):
     def get_property_names(self):
         """Return the names of all of the model's properties"""
         raise Exception("Should be overriden in model declaration")
+
+
+    def diff_with(self, other):
+        """Return a diff-style text showing the difference between the
+        PymacaronBaseModels schemas of self and other. Used to see if 2
+        pymacaron objects of different types have the same schema definition.
+        """
+
+        d0 = self.schema()
+        d1 = other.schema()
+
+        # strip all descriptions
+        def __remove_descriptions(d):
+            for k in list(d.keys()):
+                v = d[k]
+                if k == 'description':
+                    del d[k]
+                elif type(v) is dict:
+                    __remove_descriptions(v)
+                elif type(v) is list:
+                    for dd in v:
+                        if type(dd) is dict:
+                            __remove_descriptions(dd)
+
+        __remove_descriptions(d0)
+        __remove_descriptions(d1)
+
+        s0 = ujson.dumps(d0, indent=4, sort_keys=True)
+        s1 = ujson.dumps(d1, indent=4, sort_keys=True)
+
+        generator = unified_diff(
+            s0.splitlines(keepends=True),
+            s1.splitlines(keepends=True),
+            fromfile=f'{self.get_model_api()}.{self.get_model_name()}',
+            tofile=f'{other.get_model_api()}.{other.get_model_name()}',
+            lineterm='\n',
+        )
+
+        return ''.join(generator).strip()
