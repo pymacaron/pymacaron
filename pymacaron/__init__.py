@@ -26,6 +26,14 @@ class modelpool():
 
     def __init__(self, name):
         self.api_name = name
+        self._model_names = []
+
+    def get_model_names(self):
+        return self._model_names
+
+    def add_model(self, model_name, model_class):
+        self._model_names.append(model_name)
+        setattr(self, model_name, model_class)
 
     def __getattr__(self, model_name):
         raise Exception(f'Either {self.api_name}.yaml has not been loaded or it does not define object {model_name}')
@@ -52,7 +60,7 @@ class apipool():
         if not hasattr(apipool, api_name):
             setattr(apipool, api_name, modelpool(api_name))
         models = getattr(apipool, api_name)
-        setattr(models, model_name, model_class)
+        models.add_model(model_name, model_class)
 
     @classmethod
     def get_model(cls, api_name):
@@ -104,6 +112,42 @@ class apipool():
         apipool.__api_paths[api_name] = api_path
 
         return app_pkg
+
+    @classmethod
+    def enforce_global_model_names(cls):
+        """Find all models that have the same names in different apis and compare their
+        schema declarations.  Raise an error if at least two of them differ,
+        and show all the differences that were found as a diff of their json
+        schemas.
+        """
+
+        model_name_to_apis = {}
+
+        for api_name in apipool.__api_paths.keys():
+            api = getattr(apipool, api_name)
+            for model_name in api.get_model_names():
+                if model_name not in model_name_to_apis:
+                    model_name_to_apis[model_name] = []
+                model_name_to_apis[model_name].append(api)
+
+        found_names = []
+
+        for model_name in sorted(model_name_to_apis.keys()):
+            apis = model_name_to_apis[model_name]
+            cnt = len(apis)
+            if cnt > 1:
+                log.info(f"Found {model_name} in {cnt} apis: {', '.join([str(a) for a in apis])}")
+                m0 = getattr(apis[0], model_name)
+                for api in apis[1:]:
+                    m1 = getattr(api, model_name)
+                    diff = m0().diff_with(m1())
+                    if diff:
+                        log.error('\n' + diff)
+                        if model_name not in found_names:
+                            found_names.append(model_name)
+
+        if found_names:
+            raise Exception(f"Found models with same names but different schemas in different apis: {', '.join(found_names)}")
 
     @classmethod
     def publish_apis(cls, app, path='doc'):
@@ -293,10 +337,15 @@ class API(object):
         return self
 
 
-    def load_apis(self, path=None, ignore=[], only_models=[], force=False):
+    def load_apis(self, path=None, ignore=[], only_models=[], force=False, global_names=False):
         """Find all swagger files under the given path. Ignore those whose name is in
         the ignore list. Generate and load models for all others. Generate
         Flask app code for all except those in ignore and only_models list.
+
+        If global_names is true, load_apis() will check all generated models
+        from all loaded apis and if two models with the same name but different
+        schemas are found, raise an exception and show the diff between those
+        two models.
 
         """
 
@@ -343,6 +392,9 @@ class API(object):
             )
             if app_pkg:
                 self.app_pkgs.append(app_pkg)
+
+        if global_names:
+            apipool.enforce_global_model_names()
 
         return self
 
