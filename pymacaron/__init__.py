@@ -5,7 +5,7 @@ import click
 import pkg_resources
 from datetime import datetime
 from uuid import uuid4
-from flask import Response, redirect
+from flask import Response, redirect, abort
 from flask_compress import Compress
 from flask_cors import CORS
 from pymacaron.apiloader import load_api_models_and_endpoints
@@ -158,40 +158,43 @@ class apipool():
         if not apipool.__api_paths:
             raise Exception("You must call .load_apis() before .publish_apis()")
 
+        conf = get_config()
+
         # Infer the live host url from pym-config.yaml
         proto = 'http'
-        if hasattr(get_config(), 'aws_cert_arn'):
+        if hasattr(conf, 'aws_cert_arn'):
             proto = 'https'
 
-        live_host = "%s://%s" % (proto, get_config().live_host)
+        live_host = f"{proto}://{conf.live_host}"
 
         # Allow cross-origin calls
         CORS(app, resources={r"/%s/*" % path: {"origins": "*"}})
 
-        # Add routes to serve api specs and redirect to petstore ui for each one
-        for api_name, api_path in apipool.__api_paths.items():
+        def doc_endpoint(name=None):
+            api_name = name.replace('.yaml', '')
+            if api_name not in apipool.__api_paths:
+                log.info(f"Unknown api name '{api_name}'")
+                abort(404)
 
-            api_filename = os.path.basename(api_path)
-            log.info("Publishing api %s at /%s/%s" % (api_name, path, api_name))
+            api_path = apipool.__api_paths[api_name]
 
-            def redirect_to_petstore(live_host, api_filename):
-                def f():
-                    url = 'http://petstore.swagger.io/?url=%s/%s/%s' % (live_host, path, api_filename)
-                    log.info("Redirecting to %s" % url)
-                    return redirect(url, code=302)
-                return f
+            if name.endswith('.yaml'):
+                # Show the swagger file
+                with open(api_path, 'r') as f:
+                    spec = f.read()
+                    log.info("Returning %s" % api_path)
+                    return Response(spec, mimetype='text/plain')
 
-            def serve_api_spec(api_path):
-                def f():
-                    with open(api_path, 'r') as f:
-                        spec = f.read()
-                        log.info("Serving %s" % api_path)
-                        return Response(spec, mimetype='text/plain')
-                return f
+            else:
+                # Redirect to swagger-UI at petstore, to open this swagger file
+                url = 'http://petstore.swagger.io/?url=%s/%s/%s' % (live_host, path, api_path)
+                log.info("Redirecting to %s" % url)
+                return redirect(url, code=302)
 
-            # Publish yaml file and a redirect link to petstore's swagger UI to visualize that file
-            app.add_url_rule('/%s/%s' % (path, api_name), str(uuid4()), redirect_to_petstore(live_host, api_filename))
-            app.add_url_rule('/%s/%s' % (path, api_filename), str(uuid4()), serve_api_spec(api_path))
+        path = path.strip('/')
+        route = f'/{path}/<name>'
+        log.info(f"Publishing apis under route {route} path=[{path}]")
+        app.add_url_rule(route, str(uuid4()), view_func=doc_endpoint, methods=['GET'])
 
 
 class jsonencoders:
