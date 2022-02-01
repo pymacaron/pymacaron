@@ -73,6 +73,9 @@ def generate_models_v2(swagger, model_file, api_name):
         else:
             raise Exception(f"Don't know how to identify type in '{prop_def}' definition of {model_name}:{prop_name}")
 
+        if t in all_models:
+            return t
+
         return swagger_type_to_pydantic_type(t, all_models)
 
     def get_parent(model_def):
@@ -121,6 +124,7 @@ def generate_models_v2(swagger, model_file, api_name):
     # Now comes a tricky part: we need to sort class declarations so that
     # classes are declared before they are referenced in the type constraints
     # of other classes.
+
     ordered_names = []
     deps_by_name = {}
     for model_name, model_def in swagger['definitions'].items():
@@ -434,7 +438,7 @@ def generate_endpoints_v2(swagger, app_file, model_file, api_name):
         f.write('\n'.join(lines_header + lines_imports + lines_endpoints))
 
 
-def load_api_models_and_endpoints(api_name=None, api_path=None, dest_dir=None, create_endpoints=True, force=False):
+def load_api_models_and_endpoints(api_name=None, api_path=None, dest_dir=None, suffix_models='_models', suffix_app='_app', create_endpoints=True, force=False, load_code=True):
     """Load all object models defined inside the OpenAPI specification located at
     api_path into a generated python module at dest_dir/[api_name].py
 
@@ -450,8 +454,8 @@ def load_api_models_and_endpoints(api_name=None, api_path=None, dest_dir=None, c
     if not dest_dir:
         dest_dir = os.path.dirname(api_path)
 
-    model_file = './' + os.path.relpath(os.path.join(dest_dir, f'{api_name}_models.py'))
-    app_file = './' + os.path.relpath(os.path.join(dest_dir, f'{api_name}_app.py'))
+    model_file = './' + os.path.relpath(os.path.join(dest_dir, f'{api_name}{suffix_models}.py'))
+    app_file = './' + os.path.relpath(os.path.join(dest_dir, f'{api_name}{suffix_app}.py'))
 
     #
     # Step 1: Regenerate pydantic and FastAPI python code, if needed
@@ -499,24 +503,26 @@ def load_api_models_and_endpoints(api_name=None, api_path=None, dest_dir=None, c
     else:
         if not do_models:
             log.info(f"No need to regenerate {model_file}")
-        if not do_endpoints:
+        if create_endpoints and not do_endpoints:
             log.info(f"No need to regenerate {app_file}")
 
     #
     # Step 2: Load code
     #
 
-    def load_code(path):
+    def do_load_code(path):
         spec = importlib.util.spec_from_file_location(api_name, path)
         pkg = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(pkg)
         return pkg
 
-    model_pkg = load_code(model_file)
+    model_pkg = None
+    if load_code:
+        model_pkg = do_load_code(model_file)
 
     app_pkg = None
     if create_endpoints:
-        app_pkg = load_code(app_file)
+        app_pkg = do_load_code(app_file)
 
     #
     # Step 3: Load all pydantic models into apipool
@@ -524,11 +530,12 @@ def load_api_models_and_endpoints(api_name=None, api_path=None, dest_dir=None, c
 
     from pymacaron import apipool
 
-    cnt = 0
-    for model_name in model_pkg.__all_models:
-        apipool.add_model(api_name, model_name, getattr(model_pkg, model_name))
-        cnt += 1
+    if model_pkg:
+        cnt = 0
+        for model_name in model_pkg.__all_models:
+            apipool.add_model(api_name, model_name, getattr(model_pkg, model_name))
+            cnt += 1
 
-    log.info(f"Loaded {cnt} models from {model_file}")
+        log.info(f"Loaded {cnt} models from {model_file}")
 
     return app_pkg
