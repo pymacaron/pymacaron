@@ -106,8 +106,6 @@ def prune_none(*args, **kwargs):
 
     """
 
-    log.info(f"args {args} {type(args)}")
-
     if len(args) == 1:
         j = args[0]
         assert type(j) is dict
