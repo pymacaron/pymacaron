@@ -195,7 +195,7 @@ class apipool():
 
         path = path.strip('/')
         route = f'/{path}/<name>'
-        log.info(f"Publishing apis under route {route} path=[{path}]")
+        log.info(f"Publishing apis under route {route}")
         app.add_url_rule(route, str(uuid4()), view_func=doc_endpoint, methods=['GET'])
 
 
