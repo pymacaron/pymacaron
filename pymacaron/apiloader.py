@@ -438,7 +438,7 @@ def generate_endpoints_v2(swagger, app_file, model_file, api_name):
         f.write('\n'.join(lines_header + lines_imports + lines_endpoints))
 
 
-def load_api_models_and_endpoints(api_name=None, api_path=None, dest_dir=None, suffix_models='_models', suffix_app='_app', create_endpoints=True, force=False, load_code=True):
+def load_api_models_and_endpoints(api_name=None, api_path=None, dest_dir=None, model_file=None, app_file=None, create_endpoints=True, force=False, load_code=True):
     """Load all object models defined inside the OpenAPI specification located at
     api_path into a generated python module at dest_dir/[api_name].py
 
@@ -454,8 +454,10 @@ def load_api_models_and_endpoints(api_name=None, api_path=None, dest_dir=None, s
     if not dest_dir:
         dest_dir = os.path.dirname(api_path)
 
-    model_file = './' + os.path.relpath(os.path.join(dest_dir, f'{api_name}{suffix_models}.py'))
-    app_file = './' + os.path.relpath(os.path.join(dest_dir, f'{api_name}{suffix_app}.py'))
+    if model_file is None:
+        model_file = './' + os.path.relpath(os.path.join(dest_dir, f'{api_name}_models.py'))
+    if app_file is None:
+        app_file = './' + os.path.relpath(os.path.join(dest_dir, f'{api_name}_app.py'))
 
     #
     # Step 1: Regenerate pydantic and FastAPI python code, if needed

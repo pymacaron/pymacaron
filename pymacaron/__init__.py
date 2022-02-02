@@ -74,7 +74,7 @@ class apipool():
         return sorted(apipool.__api_paths.keys())
 
     @classmethod
-    def load_swagger(cls, api_name, api_path, dest_dir=None, create_endpoints=False, force=False):
+    def load_swagger(cls, api_name, api_path, dest_dir=None, create_endpoints=False, force=False, model_file=None, app_file=None):
         """Load a swagger/openapi specification into pymacaron: generate its model
         classes (declared with pydantic), and optionally generate the Flask api
         endpoints binding endpoint methods to routes.
@@ -106,6 +106,8 @@ class apipool():
             dest_dir=dest_dir,
             create_endpoints=create_endpoints,
             force=force,
+            model_file=model_file,
+            app_file=app_file,
         )
 
         # Remember where this api's swagger is located
