@@ -14,6 +14,7 @@ bind = '127.0.0.1:8080'
 backlog = 2048
 
 workers = get_gunicorn_worker_count()
+threads = 2
 worker_class = 'gthread'
 worker_connections = 1000
 timeout = 180
