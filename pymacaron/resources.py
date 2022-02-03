@@ -33,8 +33,8 @@ def get_celery_worker_count(cpu_count=None):
 
 
 # Memory required, in Mb, by one gunicorn or celery worker:
-GUNICORN_WORKER_MEM = 400
-CELERY_WORKER_MEM = 200
+GUNICORN_WORKER_MEM = 250
+CELERY_WORKER_MEM = 150
 
 def get_memory_limit(default_celery_worker_count=None, cpu_count=None):
     """Return the memory in Megabytes required to run pymacaron on this container hardware"""
