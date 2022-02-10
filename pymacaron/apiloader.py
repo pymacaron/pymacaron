@@ -165,21 +165,21 @@ def generate_models_v2(swagger, model_file, api_name):
 
         for p_name, p_def in model_def['properties'].items():
 
-            # By default, pydantic attributes are optional. But if the property
-            # has 'x-mandatory: true', then it becomes required.
-            optional_or_not_prefix = 'Optional['
-            optional_or_not_suffix = ']'
-            if p_def.get('x-mandatory', False) is True:
-                optional_or_not_prefix = ''
-                optional_or_not_suffix = ''
-
+            p_type = ''
             if p_def.get('type', '').lower() == 'array':
                 assert 'items' in p_def, f"Expected 'items' in array definition of {model_name}:{p_name}"
                 t = def_to_type(p_def['items'], model_name, p_name)
-                lines.append(f'    {p_name}: {optional_or_not_prefix}List[{t}]{optional_or_not_suffix} = None')
+                p_type = f'List[{t}]'
             else:
                 t = def_to_type(p_def, model_name, p_name)
-                lines.append(f'    {p_name}: {optional_or_not_prefix}{t}{optional_or_not_suffix} = None')
+                p_type = t
+
+            # By default, pydantic attributes are optional. But if the property
+            # has 'x-mandatory: true', then it becomes required.
+            if p_def.get('x-mandatory', False) is True:
+                lines.append(f'    {p_name}: {p_type}')
+            else:
+                lines.append(f'    {p_name}: Optional[{p_type}] = None')
 
     lines.append('')
     lines.append('')

@@ -142,7 +142,7 @@ class apipool():
                 m0 = getattr(apis[0], model_name)
                 for api in apis[1:]:
                     m1 = getattr(api, model_name)
-                    diff = m0().diff_with(m1())
+                    diff = m0.diff_with(m1)
                     if diff:
                         log.error('\n' + diff)
                         if model_name not in found_names:

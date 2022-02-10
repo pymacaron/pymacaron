@@ -113,13 +113,14 @@ class PymacaronBaseModel(object):
         raise Exception("Should be overriden in model declaration")
 
 
-    def diff_with(self, other):
+    @classmethod
+    def diff_with(me, other):
         """Return a diff-style text showing the difference between the
         PymacaronBaseModels schemas of self and other. Used to see if 2
         pymacaron objects of different types have the same schema definition.
         """
 
-        d0 = self.schema()
+        d0 = me.schema()
         d1 = other.schema()
 
         # strip all descriptions
@@ -144,8 +145,8 @@ class PymacaronBaseModel(object):
         generator = unified_diff(
             s0.splitlines(keepends=True),
             s1.splitlines(keepends=True),
-            fromfile=f'{self.get_model_api()}.{self.get_model_name()}',
-            tofile=f'{other.get_model_api()}.{other.get_model_name()}',
+            fromfile=f'{me.get_model_api(me)}.{me.__name__}',
+            tofile=f'{other.get_model_api(other)}.{other.__name__}',
             lineterm='\n',
         )
 
