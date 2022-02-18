@@ -163,10 +163,7 @@ class apipool():
         conf = get_config()
 
         # Infer the live host url from pym-config.yaml
-        proto = 'http'
-        if hasattr(conf, 'aws_cert_arn'):
-            proto = 'https'
-
+        proto = 'https'
         live_host = f"{proto}://{conf.live_host}"
 
         # Allow cross-origin calls
@@ -189,8 +186,8 @@ class apipool():
 
             else:
                 # Redirect to swagger-UI at petstore, to open this swagger file
-                url = 'http://petstore.swagger.io/?url=%s/%s/%s' % (live_host, path, api_path)
-                log.info("Redirecting to %s" % url)
+                url = f'http://petstore.swagger.io/?url={live_host}/{path}/{api_name}.yaml'
+                log.info(f"Redirecting to {url}")
                 return redirect(url, code=302)
 
         path = path.strip('/')
