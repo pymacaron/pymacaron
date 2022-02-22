@@ -4,13 +4,11 @@ import logging
 import click
 import pkg_resources
 from datetime import datetime
-from uuid import uuid4
-from flask import Response, redirect, abort
 from flask_compress import Compress
-from flask_cors import CORS
 from pymacaron.apiloader import load_api_models_and_endpoints
 from pymacaron.log import set_level, pymlogger
 from pymacaron.config import get_config
+from pymacaron.publisher import publish_api_specifications
 from pymacaron.monitor import monitor_init
 from pymacaron.crash import set_error_reporter
 from pymacaron.api import add_ping_hook
@@ -160,40 +158,11 @@ class apipool():
         if not apipool.__api_paths:
             raise Exception("You must call .load_apis() before .publish_apis()")
 
-        conf = get_config()
-
-        # Infer the live host url from pym-config.yaml
-        proto = 'https'
-        live_host = f"{proto}://{conf.live_host}"
-
-        # Allow cross-origin calls
-        CORS(app, resources={r"/%s/*" % path: {"origins": "*"}})
-
-        def doc_endpoint(name=None):
-            api_name = name.replace('.yaml', '')
-            if api_name not in apipool.__api_paths:
-                log.info(f"Unknown api name '{api_name}'")
-                abort(404)
-
-            api_path = apipool.__api_paths[api_name]
-
-            if name.endswith('.yaml'):
-                # Show the swagger file
-                with open(api_path, 'r') as f:
-                    spec = f.read()
-                    log.info("Returning %s" % api_path)
-                    return Response(spec, mimetype='text/plain')
-
-            else:
-                # Redirect to swagger-UI at petstore, to open this swagger file
-                url = f'http://petstore.swagger.io/?url={live_host}/{path}/{api_name}.yaml'
-                log.info(f"Redirecting to {url}")
-                return redirect(url, code=302)
-
-        path = path.strip('/')
-        route = f'/{path}/<name>'
-        log.info(f"Publishing apis under route {route}")
-        app.add_url_rule(route, str(uuid4()), view_func=doc_endpoint, methods=['GET'])
+        publish_api_specifications(
+            app=app,
+            path=path,
+            api_paths=apipool.__api_paths,
+        )
 
 
 class jsonencoders:
