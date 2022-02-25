@@ -2,6 +2,7 @@ import os
 import json
 from flask import request, jsonify
 from werkzeug import FileStorage
+from werkzeug.exceptions import ClientDisconnected
 from pydantic.error_wrappers import ValidationError
 from pymacaron.log import pymlogger
 from pymacaron.utils import timenow
@@ -14,6 +15,7 @@ from pymacaron.exceptions import UnhandledServerError
 from pymacaron.exceptions import InvalidParameterError
 from pymacaron.exceptions import BadResponseException
 from pymacaron.exceptions import InternalValidationError
+from pymacaron.exceptions import RequestTimeout
 
 
 log = pymlogger(__name__)
@@ -22,7 +24,10 @@ log = pymlogger(__name__)
 def get_form_data(form_args=None):
     # Just extract whatever we can from that form, data or file alike
 
-    kwargs = request.form.to_dict()
+    try:
+        kwargs = request.form.to_dict()
+    except ClientDisconnected:
+        raise RequestTimeout()
 
     # Go through all the objects passed in form-data and try converting to something json-friendly
     files = request.files.to_dict()

@@ -83,6 +83,11 @@ class InvalidParameterError(PyMacaronException):
     status = 400
 
 
+class RequestTimeout(PyMacaronException):
+    code = 'REQUEST_TIMEOUT'
+    status = 408
+
+
 #
 # Interface to allow creating further Exception classes
 #
