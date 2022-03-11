@@ -174,7 +174,7 @@ class apipool():
         def doc_endpoint(name=None):
             api_name = name.replace('.yaml', '')
             if api_name not in apipool.__api_paths:
-                log.info(f"Unknown api name '{api_name}'")
+                log.error(f"Unknown api name '{api_name}'")
                 abort(404)
 
             api_path = apipool.__api_paths[api_name]
@@ -186,9 +186,13 @@ class apipool():
 
                     if toc:
                         # Insert the table of content after the first 'description: |'
-                        spec.replace('description: |', f'description: |\n{toc}\n', 1)
+                        spec = spec.replace(
+                            'description: |',
+                            f'description: |\n{toc}\n',
+                            1,
+                        )
 
-                    toc.info("Returning %s" % api_path)
+                    log.info("Returning %s" % api_path)
                     return Response(spec, mimetype='text/plain')
 
             else:
