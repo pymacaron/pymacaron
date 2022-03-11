@@ -152,9 +152,11 @@ class apipool():
             raise Exception(f"Found models with same names but different schemas in different apis: {', '.join(found_names)}")
 
     @classmethod
-    def publish_apis(cls, app, path='doc'):
+    def publish_apis(cls, app, path='doc', toc=None):
         """Add routes to the Flask app to publish all loaded swagger files under the
-        paths doc/<api_name>.yaml and doc/<api_name>
+        paths doc/<api_name>.yaml and doc/<api_name>. Optionally add a table of
+        content to all swagger specs.
+
         """
 
         if not apipool.__api_paths:
@@ -181,7 +183,12 @@ class apipool():
                 # Show the swagger file
                 with open(api_path, 'r') as f:
                     spec = f.read()
-                    log.info("Returning %s" % api_path)
+
+                    if toc:
+                        # Insert the table of content after the first 'description: |'
+                        spec.replace('description: |', f'description: |\n{toc}\n', 1)
+
+                    toc.info("Returning %s" % api_path)
                     return Response(spec, mimetype='text/plain')
 
             else:
@@ -289,11 +296,12 @@ class API(object):
         log.info("Initialized API (%s:%s) (Flask debug:%s)" % (host, port, debug))
 
 
-    def publish_apis(self, path='doc'):
-        """Publish all loaded apis on under the uri /<path>/<api-name>, by
-        redirecting to http://petstore.swagger.io/
+    def publish_apis(self, path='doc', toc=None):
+        """Publish all loaded apis on under the uri /<path>/<api-name>, by redirecting
+        to http://petstore.swagger.io/. Optionally add a common table of
+        content (provided in markdown) to all apis' yaml files.
         """
-        apipool.publish_apis(self.app, path=path)
+        apipool.publish_apis(self.app, path=path, toc=toc)
 
 
     def load_builtin_apis(self, names=['ping']):
