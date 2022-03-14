@@ -11,7 +11,8 @@ log = pymlogger(__name__)
 
 class PyMacaronConfig(object):
 
-    def __init__(self, path=None, env=None):
+    def __init__(self):
+        """Initialize a minimal pymacaron config"""
 
         # Some defaults, required by pymacaron.auth
         self.jwt_issuer = None
@@ -23,6 +24,12 @@ class PyMacaronConfig(object):
 
         # Default time-limit for the slow-call report
         self.report_call_exceeding_ms = 1000
+
+
+    def load_pym_config(self, path=None, env=None):
+        """Search for a pym-config file and load it if found, otherwise raise an error
+        for not finding any.
+        """
 
         # Find a pym-config file
         pym_env = os.environ.get('PYM_ENV', None)
@@ -119,7 +126,7 @@ def get_config_path(name='pym-config.yaml', path=None):
 config = None
 
 
-def get_config(path=None, env=None):
+def get_config():
     """Find the pym-config yaml file for the current environment, as identified by
     the PYM_ENV variable. Look at all standard locations. Optionally take an
     extra location/path to look at, and/or an environment that overrides
@@ -128,5 +135,5 @@ def get_config(path=None, env=None):
 
     global config
     if not config:
-        config = PyMacaronConfig(path=path, env=env)
+        config = PyMacaronConfig()
     return config

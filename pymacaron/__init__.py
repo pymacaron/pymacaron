@@ -504,7 +504,9 @@ def letsgo(name, callback=None):
             log.info("Overriding PYM_ENV to '%s'" % env)
             os.environ['PYM_ENV'] = env
 
+        # First thing first: load pymacaron's config file
         conf = get_config()
+        conf.load_pym_config(env=env)
 
         show_splash()
         if not port:
