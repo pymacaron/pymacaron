@@ -1,6 +1,7 @@
-from pymacaron.log import pymlogger
+import os
 import multiprocessing
 from math import ceil
+from pymacaron.log import pymlogger
 from pymacaron.config import get_config
 
 
@@ -12,6 +13,9 @@ log = pymlogger(__name__)
 
 def get_gunicorn_worker_count(cpu_count=None):
     """Return the number of gunicorn worker to run on this container hardware"""
+    # The worker count can be overriden by setting this env variable
+    if os.environ.get('PYM_GUNICORN_WORKERS_COUNT', None):
+        return os.environ['PYM_GUNICORN_WORKERS_COUNT']
     if cpu_count:
         return cpu_count * 2 + 1
     return multiprocessing.cpu_count() * 2 + 1

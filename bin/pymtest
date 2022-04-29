@@ -89,6 +89,10 @@ parse_args $ARGS
 # Force re-generation of recent auth token
 unset PYM_JWT_TOKEN
 
+if [ ! -z "$TARGET_ENV" ]; then
+    export PYM_ENV=$TARGET_ENV
+fi
+
 PYMCONFIG_ARGS=""
 if [ ! -z "$TARGET_ENV" ]; then
     PYMCONFIG_ARGS="--env $TARGET_ENV"
@@ -127,18 +131,10 @@ if [ ! -z "$TARGET_HOST" ]; then
     echo "=> Running against $TARGET_HOST:$TARGET_PORT"
     export PYM_SERVER_HOST=$TARGET_HOST
     export PYM_SERVER_PORT=$TARGET_PORT
-    export PYM_ENV=$TARGET_ENV
-
     set_runpath
 
 elif [ ! -z "$IMAGE_ID" ]; then
     echo "=> Running against docker image $IMAGE_ID"
-
-    export PYM_ENV=$TARGET_ENV
-    if [ -z "$PYM_ENV" ]; then
-        export PYM_ENV='dev'
-    fi
-
     set_runpath
 
     # Start the container, passing all secrets as environment variables,
@@ -204,20 +200,32 @@ elif [ ! -z "$LOCAL" ]; then
     export PYM_SERVER_HOST=127.0.0.1
     export PYM_SERVER_PORT=8080
 
-    # Let's try to guess if we should set PYM_ENV
-    RUN_ENV=$(ps auxwwf | grep 'python server.py' | grep '\--env' | sed -e 's/.*--env //' | awk '{ print $1 }')
-    if [ -z "$RUN_ENV" ]; then
-        IS_RUNNING=$(ps auxwwf | grep 'python server.py' | grep '\--port')
-        if [ -z "$IS_RUNNING" ]; then
-            echo "ERROR: server is not started!"
-            exit -1
+    # Is there a server running locally with gunicorn? Try getting its bind arguments
+    GUNICORN_BIND=$(ps auxwwf | grep '/pym/virtenv/bin/gunicorn' | grep -v 'grep' | head -n 1 | sed -e 's/.*--bind //' | awk '{ print $1 }')
+    if [ ! -z "$GUNICORN_BIND" ]; then
+        PYM_SERVER_HOST=$(echo $GUNICORN_BIND | cut -d ':' -f 1)
+        PYM_SERVER_PORT=$(echo $GUNICORN_BIND | cut -d ':' -f 2)
+        if [ -z "$PYM_ENV" ]; then
+            echo "ERROR: expected PYM_ENV to be set"
+            exit 1
         fi
-        # The server is started without --env
-        export PYM_ENV=dev
     else
-        export PYM_ENV=$RUN_ENV
-        export PYMCONFIG_ARGS="--env $RUN_ENV"
+        # Is there a server running with 'python server.py --env'?
+        RUN_ENV=$(ps auxwwf | grep 'python server.py' | grep '\--env' | sed -e 's/.*--env //' | awk '{ print $1 }')
+        if [ -z "$RUN_ENV" ]; then
+            IS_RUNNING=$(ps auxwwf | grep 'python server.py' | grep '\--port')
+            if [ -z "$IS_RUNNING" ]; then
+                echo "ERROR: server is not started!"
+                exit -1
+            fi
+            # The server is started without --env
+            export PYM_ENV=dev
+        else
+            export PYM_ENV=$RUN_ENV
+        fi
     fi
+
+    export PYMCONFIG_ARGS="--env $PYM_ENV"
 
     set_runpath
 fi
