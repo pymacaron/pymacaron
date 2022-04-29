@@ -60,6 +60,7 @@ setup(
         'PyYAML>=5.1.2',
         'pydantic>=1.8.2',
         'ujson>=5.1.0',
+        'MarkupSafe==1.1.1',
     ],
     tests_require=[
         'psutil',
