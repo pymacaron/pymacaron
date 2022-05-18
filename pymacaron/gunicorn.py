@@ -20,7 +20,7 @@ worker_connections = 1000
 timeout = 180
 keepalive = 2
 
-max_requests = 5000
+max_requests = 2500
 max_requests_jitter = 500
 
 preload = True
