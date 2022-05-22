@@ -341,10 +341,14 @@ def generate_endpoints_v2(swagger, app_file, model_file, api_name):
                 for name, param in query_params.items():
                     _type, value = param
                     python_type = swagger_type_to_pydantic_type(_type)
-                    if value == None or value == "":
+                    if value == None:
                         query_model_lines.append(f'            {name}: Optional[{python_type}] = None')
                     else:
-                        query_model_lines.append(f'            {name}: {python_type} = {value}')
+                        # Careful with strings, They need to be wrapped in double quotes:
+                        if python_type == "str":
+                            query_model_lines.append(f'            {name}: {python_type} = "{value}"')
+                        else:
+                            query_model_lines.append(f'            {name}: {python_type} = {value}')
 
             # If there are path parameters, pass them as a dictionary to the
             # generic pymacaron endpoint
