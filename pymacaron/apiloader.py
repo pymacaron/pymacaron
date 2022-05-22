@@ -252,7 +252,10 @@ def generate_endpoints_v2(swagger, app_file, model_file, api_name):
                         path_params[param['name']] = param['type']
                     elif param['in'] == 'query':
                         assert 'name' in param and 'type' in param, f"Missing 'name' and/or 'type' declaration for query paramater {err_str}"
-                        query_params[param['name']] = param['type']
+                        if param.get('default', None) != None:
+                            query_params[param['name']] = (param['type'], param['default'])
+                        else:
+                            query_params[param['name']] = (param['type'], None)
                     elif param['in'] == 'body':
                         assert 'schema' in param, f"Missing 'schema' declaration for body parameter {err_str}"
                         assert '$ref' in param['schema'], f"Missing '$ref' declaration in schema of body parameter {err_str}"
@@ -335,11 +338,13 @@ def generate_endpoints_v2(swagger, app_file, model_file, api_name):
                 query_model_lines = [
                     '        class QueryModel(BaseModel):',
                 ]
-                for name, typ in query_params.items():
-                    python_type = swagger_type_to_pydantic_type(typ)
-                    query_model_lines += [
-                        f'            {name}: Optional[{python_type}] = None',
-                    ]
+                for name, param in query_params.items():
+                    _type, value = param
+                    python_type = swagger_type_to_pydantic_type(_type)
+                    if value == None or value == "":
+                        query_model_lines.append(f'            {name}: Optional[{python_type}] = None')
+                    else:
+                        query_model_lines.append(f'            {name}: {python_type} = {value}')
 
             # If there are path parameters, pass them as a dictionary to the
             # generic pymacaron endpoint
