@@ -1,3 +1,4 @@
+from crypt import methods
 import os
 import sys
 import logging
@@ -296,6 +297,22 @@ class API(object):
         if json_encoders:
             log.info(f"Using custom json encoder when serializing Flask response: {json_encoders}")
             jsonencoders.set_json_encoders(json_encoders)
+
+        # Implementation of /docs in the api based on the yaml file:
+        from pymacaron.html.yaml2swagger import YamlParser
+        yaml_files = YamlParser.identify_yaml_files()
+
+        # Setup of the page router:
+        @self.app.route("/docs", methods=["GET"])
+        def get_documentation_router():
+            return YamlParser.make_router(yaml_files=yaml_files)
+
+        # Dynamic interpretation for multiple yaml files:
+        for file in yaml_files:
+            file_name = file.split('.')[0]
+            html = YamlParser.convert_to_html(yaml_file=file)
+            exec(f'@self.app.route(f"/docs/{file_name}", methods=["GET"])\ndef get_{file_name}_docs():\n    return """{html}"""')
+
 
         log.info("Initialized API (%s:%s) (Flask debug:%s)" % (host, port, debug))
 
