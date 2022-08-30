@@ -20,6 +20,7 @@ Run the pymacaron deployment pipeline:
  7. Run the tests again, against the live api.
 
 OPTIONS:
+  --x-auth TOKEN    Use x-auth token in bitbucket pipelines to pull the repo. 
   --branch BRANCH   Deploy this branch (default: master)
   --commit COMMIT   Deploy this commit in the given branch (default: HEAD)
   --env ENV         Deploy the service described in 'pym-config.ENV.yaml'
@@ -59,6 +60,7 @@ DEPLOY_ARGS=
 WITH_DEBUG=
 TARGET_ENV=
 IMAGE_ID=
+X_AUTH=
 
 parse_args() {
     while [ "$1" != "" ]; do
@@ -66,6 +68,7 @@ parse_args() {
             "--branch")        shift; export CHECKOUT_BRANCH=$1;;
             "--commit")        shift; export CHECKOUT_COMMIT=$1;;
             "--env")           shift; export TARGET_ENV=$1;;
+            "--x-auth")        shift; export X_AUTH=$1;;
             "--debug")         set -x; DEBUG='true'; WITH_DEBUG="--debug";;
             "--force-build")   export FORCE_BUILD=1;;
             "--no-push")       export DO_PUSH=;;
@@ -106,7 +109,11 @@ echo "******************************************"
 echo ""
 
 do_checkout_git_repo() {
-    REMOTE_URL=$(git config --get remote.origin.url)
+    if [ ! -z "$X_AUTH" ]; then
+        REMOTE_URL=$(git config --get remote.origin.url | sed "s/\/\//\/\/x-token-auth:{$X_AUTH}@/")
+    else
+        REMOTE_URL=$(git config --get remote.origin.url)
+    fi
     PROJECT_NAME=$(basename -s .git `git config --get remote.origin.url`)
     TMPDIR=/tmp/pym-${NAME}-${CHECKOUT_BRANCH}-${CHECKOUT_COMMIT}
 
