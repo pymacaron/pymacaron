@@ -109,11 +109,15 @@ echo "******************************************"
 echo ""
 
 do_checkout_git_repo() {
+    REMOTE_URL=$(git config --get remote.origin.url)
+
+    # If x-token-auth is provided, we need to add it to the remote url. The
+    # remote url is either a git url (in which case an ssh key is used) or an
+    # https url (in which case we should insert the auth token)
     if [ ! -z "$X_AUTH" ]; then
-        REMOTE_URL=$(git config --get remote.origin.url | sed "s/\/\//\/\/x-token-auth:{$X_AUTH}@/")
-    else
-        REMOTE_URL=$(git config --get remote.origin.url)
+        REMOTE_URL=$(echo $REMOTE_URL | sed "s|https://|https://x-token-auth:{$X_AUTH}@|")
     fi
+
     PROJECT_NAME=$(basename -s .git `git config --get remote.origin.url`)
     TMPDIR=/tmp/pym-${NAME}-${CHECKOUT_BRANCH}-${CHECKOUT_COMMIT}
 
