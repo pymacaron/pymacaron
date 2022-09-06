@@ -117,16 +117,6 @@ set_runpath() {
     fi
 }
 
-# Make sure we can connect to aws
-if [ -z $AWS_SECRET_ACCESS_KEY ]; then
-    SECRETS_FILE=~/.env.secrets
-    if [ ! -e "$SECRETS_FILE" ]; then
-        echo "ERROR: no secrets file at $SECRETS_FILE"
-    else
-        source $SECRETS_FILE
-    fi
-fi
-
 if [ ! -z "$TARGET_HOST" ]; then
     echo "=> Running against $TARGET_HOST:$TARGET_PORT"
     export PYM_SERVER_HOST=$TARGET_HOST
